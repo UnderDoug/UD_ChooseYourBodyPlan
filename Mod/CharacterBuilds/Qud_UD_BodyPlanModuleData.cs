@@ -22,11 +22,11 @@ namespace XRL.CharacterBuilds.Qud
                 });
 
         public Qud_UD_BodyPlanModuleData(Anatomy Selection)
-            : this()
-            => Selections.Add(
-                item: new Qud_UD_BodyPlanModuleDataRow()
-                {
-                    Anatomy = Selection.Name
-                });
+            : this(Selection?.Name)
+        { }
+
+        public Qud_UD_BodyPlanModuleData(Qud_UD_BodyPlanModule.AnatomyChoice Selection)
+            : this(Selection.Anatomy)
+        { }
     }
 }

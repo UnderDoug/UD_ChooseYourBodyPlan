@@ -1,0 +1,9 @@
+{
+    "id": "UD_BodyPlan_Selection",
+    "title": "{{C|Body Plan}} {{W|Selection}}",
+    "description": "Adds a window to character generation allowing mutants to pick an alternative body type.",
+    "version": "0.0.1",
+    "author": "{{K-g-G-Y-G-g-K alternation|UnderDoug}}",
+    "tags": "Character Generation,Extension,Customization",
+    "PreviewImage": "preview.png"
+}

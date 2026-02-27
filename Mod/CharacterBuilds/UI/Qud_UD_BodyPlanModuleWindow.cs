@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using ConsoleLib.Console;
@@ -41,7 +42,20 @@ namespace XRL.CharacterBuilds.Qud.UI
                 windowDescriptor = descriptor;
 
             if (module.data == null)
+            {
                 module.setData(module.GetDefaultData());
+
+                if (module.GetDefaultPlayerBodyPlan() is string playerAnatomyName
+                    && module.AnatomyChoices
+                        .FirstOrDefault(a => a?.Anatomy?.Name == playerAnatomyName) is Qud_UD_BodyPlanModule.AnatomyChoice playerAnatomyChoice
+                    && !playerAnatomyChoice.Equals(default))
+                {
+                    module.AnatomyChoices.OrderBy(a => a.Anatomy.Name);
+                    module.AnatomyChoices.Remove(playerAnatomyChoice);
+                    module.AnatomyChoices.Insert(0, playerAnatomyChoice);
+                    module.SetDefautChoice();
+                }
+            }
 
             prefabComponent.onSelected.RemoveAllListeners();
             prefabComponent.onSelected.AddListener(SelectAnatomy);
@@ -65,11 +79,16 @@ namespace XRL.CharacterBuilds.Qud.UI
             AnatomiesMenuState.Add(categoryMenuData);
             for (int i = 0; i < module.AnatomyChoices.Count; i++)
             {
+                bool isSelected = module.IsSelected(module.AnatomyChoices[i]);
+                string description = module.AnatomyChoices[i].GetDescription();
+                if (isSelected)
+                    description = "{{W|" + description + "}}";
+
                 var item = new PrefixMenuOption()
                 {
-                    Prefix = module.IsSelected(module.AnatomyChoices[i]) ? "[■]" : "[ ]",
-                    Description = module.AnatomyChoices[i].GetDescription(),
-                    LongDescription = module.AnatomyChoices[i].GetLongDescription(),
+                    Prefix = isSelected ? CHECKED : EMPTY_CHECK,
+                    Description = description,
+                    LongDescription = module.AnatomyChoices[i].GetLongDescription(IncludeOpening: true),
                     Renderable = module.AnatomyChoices[i].GetRenderable()
                 };
                 categoryMenuData.menuOptions.Add(item);
@@ -77,7 +96,6 @@ namespace XRL.CharacterBuilds.Qud.UI
 
             if (!module.builder.SkippingUIUpdates)
                 prefabComponent.BeforeShow(windowDescriptor, AnatomiesMenuState);
-
         }
 
         public override void ResetSelection()
@@ -110,7 +128,7 @@ namespace XRL.CharacterBuilds.Qud.UI
             {
                 Id = GetType().FullName,
                 Title = (module?.SelectedChoice())?.Anatomy?.Name ?? "Body Plan",
-                IconPath = renderable?.getTile() ?? "creatures/sw_slog.bmp",
+                IconPath = renderable?.getTile() ?? "Creatures/natural-weapon-fist.bmp",
                 IconDetailColor = ColorUtility.ColorMap[renderable?.getColorChars().detail ?? 'W'],
                 IconForegroundColor = ColorUtility.ColorMap[renderable?.getColorChars().foreground ?? 'w']
             };
