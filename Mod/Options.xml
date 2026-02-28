@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<options>
+  <!-- Option_UD_BodyPlan_Selection_ 
+  
+  Debug Options
+  
+  -->
+  <!--option
+        ID="Option_UD_BodyPlan_Selection_DebugEnableOption"
+        DisplayText="{{C|Body Plan}} {{W|Selection}}: Enable a debug option for this mod."
+        Category="Debug"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, this option is enabled.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option-->
+
+  <!--
+  
+  Mod Options
+  
+  -->
+  <option
+        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansForTK"
+        DisplayText="Enable body plan selection for True Kin."
+        Category="Mod: Body Plan Selection"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, body plan selection is avaialable to True Kin.
+      
+      {{r|Be warned}}: several body plans are inherently incapable of installing cybernetics despite the creature itself being genotypically capable.
+      
+      An effort has been made to mark these body plans as {{r|cybernetically incompatible}}.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  <option
+        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansAvailableViaRecipe"
+        DisplayText="Enable body plans that are otherwise available via {{m|cooking recipes}}."
+        Category="Mod: Body Plan Selection"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, body plans that the player can access through normal play by way of {{m|cooking recipes}} will available to select from.
+      
+      Selecting one of these body plans will mark your character as having already &quot;consumed&quot; the relevant recipe if consuming that recipe would prevent you from consuming it again.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  <option
+        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansThatAreRobotic"
+        DisplayText="Enable body plans that are for robots."
+        Category="Mod: Body Plan Selection"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, body plans that are typically for robots will be available.
+
+      {{r|Be warned}}: selecting one of these body plans will make your character {{c|mechanical}}.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  <option
+        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansThatAreRoboticWithoutMakingYouRobotic"
+		    Requires="Option_UD_BodyPlan_Selection_EnableBodyPlansThatAreRobotic==Yes"
+        DisplayText="Enable body plans that are for robots without making you {{c|mechanical}}."
+        Category="Mod: Body Plan Selection"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, body plans that are for robots will not make you {{c|mechanical}}.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  <option
+        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansThatSuck"
+        DisplayText="Enable body plans that are going to be very difficult to play with."
+        Category="Mod: Body Plan Selection"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, body plans that are lacking many of the integral components required to play properly will be available to select from.
+
+      {{r|Be warned}}: the game will substantially more difficult playing as one of these.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+</options>
