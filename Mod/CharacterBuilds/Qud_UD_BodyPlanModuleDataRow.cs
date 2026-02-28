@@ -9,12 +9,10 @@ namespace XRL.CharacterBuilds.Qud
         public Qud_UD_BodyPlanModuleDataRow()
             => Anatomy = null
             ;
-
         public Qud_UD_BodyPlanModuleDataRow(string Anatomy)
             : this()
             => this.Anatomy = Anatomy
             ;
-
         public Qud_UD_BodyPlanModuleDataRow(Qud_UD_BodyPlanModule.AnatomyChoice Choice)
             : this(Choice?.Anatomy?.Name)
         { }

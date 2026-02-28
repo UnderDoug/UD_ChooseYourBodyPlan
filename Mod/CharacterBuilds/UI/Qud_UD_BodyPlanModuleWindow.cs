@@ -11,7 +11,10 @@ using XRL.Rules;
 using XRL.UI;
 using XRL.UI.Framework;
 
+using UD_BodyPlan_Selection.Mod;
+
 using ColorUtility = ConsoleLib.Console.ColorUtility;
+using XRL.Collections;
 
 namespace XRL.CharacterBuilds.Qud.UI
 {
@@ -30,21 +33,38 @@ namespace XRL.CharacterBuilds.Qud.UI
 
         private List<Qud_UD_BodyPlanModule.AnatomyChoice> AnatomyChoices => module?.AnatomyChoices;
 
-        public override void BeforeShow(EmbarkBuilderModuleWindowDescriptor descriptor)
+        public bool TrySetupModuleData()
         {
             if (module.data == null)
             {
-                module.setData(module.GetDefaultData());
-
+                module.setData(module.DefaultData);
                 module.OrganizeAnatomyChoices(true);
+                return true;
             }
-            
+            return false;
+        }
+        public override void BeforeShow(EmbarkBuilderModuleWindowDescriptor descriptor)
+        {
+            module.WindowShown = true;
+
+            TrySetupModuleData();
+
             prefabComponent.onSelected.RemoveAllListeners();
             prefabComponent.onSelected.AddListener(SelectAnatomy);
 
             UpdateControls();
 
             base.BeforeShow(descriptor);
+        }
+        public override void Show()
+        {
+            base.Show();
+            TrySetupModuleData();
+
+            if (!module.HasSelection)
+                module.SetDefautChoice(true);
+
+            UpdateControls();
         }
 
         public override GameObject InstantiatePrefab(GameObject prefab)
@@ -54,10 +74,7 @@ namespace XRL.CharacterBuilds.Qud.UI
         }
 
         public override void RandomSelectionNoUI()
-        {
-            module.PickAnatomy(Stat.Roll(0, module.AnatomyChoices.Count - 1));
-            UpdateControls();
-        }
+            => SelectAnatomy(Stat.Roll(0, module.AnatomyChoices.Count - 1));
 
         public override void RandomSelection()
         {
@@ -69,7 +86,7 @@ namespace XRL.CharacterBuilds.Qud.UI
 
         public override void ResetSelection()
         {
-            module.PickAnatomy(0);
+            module.setData(module.DefaultData);
             UpdateControls();
         }
 
@@ -86,11 +103,14 @@ namespace XRL.CharacterBuilds.Qud.UI
             };
         }
 
-        public void SelectAnatomy(FrameworkDataElement dataElement)
+        public void SelectAnatomy(int n)
         {
-            module.PickAnatomy(AnatomiesMenuState[0].menuOptions.FindIndex(d => d == dataElement));
+            module.PickAnatomy(n);
             UpdateControls();
         }
+        public void SelectAnatomy(FrameworkDataElement dataElement)
+            => SelectAnatomy(AnatomiesMenuState[0].menuOptions.FindIndex(d => d == dataElement))
+            ;
 
         public void UpdateControls()
         {
@@ -102,13 +122,18 @@ namespace XRL.CharacterBuilds.Qud.UI
             };
             AnatomiesMenuState.Add(categoryMenuData);
             if (AnatomyChoices != null)
-                foreach (Qud_UD_BodyPlanModule.AnatomyChoice choice in AnatomyChoices)
+            {
+                using var choicesToDelete = ScopeDisposedList<int>.GetFromPool();
+                for (int i = 0; i < AnatomyChoices.Count; i++)
                 {
-                    if (choice == null)
+                    if (AnatomyChoices[i] is not Qud_UD_BodyPlanModule.AnatomyChoice choice)
+                    {
+                        choicesToDelete.Add(i);
                         continue;
+                    }
 
                     bool isSelected = module.IsSelected(choice);
-                    string description = choice.GetDescription();
+                    string description = choice.GetDescription(ShowDefault: true);
                     if (isSelected)
                         description = "{{W|" + description + "}}";
 
@@ -117,10 +142,15 @@ namespace XRL.CharacterBuilds.Qud.UI
                         {
                             Prefix = isSelected ? CHECKED : EMPTY_CHECK,
                             Description = description,
-                            LongDescription = choice.GetLongDescription(IncludeOpening: true),
+                            LongDescription = choice.GetLongDescription(
+                                IncludeOpening: true,
+                                IsTrueKin: module?.GenotypeModuleData?.Entry?.IsTrueKin ?? false),
                             Renderable = choice.GetRenderable()
                         });
                 }
+                foreach (int index in choicesToDelete)
+                    AnatomyChoices.RemoveAt(index);
+            }
 
             if (!module.builder.SkippingUIUpdates)
                 prefabComponent.BeforeShow(descriptor, AnatomiesMenuState);

@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using XRL.World.Anatomy;
+﻿using XRL.World.Anatomy;
 
 namespace XRL.CharacterBuilds.Qud
 {
     public class Qud_UD_BodyPlanModuleData : AbstractEmbarkBuilderModuleData
     {
         public Qud_UD_BodyPlanModuleDataRow Selection;
+
+        public bool HasSelection => Selection.Anatomy != null; 
 
         public Qud_UD_BodyPlanModuleData()
             => Selection = null;
