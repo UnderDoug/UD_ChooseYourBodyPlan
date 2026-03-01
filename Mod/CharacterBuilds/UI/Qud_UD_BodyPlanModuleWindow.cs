@@ -38,15 +38,15 @@ namespace XRL.CharacterBuilds.Qud.UI
             if (module.data == null)
             {
                 module.setData(module.DefaultData);
-                module.OrganizeAnatomyChoices(true);
                 return true;
             }
+            if ((module?.HasSelection ?? false)
+                && !module.AnatomyChoices.Contains(module.SelectedChoice()))
+                ResetSelection();
             return false;
         }
         public override void BeforeShow(EmbarkBuilderModuleWindowDescriptor descriptor)
         {
-            module.WindowShown = true;
-
             TrySetupModuleData();
 
             prefabComponent.onSelected.RemoveAllListeners();
@@ -62,7 +62,7 @@ namespace XRL.CharacterBuilds.Qud.UI
             TrySetupModuleData();
 
             if (!module.HasSelection)
-                module.SetDefautChoice(true);
+                SelectDefaultChoice(true);
 
             UpdateControls();
         }
@@ -111,6 +111,11 @@ namespace XRL.CharacterBuilds.Qud.UI
         public void SelectAnatomy(FrameworkDataElement dataElement)
             => SelectAnatomy(AnatomiesMenuState[0].menuOptions.FindIndex(d => d == dataElement))
             ;
+        public void SelectDefaultChoice(bool Override = false)
+        {
+            module.SelectDefaultChoice(Override);
+            UpdateControls();
+        }
 
         public void UpdateControls()
         {
@@ -124,6 +129,7 @@ namespace XRL.CharacterBuilds.Qud.UI
             if (AnatomyChoices != null)
             {
                 using var choicesToDelete = ScopeDisposedList<int>.GetFromPool();
+                bool isTK = module?.GenotypeModuleData?.Entry?.IsTrueKin ?? false;
                 for (int i = 0; i < AnatomyChoices.Count; i++)
                 {
                     if (AnatomyChoices[i] is not Qud_UD_BodyPlanModule.AnatomyChoice choice)
@@ -137,15 +143,23 @@ namespace XRL.CharacterBuilds.Qud.UI
                     if (isSelected)
                         description = "{{W|" + description + "}}";
 
+                    string longDesc = isTK ? choice.LongDescriptionTK : choice.LongDescription;
+
+                    var renderable = choice.GetRenderable();
+                    if (choice.IsDefault
+                        && module.GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry
+                        && module.SubtypeModuleData?.Entry is SubtypeEntry subtypeEntry
+                        && subtypeEntry.Tile.Coalesce(genotypeEntry.Tile) is string typeTile
+                        && subtypeEntry.DetailColor.Coalesce(genotypeEntry.DetailColor) is string typeDetailColor)
+                        renderable = new(typeTile, RenderString: "@", ColorString: $"&Y^{typeDetailColor}", TileColor: "&Y", DetailColor: typeDetailColor[0]);
+
                     categoryMenuData.menuOptions.Add(
                         item: new PrefixMenuOption()
                         {
                             Prefix = isSelected ? CHECKED : EMPTY_CHECK,
                             Description = description,
-                            LongDescription = choice.GetLongDescription(
-                                IncludeOpening: true,
-                                IsTrueKin: module?.GenotypeModuleData?.Entry?.IsTrueKin ?? false),
-                            Renderable = choice.GetRenderable()
+                            LongDescription = longDesc,
+                            Renderable = renderable
                         });
                 }
                 foreach (int index in choicesToDelete)
@@ -154,6 +168,9 @@ namespace XRL.CharacterBuilds.Qud.UI
 
             if (!module.builder.SkippingUIUpdates)
                 prefabComponent.BeforeShow(descriptor, AnatomiesMenuState);
+
+            if (module?.HasSelection ?? false)
+                GetOverlayWindow().nextButton.navigationContext.ActivateAndEnable();
         }
     }
 }

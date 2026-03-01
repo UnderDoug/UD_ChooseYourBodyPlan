@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<objects>
+  
+  <object Name="UD_BodyPlan_Selection_BaseExclusion" Inherits="DataBucket">
+    <tag Name="BaseObject" Value="*noinherit" />
+  </object>
+
+  <!--object Name="YourPrefix_UD_BodyPlanExclusion" Inherits="UD_BodyPlan_Selection_BaseExclusion">
+    <tag Name="Anatomy" Value="AnatomyNameToExclude" />
+    <xtagUD_BPS_Transformation
+      Anatomy="AnatomyToTransformInto"
+      Tile="TileWhenTransformed"
+      RenderString="%"
+      DetailColor="m"
+      Species=""
+      Property="PropertySetWhenRecipeConsumed"
+      Mutations="List,OfMutations,WhenTransformed" />
+    <tag Name="Optional" Value="true" />
+    <tag Name="ExceptionMessage" Value="Message to display in Long Description if optionally exempt from exclusion." />
+    <tag Name="ExceptionSummary" Value="Message to display in Summary Block if optionally exempt from exclusion." />
+  </object-->
+
+  <object Name="UD_BodyPlan_Selection_NotOptional" Inherits="UD_BodyPlan_Selection_BaseExclusion">
+    <tag Name="Anatomies" Value="HumanoidWithHandsFace" />
+  </object>
+
+  <object Name="UD_BodyPlan_Selection_Sucks" Inherits="UD_BodyPlan_Selection_BaseExclusion">
+    <tag Name="Anatomies" Value="Echinoid,Motes,Nest" />
+    <tag Name="Difficult" />
+    <tag Name="Optional" />
+    <tag Name="ExceptionMessage" Value="{{r|This body plan will be difficult to play with.}}" />
+    <tag Name="ExceptionSummary" Value="{{r|Difficult to play.}}" />
+  </object>
+
+  <object Name="UD_BodyPlan_Selection_CloacaSurprise" Inherits="UD_BodyPlan_Selection_BaseExclusion">
+    <xtagUD_BPS_Transformation
+      Anatomy="SlugWithHands"
+      RenderString="Q"
+      Tile="Creatures/sw_slog.bmp"
+      Species="slug"
+      Property="AteCloacaSurprise"
+      Mutations="Bilge Sphincter" />
+    <tag Name="Optional" />
+    <tag Name="ExceptionMessage" Value="{{m|There is a cooking recipe to get this body plan.}}" />
+    <tag Name="ExceptionSummary" Value="{{m|Avaialable via cooking.}}" />
+  </object>
+
+  <object Name="UD_BodyPlan_Selection_CrystalDelight" Inherits="UD_BodyPlan_Selection_BaseExclusion">
+    <xtagUD_BPS_Transformation
+      Anatomy="HumanoidOctohedron"
+      RenderString="µ"
+      Tile="Creatures/sw_crystal_body.png"
+      Species="crystal"
+      Property="AteCrystalDelight"
+      Mutations="Crystallinity" />
+    <tag Name="Optional" />
+    <tag Name="ExceptionMessage" Value="{{m|There is a cooking recipe to get this body plan.}}" />
+    <tag Name="ExceptionSummary" Value="{{m|Avaialable via cooking.}}" />
+  </object>
+  
+</objects>

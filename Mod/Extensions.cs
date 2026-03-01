@@ -8,6 +8,7 @@ using XRL;
 using XRL.Collections;
 using XRL.World;
 using XRL.World.Anatomy;
+using XRL.World.Parts;
 
 namespace UD_BodyPlan_Selection.Mod
 {
@@ -83,5 +84,15 @@ namespace UD_BodyPlan_Selection.Mod
                 SB.Append(' ');
             return SB.AppendColored("w", "\x0006");
         }
+
+        public static string GetTile(this GameObjectBlueprint Blueprint)
+            => Utils.GetTile(Blueprint)
+            ;
+        public static string GetAnatomyName(this GameObjectBlueprint Blueprint)
+            => Utils.GetAnatomyName(Blueprint)
+            ;
+        public static Anatomy GetAnatomy(this GameObjectBlueprint Blueprint)
+            => Utils.GetAnatomy(Blueprint)
+            ;
     }
 }
