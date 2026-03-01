@@ -22,6 +22,68 @@ namespace XRL.CharacterBuilds.Qud
     {
         public class AnatomyChoice
         {
+            public class ChoiceRenderable : Renderable
+            {
+                public bool HFlip;
+
+                public ChoiceRenderable(
+                    string Tile = null,
+                    string RenderString = null,
+                    string ColorString = null,
+                    string TileColor = null,
+                    char DetailColor = '\0',
+                    bool HFlip = false)
+                    : base(
+                          Tile: Tile,
+                          RenderString: RenderString,
+                          ColorString: ColorString,
+                          TileColor: TileColor,
+                          DetailColor: DetailColor)
+                {
+                    this.HFlip = HFlip;
+                }
+                public ChoiceRenderable(TransformationData Transformation, bool HFlip = false)
+                    : this(
+                          Tile: Transformation?.Tile,
+                          RenderString: Transformation?.RenderString ?? "@",
+                          ColorString: $"{Transformation?.TileColor ?? "&Y"}^{Transformation?.DetailColor ?? "y"}",
+                          TileColor: Transformation?.TileColor ?? "&Y",
+                          DetailColor: Transformation?.DetailColor?[0] ?? 'y',
+                          HFlip: HFlip)
+                { }
+                public ChoiceRenderable(GenotypeEntry GenotypeEntry)
+                    : this(
+                          Tile: GenotypeEntry.Tile,
+                          RenderString: "@",
+                          ColorString: $"&Y^{GenotypeEntry.DetailColor}",
+                          TileColor: "&Y",
+                          DetailColor: GenotypeEntry?.DetailColor?[0] ?? 'y',
+                          HFlip: true)
+                { }
+                public ChoiceRenderable(SubtypeEntry SubtypeEntry)
+                    : this(
+                          Tile: SubtypeEntry.Tile,
+                          RenderString: "@",
+                          ColorString: $"&Y^{SubtypeEntry.DetailColor}",
+                          TileColor: "&Y",
+                          DetailColor: SubtypeEntry?.DetailColor?[0] ?? 'y',
+                          HFlip: true)
+                { }
+                public ChoiceRenderable(Renderable Renderable, bool HFlip = false)
+                    : base(Renderable)
+                {
+                    this.HFlip = HFlip;
+                }
+                public ChoiceRenderable(GameObjectBlueprint Blueprint, bool HFlip = false)
+                    : base(Blueprint)
+                {
+                    this.HFlip = HFlip;
+                }
+
+                public override bool getHFlip()
+                    => HFlip;
+            }
+
             protected static GameObject SampleCreature = null;
 
             public static string MISSING_ANATOMY => nameof(MISSING_ANATOMY);
@@ -31,7 +93,7 @@ namespace XRL.CharacterBuilds.Qud
             private AnatomyExclusion _AnatomyExclusion;
             public AnatomyExclusion AnatomyExclusion => _AnatomyExclusion ??= Utils.GetAnatomyExclusion(this);
 
-            public Renderable Renderable;
+            public ChoiceRenderable Renderable;
 
             public bool IsDefault;
 
@@ -59,14 +121,14 @@ namespace XRL.CharacterBuilds.Qud
                 _LongDescriptionTK = null;
                 _LongDescriptionTKSummary = null;
             }
-            public AnatomyChoice(Anatomy Anatomy, bool IsDefault, Renderable Renderable)
+            public AnatomyChoice(Anatomy Anatomy, bool IsDefault, ChoiceRenderable Renderable)
                 : this()
             {
                 this.Anatomy = Anatomy;
                 this.Renderable = Renderable;
                 this.IsDefault = IsDefault;
             }
-            public AnatomyChoice(Anatomy Anatomy, Renderable Renderable)
+            public AnatomyChoice(Anatomy Anatomy, ChoiceRenderable Renderable)
                 : this(Anatomy, false, Renderable)
             {
             }
@@ -122,6 +184,7 @@ namespace XRL.CharacterBuilds.Qud
                         SB.AppendColored("r", "Difficult to play.");
                     SB.AppendLine();
                 }
+                */
 
                 if (Anatomy.HasRecipe())
                 {
@@ -129,19 +192,19 @@ namespace XRL.CharacterBuilds.Qud
                         SB.AppendColored("m", "There is a cooking recipe to get this body plan.")
                             .AppendLine();
                     else
-                        SB.AppendColored("m", "Avaialable via cooking.");
+                        SB.AppendColored("m", "Avaialable via cooking");
                     SB.AppendLine();
                 }
-                */
 
-                if ((AnatomyExclusion?.IsMechanical ?? false)
+                if (((AnatomyExclusion?.IsMechanical ?? false)
+                        || Anatomy?.Category == BodyPartCategory.MECHANICAL)
                     && !Options.EnableBodyPlansThatAreRoboticWithoutMakingYouRobotic)
                 {
                     if (!Summary)
                         SB.AppendColored("c", "You will be made mechanical with this body plan.")
                             .AppendLine();
                     else
-                        SB.AppendColored("c", "You are mechanical.");
+                        SB.AppendColored("c", "You are mechanical");
                     SB.AppendLine();
                 }
 
@@ -170,8 +233,12 @@ namespace XRL.CharacterBuilds.Qud
                 Anatomy.ApplyTo(SampleCreature.Body);
                 if (!Summary)
                 {
+                    bool anyHasNatEquip = false;
                     foreach (BodyPart bodyPart in SampleCreature.Body.GetParts())
-                        GetBodyPartString(SB, bodyPart, IsTrueKin);
+                    {
+                        GetBodyPartString(SB, bodyPart, out bool hasNatEquip, IsTrueKin);
+                        anyHasNatEquip = hasNatEquip || anyHasNatEquip;
+                    }
 
                     SB.AppendLine();
                     if (IsTrueKin)
@@ -180,10 +247,13 @@ namespace XRL.CharacterBuilds.Qud
                             .AppendNoCybernetics(false).Append(" - Incompatible with {{c|cybernetics}}")
                             ;
 
-                    SB
-                        .AppendLine()
-                        .AppendColored("w", "Indicates natural equipment/default behaviour")
-                        ;
+                    if (anyHasNatEquip)
+                        SB
+                            .AppendLine()
+                            .AppendColored("w", "Indicates natural equipment")
+                            ;
+
+                    SB.AppendLines(2);
                 }
                 else
                 {
@@ -212,11 +282,6 @@ namespace XRL.CharacterBuilds.Qud
                             limbPluralName = timesColored + "feet";
 
                         SB.Append("{{W|").Append(count.Things(limbName, limbPluralName)).Append("}}");
-                        
-                        /*
-                        if (!limb.Name.EqualsNoCase(limb.FinalType))
-                            SB.Append(" (").Append(limb.FinalType).Append(")");
-                        */
 
                         if (IsTrueKin
                             && limb.Category != BodyPartCategory.ANIMAL)
@@ -249,48 +314,15 @@ namespace XRL.CharacterBuilds.Qud
                 }
             }
 
-            public static StringBuilder GetAnatomyPartString(
-                StringBuilder SB,
-                AnatomyPart AnatomyPart,
-                int Indent = 0,
-                bool IsTrueKin = false
-                )
-            {
-                var limb = AnatomyPart.Type;
-
-                if (!SB.IsNullOrEmpty())
-                    SB.AppendLine();
-
-                if (Indent > 0)
-                    SB.Append(" ".ThisManyTimes(Indent * 2));
-
-                var bodypart = new BodyPart();
-                limb.ApplyTo(bodypart);
-
-                SB.AppendColored("W", bodypart.GetCardinalDescription());
-                if (!limb.Name.EqualsNoCase(limb.FinalType))
-                    SB.Append(" (").Append(limb.FinalType).Append(")");
-
-                if (GameObjectFactory.Factory.GetBlueprintIfExists(limb.DefaultBehavior) is GameObjectBlueprint defaultBehvaiour)
-                    SB.Append(" [").AppendColored("w", defaultBehvaiour.DisplayName()).Append("]");
-
-                if (IsTrueKin
-                    && limb.Category != BodyPartCategory.ANIMAL)
-                    SB.AppendNoCybernetics();
-
-                if (!AnatomyPart.Subparts.IsNullOrEmpty())
-                    foreach (AnatomyPart subpart in AnatomyPart.Subparts)
-                        GetAnatomyPartString(SB, subpart, Indent + 1, IsTrueKin);
-
-                return SB;
-            }
-
             public static StringBuilder GetBodyPartString(
                 StringBuilder SB,
                 BodyPart BodyPart,
+                out bool HasNaturalEquipment,
                 bool IsTrueKin = false
                 )
             {
+                HasNaturalEquipment = false;
+
                 if (!SB.IsNullOrEmpty())
                     SB.AppendLine();
 
@@ -312,12 +344,17 @@ namespace XRL.CharacterBuilds.Qud
                         .Append(")");
 
                 if (GameObjectFactory.Factory.GetBlueprintIfExists(BodyPart.DefaultBehaviorBlueprint) is GameObjectBlueprint defaultBehvaiour)
+                {
+                    HasNaturalEquipment = true;
+                    var sampleDefaultBehaviour = defaultBehvaiour.createSample();
                     SB
                         .Append(" - ")
                         //.Append(" [")
-                        .AppendColored("w", defaultBehvaiour.CachedDisplayNameStrippedLC)
+                        .AppendColored("w", sampleDefaultBehaviour.ShortDisplayNameStripped)
                         //.Append("]")
                         ;
+                    sampleDefaultBehaviour?.Obliterate();
+                }
 
                 if (IsTrueKin
                     && !BodyPart.CanReceiveCyberneticImplant())
@@ -326,13 +363,25 @@ namespace XRL.CharacterBuilds.Qud
                 return SB;
             }
 
-            public Renderable GetRenderable()
+            public ChoiceRenderable GetRenderable()
             {
                 if (Renderable == null
                     && Anatomy != null)
-                    Renderable = GetExampleBlueprint()?.GetRenderable();
+                {
+                    if (AnatomyExclusion?.Transformation is TransformationData xForm
+                        && !xForm.Tile.IsNullOrEmpty()
+                        && !xForm.DetailColor.IsNullOrEmpty())
+                        Renderable = new(xForm, true);
+                    else
+                        Renderable = new(GetExampleBlueprint()?.GetRenderable(), false);
+                }
 
                 return Renderable;
+            }
+            public void OverrideRenderable(ChoiceRenderable Renderable)
+            {
+                if (Renderable != null)
+                    this.Renderable = Renderable;
             }
 
             public bool HasMatchingAnatomy(GameObjectBlueprint Blueprint)
@@ -350,54 +399,30 @@ namespace XRL.CharacterBuilds.Qud
                 && Blueprint.InheritsFrom(Anatomy.Name)
                 ;
 
-            private static bool IsNotExcluded(
-                GameObjectBlueprint Blueprint,
-                bool AllowExcludedFromDynamicEncounters
-                )
-                => AllowExcludedFromDynamicEncounters
-                || !Blueprint.IsExcludedFromDynamicEncounters()
-                ;
-            public IEnumerable<GameObjectBlueprint> GetExampleBlueprints(
-                bool FallBackToExcluded = true,
-                bool AllowExcludedFromDynamicEncounters = false
-                )
+            public IEnumerable<GameObjectBlueprint> GetExampleBlueprints()
             {
                 var blueprints = Utils.GenerallyEligbleForDisplayBlueprints;
 
-                AllowExcludedFromDynamicEncounters = true;
-
                 if (blueprints
-                    ?.Where(HasMatchingAnatomy)
-                    ?.Where(bp => IsNotExcluded(bp, AllowExcludedFromDynamicEncounters)) is IEnumerable<GameObjectBlueprint> objectsWithAnatomy
+                    ?.Where(HasMatchingAnatomy) is IEnumerable<GameObjectBlueprint> objectsWithAnatomy
                     && !objectsWithAnatomy.IsNullOrEmpty())
                     return objectsWithAnatomy;
 
                 if (blueprints
-                    ?.Where(ObjectAnimatesWithAnatomy)
-                    ?.Where(bp => IsNotExcluded(bp, AllowExcludedFromDynamicEncounters)) is IEnumerable<GameObjectBlueprint> objectsAnimatingWithAnatomy
+                    ?.Where(ObjectAnimatesWithAnatomy) is IEnumerable<GameObjectBlueprint> objectsAnimatingWithAnatomy
                     && !objectsAnimatingWithAnatomy.IsNullOrEmpty())
                     return objectsAnimatingWithAnatomy;
 
                 if (blueprints
-                    ?.Where(InheritsFromAnatomy)
-                    ?.Where(bp => IsNotExcluded(bp, AllowExcludedFromDynamicEncounters)) is IEnumerable<GameObjectBlueprint> objectsInheritingAnatomy
+                    ?.Where(InheritsFromAnatomy) is IEnumerable<GameObjectBlueprint> objectsInheritingAnatomy
                     && !objectsInheritingAnatomy.IsNullOrEmpty())
                     return objectsInheritingAnatomy;
-
-                /*
-                if (FallBackToExcluded
-                    && !AllowExcludedFromDynamicEncounters
-                    && GetExampleBlueprints(false, false) is IEnumerable<GameObjectBlueprint> dynamicEncounterExcludedObjects
-                    && !dynamicEncounterExcludedObjects.IsNullOrEmpty())
-                    return dynamicEncounterExcludedObjects;
-                */
 
                 return new GameObjectBlueprint[0];
             }
 
             public GameObjectBlueprint GetExampleBlueprint()
-                => GetExampleBlueprints(FallBackToExcluded: true, AllowExcludedFromDynamicEncounters: false)
-                    ?.GetRandomElementCosmetic()
+                => GetExampleBlueprints()?.GetRandomElementCosmetic()
                 ?? GameObjectFactory.Factory.GetBlueprintIfExists("Mimic")
                 ;
         }
@@ -671,23 +696,29 @@ namespace XRL.CharacterBuilds.Qud
 
         public void SetDefaultChoice()
         {
-            PlayerAnatomyChoice = null;
-            if (PlayerAnatomyChoice is AnatomyChoice defaultChoice)
+            if (AnatomyChoices.FirstOrDefault(c => c.IsDefault) is AnatomyChoice defaultChoice
+                && defaultChoice != PlayerAnatomyChoice)
             {
-                defaultChoice.IsDefault = true;
-
+                defaultChoice.IsDefault = false;
+                PlayerAnatomyChoice = null;
+            }
+            if (PlayerAnatomyChoice is AnatomyChoice playerChoice
+                && !playerChoice.IsDefault)
+            {
+                playerChoice.IsDefault = true;
                 if (GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry
                     && SubtypeModuleData?.Entry is SubtypeEntry subtypeEntry
-                    && defaultChoice.GetRenderable() is Renderable defaultRenderable)
-                {
-                    if (subtypeEntry.Tile.Coalesce(genotypeEntry.Tile) is string typeTile)
-                        defaultRenderable.setTile(typeTile);
+                    && subtypeEntry.Tile.Coalesce(genotypeEntry.Tile) is string typeTile
+                    && subtypeEntry.DetailColor.Coalesce(genotypeEntry.DetailColor) is string typeDetailColor)
+                    playerChoice.OverrideRenderable(
+                        Renderable: new(
+                            Tile: typeTile,
+                            RenderString: "@",
+                            ColorString: $"&Y^{typeDetailColor}",
+                            TileColor: "&Y",
+                            DetailColor: typeDetailColor[0],
+                            HFlip: true));
 
-                    if (subtypeEntry.DetailColor.Coalesce(genotypeEntry.DetailColor) is string typeDetailColor)
-                        defaultRenderable.setDetailColor(typeDetailColor[0]);
-
-                    defaultRenderable.setTileColor("&Y");
-                }
                 setData(data);
             }
         }

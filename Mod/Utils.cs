@@ -65,8 +65,12 @@ namespace UD_BodyPlan_Selection.Mod
             if (Blueprint.InheritsFromAny(
                 Blueprints: new string[]
                 {
-                        "Templar",
+                    "Templar",
                 }))
+                return false;
+
+            if (Blueprint.InheritsFrom("Chair")
+                && Blueprint.Name.EndsWithAny(" L", " C", " R"))
                 return false;
 
             if (Blueprint.Name.Contains("Cherub"))
@@ -106,7 +110,7 @@ namespace UD_BodyPlan_Selection.Mod
         }
 
         public static AnatomyExclusion GetAnatomyExclusion(string Anatomy)
-            => Anatomy.IsNullOrEmpty()
+            => !Anatomy.IsNullOrEmpty()
             ? AnatomyExclusions?.FirstOrDefault(e => !e.Anatomies.IsNullOrEmpty() && e.Anatomies.Contains(Anatomy))
             : null
             ;
@@ -138,26 +142,27 @@ namespace UD_BodyPlan_Selection.Mod
 
         #endregion
         #region Pseudo-Debug
-        public static bool LogReturnBool(bool Return, string Message)
-        {
-            UnityEngine.Debug.Log(Message);
-            return Return;
-        }
-        public static bool LogTrue(string Message)
-            => LogReturnBool(true, Message)
-            ;
-        public static bool LogFalse(string Message)
-            => LogReturnBool(false, Message)
-            ;
 
         public static void Log(string Message, int Indent = 0)
         {
             if (Indent > 0)
-                Message = " ".ThisManyTimes(Indent * 4);
+                Message = " ".ThisManyTimes(Indent * 4) + Message;
             UnityEngine.Debug.Log(Message);
         }
         public static void Log(object Context, int Indent = 0)
             => Log(Context.ToString(), Indent);
+
+        public static bool LogReturnBool(bool Return, string Message, int Indent = 0)
+        {
+            Log(Message, Indent);
+            return Return;
+        }
+        public static bool LogTrue(string Message, int Indent = 0)
+            => LogReturnBool(true, Message, Indent)
+            ;
+        public static bool LogFalse(string Message, int Indent = 0)
+            => LogReturnBool(false, Message, Indent)
+            ;
 
         #endregion
     }

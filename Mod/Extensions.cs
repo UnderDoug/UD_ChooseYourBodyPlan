@@ -38,22 +38,15 @@ namespace UD_BodyPlan_Selection.Mod
             && Blueprints.Any(bp => Blueprint.InheritsFrom(bp));
 
         public static string ThisManyTimes(this string @string, int Times = 1)
-        {
-            if (Times < 1)
-                return null;
-
-            string output = "";
-
-            for (int i = 0; i < Times; i++)
-                output += @string;
-
-            return output;
-        }
+            => Times.Aggregate("", (a, n) => a + @string)
+            ;
         public static string ThisManyTimes(this char @char, int Times = 1)
-            => @char.ToString().ThisManyTimes(Times);
+            => @char.ToString().ThisManyTimes(Times)
+            ;
 
         public static string CallChain(this string String, params string[] Calls)
-            => Calls.Aggregate(String, (a, n) => a + "." + n);
+            => Calls.Aggregate(String, (a, n) => a + "." + n)
+            ;
 
         public static string CallChain(this Type Type, params string[] Calls)
             => Type.Name.CallChain(Calls);
@@ -94,5 +87,28 @@ namespace UD_BodyPlan_Selection.Mod
         public static Anatomy GetAnatomy(this GameObjectBlueprint Blueprint)
             => Utils.GetAnatomy(Blueprint)
             ;
+
+        public static T Coalesce<T>(this T Object, T OtherObject)
+            => Object ?? OtherObject;
+
+        public static TAccumulate Aggregate<TAccumulate>(
+            this int Number,
+            TAccumulate seed,
+            Func<TAccumulate, int, TAccumulate> func
+            )
+        {
+            for (int i = 0; i < Number; i++)
+                seed = func(seed, i);
+
+            return seed;
+        }
+
+        public static StringBuilder AppendLines(this StringBuilder SB, int Count)
+            => Count.Aggregate(SB, (a, n) => a.AppendLine())
+            ;
+
+        public static bool EndsWithAny(this string String, params string[] Values)
+            => Values.IsNullOrEmpty()
+            || Values.Any(s => String.EndsWith(s));
     }
 }

@@ -28,8 +28,8 @@
     <tag Name="Anatomies" Value="Echinoid,Motes,Nest" />
     <tag Name="Difficult" />
     <tag Name="Optional" />
-    <tag Name="ExceptionMessage" Value="{{r|This body plan will be difficult to play with.}}" />
-    <tag Name="ExceptionSummary" Value="{{r|Difficult to play.}}" />
+    <tag Name="ExceptionMessage" Value="This body plan will be {{r|difficult}} to play with." />
+    <tag Name="ExceptionSummary" Value="{{r|Difficult to play}}" />
   </object>
 
   <object Name="UD_BodyPlan_Selection_CloacaSurprise" Inherits="UD_BodyPlan_Selection_BaseExclusion">
@@ -37,12 +37,14 @@
       Anatomy="SlugWithHands"
       RenderString="Q"
       Tile="Creatures/sw_slog.bmp"
+      TileColor="&amp;M"
+      DetailColor="G"
       Species="slug"
       Property="AteCloacaSurprise"
       Mutations="Bilge Sphincter" />
     <tag Name="Optional" />
-    <tag Name="ExceptionMessage" Value="{{m|There is a cooking recipe to get this body plan.}}" />
-    <tag Name="ExceptionSummary" Value="{{m|Avaialable via cooking.}}" />
+    <tag Name="ExceptionMessage" Value="Has the {{C|Bilge Sphincter}} mutation." />
+    <tag Name="ExceptionSummary" Value="Has {{C|Bilge Sphincter}}" />
   </object>
 
   <object Name="UD_BodyPlan_Selection_CrystalDelight" Inherits="UD_BodyPlan_Selection_BaseExclusion">
@@ -50,12 +52,14 @@
       Anatomy="HumanoidOctohedron"
       RenderString="µ"
       Tile="Creatures/sw_crystal_body.png"
+      TileColor="&amp;Y"
+      DetailColor="m"
       Species="crystal"
       Property="AteCrystalDelight"
       Mutations="Crystallinity" />
     <tag Name="Optional" />
-    <tag Name="ExceptionMessage" Value="{{m|There is a cooking recipe to get this body plan.}}" />
-    <tag Name="ExceptionSummary" Value="{{m|Avaialable via cooking.}}" />
+    <tag Name="ExceptionMessage" Value="Has the {{C|Crystallinity}} mutation." />
+    <tag Name="ExceptionSummary" Value="Has {{C|Crystallinity}}" />
   </object>
   
 </objects>

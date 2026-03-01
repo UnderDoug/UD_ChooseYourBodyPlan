@@ -93,6 +93,7 @@ namespace XRL.CharacterBuilds.Qud.UI
         public override UIBreadcrumb GetBreadcrumb()
         {
             Renderable renderable = (module?.SelectedChoice())?.GetRenderable();
+
             return new()
             {
                 Id = GetType().FullName,
@@ -145,13 +146,15 @@ namespace XRL.CharacterBuilds.Qud.UI
 
                     string longDesc = isTK ? choice.LongDescriptionTK : choice.LongDescription;
 
+                    if (choice.IsDefault)
+                    {
+                        if (module.GenotypeModuleData.Entry is GenotypeEntry genotypeEntry)
+                            choice.OverrideRenderable(new(genotypeEntry));
+                        if (module.SubtypeModuleData.Entry is SubtypeEntry subtypeEntry)
+                            choice.OverrideRenderable(new(subtypeEntry));
+                    }
+
                     var renderable = choice.GetRenderable();
-                    if (choice.IsDefault
-                        && module.GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry
-                        && module.SubtypeModuleData?.Entry is SubtypeEntry subtypeEntry
-                        && subtypeEntry.Tile.Coalesce(genotypeEntry.Tile) is string typeTile
-                        && subtypeEntry.DetailColor.Coalesce(genotypeEntry.DetailColor) is string typeDetailColor)
-                        renderable = new(typeTile, RenderString: "@", ColorString: $"&Y^{typeDetailColor}", TileColor: "&Y", DetailColor: typeDetailColor[0]);
 
                     categoryMenuData.menuOptions.Add(
                         item: new PrefixMenuOption()
