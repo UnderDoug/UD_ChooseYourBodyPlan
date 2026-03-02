@@ -9,16 +9,14 @@ using XRL.UI.Framework;
 using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
-using XRL.World.Parts.Mutation;
 
 using UD_BodyPlan_Selection.Mod;
-using XRL.Collections;
 using static UD_BodyPlan_Selection.Mod.AnatomyExclusion;
 
 namespace XRL.CharacterBuilds.Qud
 {
     [HasOptionFlagUpdate]
-    public class Qud_UD_BodyPlanModule : QudEmbarkBuilderModule<Qud_UD_BodyPlanModuleData>
+    public partial class Qud_UD_BodyPlanModule : QudEmbarkBuilderModule<Qud_UD_BodyPlanModuleData>
     {
         public class AnatomyChoice
         {
@@ -648,7 +646,7 @@ namespace XRL.CharacterBuilds.Qud
             if (PlayerAnatomyChoice != null
                 && !IsPlayerChoice(AnatomyChoices[0]))
             {
-                AnatomyChoices.OrderBy(a => a.Anatomy.Name);
+                AnatomyChoices.OrderBy(a => a?.Anatomy?.Name);
                 AnatomyChoices.Remove(PlayerAnatomyChoice);
                 AnatomyChoices.Insert(0, PlayerAnatomyChoice);
                 SetDefaultChoice();
@@ -667,7 +665,7 @@ namespace XRL.CharacterBuilds.Qud
             ;
         public void PickAnatomy(int n)
         {
-            data ??= new Qud_UD_BodyPlanModuleData();
+            data ??= new Qud_UD_BodyPlanModuleData(PlayerAnatomyChoice);
 
             if (AnatomyChoices.IsNullOrEmpty())
                 MetricsManager.LogCallingModError(nameof(AnatomyChoices) + " empty when it probably shouldn't be.");
@@ -719,7 +717,8 @@ namespace XRL.CharacterBuilds.Qud
                             DetailColor: typeDetailColor[0],
                             HFlip: true));
 
-                setData(data);
+                if (data != null)
+                    setData(data);
             }
         }
         public bool IsPlayerChoice(AnatomyChoice Choice)

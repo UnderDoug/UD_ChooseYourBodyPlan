@@ -47,7 +47,7 @@ namespace UD_BodyPlan_Selection.Mod
                     xTag.TryGetValue(nameof(Species), out Species);
                     xTag.TryGetValue(nameof(Property), out Property);
                     if (xTag.TryGetValue(nameof(Mutations), out string mutations))
-                        Mutations = XmlDataHelper.TryGetAttributeParser<List<string>>()?.Invoke(mutations);
+                        Mutations = Utils.GetVersionSafeParser<List<string>>()?.Invoke(mutations);
                 }
             }
 
@@ -123,7 +123,7 @@ namespace UD_BodyPlan_Selection.Mod
             : this()
         {
             if (DataBucket.TryGetTag("Anatomies", out string anatomies))
-                Anatomies = XmlDataHelper.TryGetAttributeParser<List<string>>()?.Invoke(anatomies);
+                Anatomies = Utils.GetVersionSafeParser<List<string>>()?.Invoke(anatomies);
 
             if (DataBucket.TryGetTag("Anatomy", out string anatomy))
             {
@@ -138,7 +138,7 @@ namespace UD_BodyPlan_Selection.Mod
             {
                 if (transformationData.ContainsKey("Anatomies"))
                 {
-                    var anatomyList = XmlDataHelper.TryGetAttributeParser<List<string>>()?.Invoke(transformationData["Anatomies"]);
+                    var anatomyList = Utils.GetVersionSafeParser<List<string>>()?.Invoke(transformationData["Anatomies"]);
                     if (!Anatomies.IsNullOrEmpty())
                         anatomyList.AddRange(Anatomies);
                     Anatomies = anatomyList;
@@ -172,7 +172,7 @@ namespace UD_BodyPlan_Selection.Mod
                     Property = DataBucket.GetTag("TransormationProperty").Coalesce(DataBucket.GetTag("xFormProperty")),
                     Species = DataBucket.GetTag("TransormationSpecies").Coalesce(DataBucket.GetTag("xFormSpecies")),
                     DetailColor = DataBucket.GetTag("TransormationDetailColor").Coalesce(DataBucket.GetTag("xFormDetailColor")),
-                    Mutations = XmlDataHelper.TryGetAttributeParser<List<string>>()?.Invoke(DataBucket.GetTag("TransormationMutations").Coalesce(DataBucket.GetTag("xFormMutations")))
+                    Mutations = Utils.GetVersionSafeParser<List<string>>()?.Invoke(DataBucket.GetTag("TransormationMutations").Coalesce(DataBucket.GetTag("xFormMutations")))
                 };
 
             Utils.Log($"{nameof(IsTransformation)}: {IsTransformation}", Indent: 1);

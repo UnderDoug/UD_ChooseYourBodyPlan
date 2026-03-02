@@ -1,24 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-
-using Qud.UI;
 
 using XRL;
-using XRL.UI;
-using XRL.World;
 
+using static UD_BodyPlan_Selection.Mod.Utils;
 using static XRL.XmlDataHelper;
 
 namespace UD_BodyPlan_Selection.Mod
 {
-    [HasModSensitiveStaticCache]
-    [HasGameBasedStaticCache]
-    [HasCallAfterGameLoaded]
-    public static class Startup
+    public static partial class Startup
     {
         [ModSensitiveCacheInit]
-        public static void ModSensitiveCacheInit()
+        public static void BetaModSensitiveCacheInit_Beta()
         {
             // Called at game startup and whenever mod configuration changes
 
@@ -56,39 +49,10 @@ namespace UD_BodyPlan_Selection.Mod
             });
         }
 
-        [GameBasedCacheInit]
-        public static void GameBasedCacheInit()
-        {
-            // Called once when world is first generated.
-
-            // The.Game registered events should go here.
-        }
-
-        // [PlayerMutator]
-
-        // The.Player.FireEvent("GameRestored");
-        // AfterGameLoadedEvent.Send(Return);  // Return is the game.
-
-        [CallAfterGameLoaded]
-        public static void OnLoadGameCallback()
-        {
-            // Gets called every time the game is loaded but not during generation
-
-        }
+        public static Func<string,T> GetParser<T>()
+            => TryGetAttributeParser<T>() is AttributeParser<T> parser
+            ? parser.Invoke
+            : null
+            ;
     }
-
-    // [ModSensitiveCacheInit]
-
-    // [GameBasedCacheInit]
-
-    [PlayerMutator]
-    public class OnPlayerLoad : IPlayerMutator
-    {
-        public void mutate(GameObject player)
-        {
-            // Gets called once when the player is first generated
-        }
-    }
-
-    // [CallAfterGameLoaded]
 }

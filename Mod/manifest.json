@@ -5,5 +5,22 @@
     "version": "0.0.1",
     "author": "{{K-g-G-Y-G-g-K alternation|UnderDoug}}",
     "tags": "Character Generation,Extension,Customization",
-    "PreviewImage": "preview.png"
+    "PreviewImage": "preview.png",
+    "Directories": [
+        {
+            "Path": "/Common/"
+        },
+        {
+            "Path": "/Lang/",
+            "Build": ">=2.0.212.14"
+        },
+        {
+            "Path": "/PreLang/",
+            "Build": "<2.0.212"
+        },
+        {
+            "Path": "/Beta.BuildCodes/",
+            "Build": ">=2.0.211.36"
+        }
+    ]
 }

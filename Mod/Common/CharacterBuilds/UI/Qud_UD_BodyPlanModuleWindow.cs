@@ -52,21 +52,22 @@ namespace XRL.CharacterBuilds.Qud.UI
             prefabComponent.onSelected.RemoveAllListeners();
             prefabComponent.onSelected.AddListener(SelectAnatomy);
 
+            if (!module.HasSelection)
+                SelectDefaultChoice(true, false);
+
             UpdateControls();
 
             base.BeforeShow(descriptor);
         }
+        /*
         public override void Show()
         {
             base.Show();
             TrySetupModuleData();
 
-            if (!module.HasSelection)
-                SelectDefaultChoice(true);
-
             UpdateControls();
         }
-
+        */
         public override GameObject InstantiatePrefab(GameObject prefab)
         {
             prefab.GetComponentInChildren<CategoryMenusScroller>().allowVerticalLayout = false;
@@ -112,10 +113,11 @@ namespace XRL.CharacterBuilds.Qud.UI
         public void SelectAnatomy(FrameworkDataElement dataElement)
             => SelectAnatomy(AnatomiesMenuState[0].menuOptions.FindIndex(d => d == dataElement))
             ;
-        public void SelectDefaultChoice(bool Override = false)
+        public void SelectDefaultChoice(bool Override = false, bool UpdateControls = true)
         {
             module.SelectDefaultChoice(Override);
-            UpdateControls();
+            if (UpdateControls)
+                this.UpdateControls();
         }
 
         public void UpdateControls()

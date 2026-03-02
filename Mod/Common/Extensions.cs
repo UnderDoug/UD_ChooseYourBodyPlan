@@ -10,10 +10,17 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
+using static UD_BodyPlan_Selection.Mod.Utils;
+
 namespace UD_BodyPlan_Selection.Mod
 {
     public static class Extensions
     {
+        public static Func<string, T> ToFunc<T>(this Parse<T> Parse)
+            => Parse.Invoke;
+        public static Parse<T> ToParse<T>(this Func<string, T> Func)
+            => s => Func(s);
+
         public static string SplitCamelCase(this string String)
             => !String.Contains(" ")
             ? Regex.Replace(

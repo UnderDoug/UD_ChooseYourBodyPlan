@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using ConsoleLib.Console;
+
 using XRL;
 using XRL.World;
 using XRL.World.Anatomy;
@@ -13,8 +15,12 @@ using static XRL.CharacterBuilds.Qud.Qud_UD_BodyPlanModule;
 namespace UD_BodyPlan_Selection.Mod
 {
     [HasModSensitiveStaticCache]
-    public static class Utils
+    public static partial class Utils
     {
+        public static string THIS_MOD_ID => "UD_BodyPlan_Selection";
+
+        public static ModInfo ThisMod => ModManager.GetMod(THIS_MOD_ID);
+
         #region Blueprints For Display
 
         [ModSensitiveStaticCache]
