@@ -21,6 +21,14 @@
         {
             "Path": "/Beta.BuildCodes/",
             "Build": ">=2.0.211.36"
+        },
+        {
+            "Path": "/Beta/",
+            "Build": ">=2.0.211"
+        },
+        {
+            "Path": "/PreBeta/",
+            "Build": "<2.0.211"
         }
     ]
 }

@@ -6,6 +6,9 @@ using System.Text;
 using ConsoleLib.Console;
 
 using XRL;
+using XRL.CharacterBuilds;
+using XRL.CharacterBuilds.Qud;
+using XRL.Wish;
 using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
@@ -14,6 +17,7 @@ using static XRL.CharacterBuilds.Qud.Qud_UD_BodyPlanModule;
 
 namespace UD_BodyPlan_Selection.Mod
 {
+    [HasWishCommand]
     [HasModSensitiveStaticCache]
     public static partial class Utils
     {
@@ -169,6 +173,16 @@ namespace UD_BodyPlan_Selection.Mod
         public static bool LogFalse(string Message, int Indent = 0)
             => LogReturnBool(false, Message, Indent)
             ;
+
+        #endregion
+        #region Wishes
+
+        [WishCommand(Command = "UD_BPS anatomy tile tags")]
+        public static bool AnatomyTileTags_WishHandler()
+        {
+            GameManager.Instance.gameObject.GetComponent<EmbarkBuilder>().GetModule<Qud_UD_BodyPlanModule>();
+            return true;
+        }
 
         #endregion
     }

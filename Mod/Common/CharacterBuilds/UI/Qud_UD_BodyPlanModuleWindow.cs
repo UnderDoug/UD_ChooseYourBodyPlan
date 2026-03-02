@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 using ConsoleLib.Console;
 
@@ -10,8 +7,6 @@ using UnityEngine;
 using XRL.Rules;
 using XRL.UI;
 using XRL.UI.Framework;
-
-using UD_BodyPlan_Selection.Mod;
 
 using ColorUtility = ConsoleLib.Console.ColorUtility;
 using XRL.Collections;
@@ -23,7 +18,7 @@ namespace XRL.CharacterBuilds.Qud.UI
         NavCategory: "Chargen",
         UICanvas: "Chargen/PickCybernetics",
         UICanvasHost: 1)]
-    public class Qud_UD_BodyPlanModuleWindow : EmbarkBuilderModuleWindowPrefabBase<Qud_UD_BodyPlanModule, CategoryMenusScroller>
+    public partial class Qud_UD_BodyPlanModuleWindow : EmbarkBuilderModuleWindowPrefabBase<Qud_UD_BodyPlanModule, CategoryMenusScroller>
     {
         protected const string EMPTY_CHECK = "[ ]";
 
@@ -73,9 +68,6 @@ namespace XRL.CharacterBuilds.Qud.UI
             prefab.GetComponentInChildren<CategoryMenusScroller>().allowVerticalLayout = false;
             return base.InstantiatePrefab(prefab);
         }
-
-        public override void RandomSelectionNoUI()
-            => SelectAnatomy(Stat.Roll(0, module.AnatomyChoices.Count - 1));
 
         public override void RandomSelection()
         {
@@ -171,7 +163,9 @@ namespace XRL.CharacterBuilds.Qud.UI
                     AnatomyChoices.RemoveAt(index);
             }
 
-            if (!module.builder.SkippingUIUpdates)
+            // This method exists in two conditionally loaded partials:
+            // PreBeta/CharacterBuilds/UI and Beta/CharacterBuilds/UI
+            if (!SkippingUIUpdates())
                 prefabComponent.BeforeShow(descriptor, AnatomiesMenuState);
 
             if (module?.HasSelection ?? false)
