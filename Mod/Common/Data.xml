@@ -25,7 +25,7 @@
   </object>
 
   <object Name="UD_BodyPlan_Selection_Sucks" Inherits="UD_BodyPlan_Selection_BaseExclusion">
-    <tag Name="Anatomies" Value="Echinoid,Motes,Nest" />
+    <tag Name="Anatomies" Value="Echinoid,Mirror,Motes,Nest" />
     <tag Name="Difficult" />
     <tag Name="Optional" />
     <tag Name="ExceptionMessage" Value="This body plan will be {{r|difficult}} to play with." />

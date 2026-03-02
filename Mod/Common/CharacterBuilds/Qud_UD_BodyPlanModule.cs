@@ -20,12 +20,21 @@ namespace XRL.CharacterBuilds.Qud
     {
         public class AnatomyChoice
         {
+            [HasModSensitiveStaticCache]
             public class ChoiceRenderable : Renderable
             {
+                public static string xTagPrefix => "UD_BDS_";
+
+                [ModSensitiveStaticCache]
+                private static Dictionary<string, Dictionary<string, string>> _AnatomyTiles;
+                public static Dictionary<string, Dictionary<string, string>> AnatomyTiles => _AnatomyTiles ??= GameObjectFactory.Factory
+                    ?.GetBlueprintIfExists("UD_BodyPlan_Slection_AnatomyTiles")
+                    ?.xTags;
+
                 public bool HFlip;
 
                 public ChoiceRenderable(
-                    string Tile = null,
+                    string Tile,
                     string RenderString = null,
                     string ColorString = null,
                     string TileColor = null,
@@ -77,6 +86,25 @@ namespace XRL.CharacterBuilds.Qud
                 {
                     this.HFlip = HFlip;
                 }
+                public ChoiceRenderable(Dictionary<string, string> xTag, bool HFlip = false)
+                    : base()
+                {
+                    xTag?.TryGetValue(nameof(Tile), out Tile);
+                    xTag?.TryGetValue(nameof(RenderString), out RenderString);
+                    xTag?.TryGetValue(nameof(ColorString), out ColorString);
+                    xTag?.TryGetValue(nameof(TileColor), out TileColor);
+                    if (xTag != null &&
+                        xTag.TryGetValue(nameof(DetailColor), out string detailColor))
+                        DetailColor = detailColor?[0] ?? '\0';
+                    this.HFlip = HFlip;
+                }
+                public ChoiceRenderable(string Anatomy, bool HFlip = false)
+                    : this(
+                          xTag: AnatomyTiles?.ContainsKey(xTagPrefix + Anatomy) ?? false
+                            ? AnatomyTiles[xTagPrefix + Anatomy]
+                            : null,
+                          HFlip: HFlip)
+                { }
 
                 public override bool getHFlip()
                     => HFlip;
@@ -366,10 +394,15 @@ namespace XRL.CharacterBuilds.Qud
                 if (Renderable == null
                     && Anatomy != null)
                 {
+                    string safeAnatomyName = Anatomy.Name.Replace("-", "_").Replace(" ", "_");
+                    string tileKey = ChoiceRenderable.xTagPrefix + safeAnatomyName;
                     if (AnatomyExclusion?.Transformation is TransformationData xForm
                         && !xForm.Tile.IsNullOrEmpty()
                         && !xForm.DetailColor.IsNullOrEmpty())
                         Renderable = new(xForm, true);
+                    else
+                    if (ChoiceRenderable.AnatomyTiles?.ContainsKey(tileKey) ?? false)
+                        Renderable = new(safeAnatomyName, false);
                     else
                         Renderable = new(GetExampleBlueprint()?.GetRenderable(), false);
                 }
@@ -467,6 +500,7 @@ namespace XRL.CharacterBuilds.Qud
                     _AnatomyChoices.RemoveAll(c => c == null || c.Anatomy == null);
                     SetDefaultChoice();
                     SelectDefaultChoice();
+                    Utils.AnatomyChoices = new(AnatomyChoices);
                 }
                 return _AnatomyChoices;
             }

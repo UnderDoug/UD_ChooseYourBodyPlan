@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -8,6 +9,7 @@ using ConsoleLib.Console;
 using XRL;
 using XRL.CharacterBuilds;
 using XRL.CharacterBuilds.Qud;
+using XRL.Collections;
 using XRL.Wish;
 using XRL.World;
 using XRL.World.Anatomy;
@@ -177,10 +179,64 @@ namespace UD_BodyPlan_Selection.Mod
         #endregion
         #region Wishes
 
+        public static string UD_BPS_Output => DataManager.SavePath("TileTags.xml");
+
+        [ModSensitiveStaticCache]
+        public static List<AnatomyChoice> AnatomyChoices = new();
+
         [WishCommand(Command = "UD_BPS anatomy tile tags")]
-        public static bool AnatomyTileTags_WishHandler()
+        public static bool AnatomyTileTags_WishHandler(string Parameters)
         {
-            GameManager.Instance.gameObject.GetComponent<EmbarkBuilder>().GetModule<Qud_UD_BodyPlanModule>();
+            bool IncludeName = Parameters?.Contains("with names") ?? false;
+            if (!AnatomyChoices.IsNullOrEmpty()
+                && new StreamWriter(UD_BPS_Output) is StreamWriter writer)
+            {
+                using (var anatomyChoices = ScopeDisposedList<AnatomyChoice>.GetFromPoolFilledWith(AnatomyChoices))
+                {
+                    Log("-".ThisManyTimes(25));
+                    writer.WriteLine2("<?xml version=\"1.0\" encoding=\"utf-8\" ?>")
+                        .WriteLine2("<objects>")
+                            .WriteLine2("<object Name=\"UD_BodyPlan_Slection_AnatomyTiles\" Inherits=\"DataBucket\" >", Indent: 1);
+
+                    for (int i = 0; i < anatomyChoices.Count; i++)
+                        if (anatomyChoices[i] is AnatomyChoice anatomyChoice)
+                        {
+                            if (i > 0)
+                                writer.WriteLine2("");
+
+                            if (anatomyChoices[i].GetExampleBlueprints().ToList() is List<GameObjectBlueprint> blueprints)
+                            {
+
+                                int count = blueprints.Count();
+                                for (int j = 0; j < count; j++)
+                                    if (blueprints[j] is GameObjectBlueprint blueprint
+                                        && blueprint.GetRenderable() is Renderable renderable)
+                                        writer.WriteLine2($"<!--xtagUD_BDS_{anatomyChoice.Anatomy.Name.Replace("-", "_").Replace(" ", "_")} " +
+                                            (IncludeName ? $"Name=\"{blueprint.Name}\" " : null) +
+                                            $"Tile=\"{renderable.Tile}\" " +
+                                            $"RenderString=\"{renderable?.RenderString}\" " +
+                                            $"ColorString=\"{renderable?.ColorString}\" " +
+                                            $"TileColor=\"{renderable?.TileColor}\" " +
+                                            $"DetailColor=\"{renderable?.DetailColor}\" " +
+                                            $"/-->", 2);
+                            }
+                            else
+                                writer.WriteLine2($"<!--xtagUD_BDS_{anatomyChoice.Anatomy.Name} " +
+                                    $"Name=\"default\" " +
+                                    $"Tile=\"Creatures/sw_mimic.bmp\" " +
+                                    $"ColorString=\"&amp;w^y\" " +
+                                    $"TileColor=\"&amp;w\" " +
+                                    $"DetailColor=\"y\" " +
+                                    $"/-->", 2);
+                        }
+
+                    writer.WriteLine2("</object>", Indent: 1)
+                        .WriteLine2("</objects>");
+                    Log("-".ThisManyTimes(25));
+                }
+                writer.Flush();
+                writer.Dispose();
+            }
             return true;
         }
 

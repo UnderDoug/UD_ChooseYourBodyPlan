@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -34,7 +35,7 @@ namespace UD_BodyPlan_Selection.Mod
             ;
 
         public static bool LogReturning(this bool Return, string Message)
-            => Utils.LogReturnBool(Return, Message);
+            => LogReturnBool(Return, Message);
 
         public static bool HasSTag(this GameObjectBlueprint Blueprint, string STag)
             => Blueprint?.Tags?.Keys is Dictionary<string, string>.KeyCollection keys
@@ -117,5 +118,25 @@ namespace UD_BodyPlan_Selection.Mod
         public static bool EndsWithAny(this string String, params string[] Values)
             => Values.IsNullOrEmpty()
             || Values.Any(s => String.EndsWith(s));
+
+        /// <summary>
+        /// Writes a line to the stream with an optional indent, factored to 2.
+        /// </summary>
+        /// <param name="Writer">The <see cref="StreamWriter"/> object.</param>
+        /// <param name="Value">The Value to write to the stream on its own line.</param>
+        /// <param name="Indent">The level of indent (2 spaces) for this line.</param>
+        /// <returns>The <see cref="StreamWriter"/> object.</returns>
+        public static StreamWriter WriteLine2(this StreamWriter Writer, string Value, int Indent = 0)
+        {
+            if (Indent > 0)
+                Value = " ".ThisManyTimes(Indent * 2) + Value;
+            Writer.Write(Value + "\n");
+            UnityEngine.Debug.Log(Value);
+            return Writer;
+        }
+
+        public static StreamWriter WriteLine4(this StreamWriter Writer, string Value, int Indent = 0)
+            => Writer.WriteLine2(Value, Indent * 2)
+            ;
     }
 }
