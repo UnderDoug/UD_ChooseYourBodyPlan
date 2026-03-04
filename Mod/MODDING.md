@@ -140,7 +140,7 @@ To achieve the same as the above with individual `tag`s instead, the blow is the
         <tag Name="ExceptionSummary" Value="{{B|Wonky, lots of falling!}}" />
     </object>
 
-You can leave the `Optional` tag's value empty and the option provided by this Choose Your Body Plan will automatically be used as the enabling option. The above is exactly what this mod uses to optionally restrict the two base game transformation recipe anatomies, and they specify this mod's recipe option explicitly, so if you wanted your own option, separate from the one provided by this mod, you can specify an option ID as `Optionally`'s tag value.
+You can leave the `Optional` tag's value empty and the option provided by Choose Your Body Plan will automatically be used as the enabling option. The above is exactly what this mod uses to optionally restrict the two base game transformation recipe anatomies, and they specify this mod's recipe option explicitly, so if you wanted your own option, separate from the one provided by this mod, you can specify an option ID as `Optionally`'s tag value.
 
 Transformation body plans are currently set to always use the supplied visual data to set the tile for the body plan in the Body Plan Module, but a future update might allow them to be specified/overridden explicity.
 
