@@ -20,6 +20,8 @@ namespace UD_BodyPlan_Selection.Mod
 
         public class TransformationData
         {
+            public static string RemoveTag => "*remove";
+
             public string RenderString;
             public string Tile;
             public string TileColor;
@@ -43,25 +45,44 @@ namespace UD_BodyPlan_Selection.Mod
             {
                 if (xTag != null)
                 {
-                    xTag.TryGetValue(nameof(RenderString), out RenderString);
-                    xTag.TryGetValue(nameof(Tile), out Tile);
-                    xTag.TryGetValue(nameof(TileColor), out TileColor);
-                    xTag.TryGetValue(nameof(DetailColor), out DetailColor);
-                    xTag.TryGetValue(nameof(Species), out Species);
-                    xTag.TryGetValue(nameof(Property), out Property);
-                    if (xTag.TryGetValue(nameof(Mutations), out string mutations))
+                    if (xTag.TryGetValue(nameof(RenderString), out RenderString)
+                        && RenderString.EqualsNoCase(RemoveTag))
+                        RenderString = null;
+
+                    if (xTag.TryGetValue(nameof(Tile), out Tile)
+                        && Tile.EqualsNoCase(RemoveTag))
+                        Tile = null;
+
+                    if (xTag.TryGetValue(nameof(TileColor), out TileColor)
+                        && TileColor.EqualsNoCase(RemoveTag))
+                        TileColor = null;
+
+                    if (xTag.TryGetValue(nameof(DetailColor), out DetailColor)
+                        && DetailColor.EqualsNoCase(RemoveTag))
+                        DetailColor = null;
+
+                    if (xTag.TryGetValue(nameof(Species), out Species)
+                        && Species.EqualsNoCase(RemoveTag))
+                        Species = null;
+
+                    if (xTag.TryGetValue(nameof(Property), out Property)
+                        && Property.EqualsNoCase(RemoveTag))
+                        Property = null;
+
+                    if (xTag.TryGetValue(nameof(Mutations), out string mutations)
+                        && !mutations.EqualsNoCase(RemoveTag))
                         Mutations = Utils.GetVersionSafeParser<List<string>>()?.Invoke(mutations);
                 }
             }
 
             public void DebugOutput(int Indent = 0)
             {
-                Utils.Log($"{nameof(RenderString)}: {RenderString}", Indent: Indent);
-                Utils.Log($"{nameof(Tile)}: {Tile}", Indent: Indent);
-                Utils.Log($"{nameof(TileColor)}: {TileColor}", Indent: Indent);
-                Utils.Log($"{nameof(DetailColor)}: {DetailColor}", Indent: Indent);
-                Utils.Log($"{nameof(Species)}: {Species}", Indent: Indent);
-                Utils.Log($"{nameof(Property)}: {Property}", Indent: Indent);
+                Utils.Log($"{nameof(RenderString)}: {RenderString ?? "NO_RENDER_STRING"}", Indent: Indent);
+                Utils.Log($"{nameof(Tile)}: {Tile ?? "NO_TILE"}", Indent: Indent);
+                Utils.Log($"{nameof(TileColor)}: {TileColor ?? "NO_TILE_COLOR"}", Indent: Indent);
+                Utils.Log($"{nameof(DetailColor)}: {DetailColor ?? "NO_DETAIL_COLOR"}", Indent: Indent);
+                Utils.Log($"{nameof(Species)}: {Species ?? "NO_SPECIES"}", Indent: Indent);
+                Utils.Log($"{nameof(Property)}: {Property ?? "NO_PROPERTY"}", Indent: Indent);
                 Utils.Log($"{nameof(Mutations)}:", Indent: Indent);
                 if (Mutations.IsNullOrEmpty())
                     Utils.Log("::None", Indent: Indent + 1);
@@ -71,7 +92,7 @@ namespace UD_BodyPlan_Selection.Mod
             }
         }
         
-        private IReadOnlyList<string> Anatomies;
+        private readonly IReadOnlyList<string> Anatomies;
 
         public string Anatomy;
 
@@ -193,6 +214,7 @@ namespace UD_BodyPlan_Selection.Mod
                     Tile = DataBucket.GetTag("TransormationTile").Coalesce(DataBucket.GetTag("xFormTile")),
                     Property = DataBucket.GetTag("TransormationProperty").Coalesce(DataBucket.GetTag("xFormProperty")),
                     Species = DataBucket.GetTag("TransormationSpecies").Coalesce(DataBucket.GetTag("xFormSpecies")),
+                    TileColor = DataBucket.GetTag("TransormationTileColor").Coalesce(DataBucket.GetTag("xFormTile")),
                     DetailColor = DataBucket.GetTag("TransormationDetailColor").Coalesce(DataBucket.GetTag("xFormDetailColor")),
                     Mutations = Utils.GetVersionSafeParser<List<string>>()?.Invoke(DataBucket.GetTag("TransormationMutations").Coalesce(DataBucket.GetTag("xFormMutations")))
                 };

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using ConsoleLib.Console;
 
@@ -215,6 +216,7 @@ namespace UD_BodyPlan_Selection.Mod
         public static bool AnatomyTileTags_WishHandler(string Parameters)
         {
             bool IncludeName = Parameters?.Contains("with names") ?? false;
+            string forAnatomy = Regex.Replace(Parameters, @" ?\@(\w.?) ?", @"$1");
             if (!AnatomyChoices.IsNullOrEmpty()
                 && new StreamWriter(UD_BPS_Output) is StreamWriter writer)
             {
@@ -223,12 +225,16 @@ namespace UD_BodyPlan_Selection.Mod
                     Log("-".ThisManyTimes(25));
                     writer.WriteLine2("<?xml version=\"1.0\" encoding=\"utf-8\" ?>")
                         .WriteLine2("<objects>")
-                            .WriteLine2("<object Name=\"UD_BodyPlan_Slection_AnatomyTiles\" Inherits=\"DataBucket\" >", Indent: 1);
+                            .WriteLine2("<object Name=\"UD_BodyPlan_Slection_AnatomyTiles\" Load=\"Merge\" >", Indent: 1);
                     var sB = Event.NewStringBuilder();
                     var attributes = new Dictionary<string, object>();
                     for (int i = 0; i < anatomyChoices.Count; i++)
                         if (anatomyChoices[i]?.Anatomy is Anatomy anatomy)
                         {
+                            if (!forAnatomy.IsNullOrEmpty()
+                                && anatomy.Name.Replace("-", "_").Replace(" ", "_") != forAnatomy)
+                                continue;
+
                             if (i > 0)
                                 writer.WriteLine2("");
                             

@@ -25,6 +25,7 @@ namespace XRL.CharacterBuilds.Qud
             [HasModSensitiveStaticCache]
             public class ChoiceRenderable : Renderable
             {
+                public static string RemoveTag => "*remove";
                 public static string xTagPrefix => "UD_BDS_";
 
                 [ModSensitiveStaticCache]
@@ -91,14 +92,33 @@ namespace XRL.CharacterBuilds.Qud
                 public ChoiceRenderable(Dictionary<string, string> xTag, bool HFlip = false)
                     : base()
                 {
-                    xTag?.TryGetValue(nameof(Tile), out Tile);
-                    xTag?.TryGetValue(nameof(RenderString), out RenderString);
-                    xTag?.TryGetValue(nameof(ColorString), out ColorString);
-                    xTag?.TryGetValue(nameof(TileColor), out TileColor);
-                    if (xTag != null &&
-                        xTag.TryGetValue(nameof(DetailColor), out string detailColor))
-                        DetailColor = detailColor?[0] ?? '\0';
                     this.HFlip = HFlip;
+
+                    if (!xTag.IsNullOrEmpty())
+                    {
+                        if (xTag.TryGetValue(nameof(Tile), out Tile)
+                            && Tile.EqualsNoCase(RemoveTag))
+                            Tile = null;
+
+                        if (xTag.TryGetValue(nameof(RenderString), out RenderString)
+                            && RenderString.EqualsNoCase(RemoveTag))
+                            RenderString = null;
+
+                        if (xTag.TryGetValue(nameof(ColorString), out ColorString)
+                            && ColorString.EqualsNoCase(RemoveTag))
+                            ColorString = null;
+
+                        if (xTag.TryGetValue(nameof(TileColor), out TileColor)
+                            && TileColor.EqualsNoCase(RemoveTag))
+                            TileColor = null;
+
+                        if (xTag.TryGetValue(nameof(DetailColor), out string detailColor)
+                            && !detailColor.EqualsNoCase(RemoveTag))
+                            DetailColor = detailColor?[0] ?? '\0';
+
+                        if (xTag.TryGetValue(nameof(this.HFlip), out string hFlip))
+                            bool.TryParse(hFlip, out this.HFlip);
+                    }
                 }
                 public ChoiceRenderable(string Anatomy, bool HFlip = false)
                     : this(
