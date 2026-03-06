@@ -24,6 +24,13 @@ namespace XRL.CharacterBuilds.Qud.UI
         UICanvasHost: 1)]
     public partial class Qud_UD_BodyPlanModuleWindow : EmbarkBuilderModuleWindowPrefabBase<Qud_UD_BodyPlanModule, CategoryMenusScroller>
     {
+        private struct RandomChoice
+        {
+            public int Index;
+            public string Anatomy;
+            public int Weight;
+        }
+
         protected const string EMPTY_CHECK = "[ ]";
 
         protected const string CHECKED = "[■]";
@@ -34,6 +41,8 @@ namespace XRL.CharacterBuilds.Qud.UI
         private List<CategoryMenuData> AnatomiesMenuState = new();
 
         private List<Qud_UD_BodyPlanModule.AnatomyChoice> AnatomyChoices => module?.AnatomyChoices;
+
+        private PrefixMenuOption Selected;
 
         public bool TrySetupModuleData()
         {
@@ -75,16 +84,33 @@ namespace XRL.CharacterBuilds.Qud.UI
 
         public override void RandomSelection()
         {
-            int num = Stat.Roll(0, module.AnatomyChoices.Count - 1);
+            using var randomChoices = ScopeDisposedList<RandomChoice>.GetFromPool();
+            int choiceIndex = 0;
+            foreach (var choice in AnatomyChoices)
+                randomChoices.Add(
+                    Item: new()
+                    {
+                        Index = choiceIndex++,
+                        Anatomy = choice.Anatomy.Name,
+                        Weight = choice.AnatomyConfigurations.IsNullOrEmpty()
+                                || (!choice.AnatomyConfigurations.IsDifficult()
+                                    && !choice.AnatomyConfigurations.IsMechanical())
+                            ? 5
+                            : 1
+                    });
+
+            int num = randomChoices.Aggregate(new BallBag<int>(), (a, n) => a.AddA(n.Index, n.Weight)).PluckOne();
+
             prefabComponent.ContextFor(0, num).ActivateAndEnable();
-            module.PickAnatomy(num);
-            UpdateControls();
+            SelectAnatomy(num);
+            HighlightSelected();
         }
 
         public override void ResetSelection()
         {
             module.setData(module.DefaultData);
             UpdateControls();
+            HighlightSelected();
         }
 
         public override UIBreadcrumb GetBreadcrumb()
@@ -114,6 +140,12 @@ namespace XRL.CharacterBuilds.Qud.UI
             module.SelectDefaultChoice(Override);
             if (UpdateControls)
                 this.UpdateControls();
+        }
+
+        public void HighlightSelected()
+        {
+            if (Selected != null)
+                prefabComponent.onHighlight.Invoke(Selected);
         }
 
         public void UpdateControls(bool OverrideHasShown = false)
@@ -157,14 +189,18 @@ namespace XRL.CharacterBuilds.Qud.UI
 
                     var renderable = choice.GetRenderable();
 
+                    var menuOption = new PrefixMenuOption()
+                    {
+                        Prefix = isSelected ? CHECKED : EMPTY_CHECK,
+                        Description = sB.ToString(),
+                        LongDescription = longDesc,
+                        Renderable = renderable
+                    };
                     categoryMenuData.menuOptions.Add(
-                        item: new PrefixMenuOption()
-                        {
-                            Prefix = isSelected ? CHECKED : EMPTY_CHECK,
-                            Description = sB.ToString(),
-                            LongDescription = longDesc,
-                            Renderable = renderable
-                        });
+                        item: menuOption);
+
+                    if (isSelected)
+                        Selected = menuOption;
 
                     sB.Clear();
                 }

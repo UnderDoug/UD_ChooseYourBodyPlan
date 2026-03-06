@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +14,7 @@ using XRL.World.Parts;
 
 using static UD_BodyPlan_Selection.Mod.Utils;
 using static UD_BodyPlan_Selection.Mod.Const;
+using System.Collections.Concurrent;
 
 namespace UD_BodyPlan_Selection.Mod
 {
@@ -110,6 +112,24 @@ namespace UD_BodyPlan_Selection.Mod
                 seed = func(seed, i);
 
             return seed;
+        }
+
+        public static BallBag<T> AddA<T>(this BallBag<T> Bag, T Ball, int Weight)
+        {
+            Bag.Add(Ball, Weight);
+            return Bag;
+        }
+
+        public static IProducerConsumerCollection<T> AddA<T>(this IProducerConsumerCollection<T> Collection, T Item)
+        {
+            Collection.TryAdd(Item);
+            return Collection;
+        }
+
+        public static ICollection<T> AddA<T>(this ICollection<T> Collection, T Item)
+        {
+            Collection.Add(Item);
+            return Collection;
         }
 
         public static IEnumerable<TSource> WhereNot<TSource>(

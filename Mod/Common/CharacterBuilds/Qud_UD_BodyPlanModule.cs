@@ -562,6 +562,8 @@ namespace XRL.CharacterBuilds.Qud
                 ;
         }
 
+        public static string GetDefaultSelectionUIEvent => $"{nameof(Qud_UD_BodyPlanModule)}_{nameof(GetDefaultSelectionUIEvent)}";
+
         private static bool WantClearChoices = false;
 
         private static IEnumerable<AnatomyChoice> _BaseAnatomyChoices;
@@ -579,10 +581,22 @@ namespace XRL.CharacterBuilds.Qud
             get
             {
                 if (_PlayerAnatomyChoice == null
-                    && GetDefaultPlayerBodyPlan() is string playerAnatomyName
                     && !_AnatomyChoices.IsNullOrEmpty())
-                    _PlayerAnatomyChoice = AnatomyChoices.FirstOrDefault(a => a?.Anatomy?.Name == playerAnatomyName);
+                {
+                    var uIEvent = builder?.handleUIEvent(GetDefaultSelectionUIEvent, _AnatomyChoices);
+                    string choiceName = GetDefaultPlayerBodyPlan();
+                    List<AnatomyChoice> anatomyChoices = _AnatomyChoices;
+                    if (uIEvent is List<AnatomyChoice> uIEventAnatomyChoices)
+                        anatomyChoices = uIEventAnatomyChoices;
+                    else
+                    if (uIEvent is string uIEventChoiceName)
+                        choiceName = uIEventChoiceName;
+                    else
+                    if (uIEvent is AnatomyChoice uIEventChoice)
+                        _PlayerAnatomyChoice = uIEventChoice;
 
+                    _PlayerAnatomyChoice ??= anatomyChoices.FirstOrDefault(a => a?.Anatomy?.Name == choiceName);
+                }
                 return _PlayerAnatomyChoice;
             }
             set => _PlayerAnatomyChoice = null;
@@ -601,6 +615,8 @@ namespace XRL.CharacterBuilds.Qud
                     WantClearChoices = false;
                     _AnatomyChoices = new();
                     _AnatomyChoices.AddRange(BaseAnatomyChoices.Where(AnatomyChoiceIsValid));
+                    if (builder?.handleUIEvent(GetDefaultSelectionUIEvent, _AnatomyChoices) is List<AnatomyChoice> uIEventChoices)
+                        _AnatomyChoices = uIEventChoices;
                     _AnatomyChoices.RemoveAll(c => c == null || c.Anatomy == null);
                     SetDefaultChoice();
                     SelectDefaultChoice();
@@ -630,12 +646,12 @@ namespace XRL.CharacterBuilds.Qud
                 || Options.EnableBodyPlansForTK)
             && SubtypeModuleData?.Subtype != null;
 
-        private static bool IsQudQudMutationsModuleWindowDescriptor(EmbarkBuilderModuleWindowDescriptor Descriptor)
+        private static bool IsQudMutationsModuleWindowDescriptor(EmbarkBuilderModuleWindowDescriptor Descriptor)
             => Descriptor.module is QudMutationsModule
             ;
         public override void assembleWindowDescriptors(List<EmbarkBuilderModuleWindowDescriptor> windows)
         {
-            int index = windows.FindIndex(IsQudQudMutationsModuleWindowDescriptor);
+            int index = windows.FindIndex(IsQudMutationsModuleWindowDescriptor);
             if (index < 0)
                 base.assembleWindowDescriptors(windows);
             else
