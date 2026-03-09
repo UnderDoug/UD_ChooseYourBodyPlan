@@ -17,7 +17,12 @@ namespace UD_BodyPlan_Selection.Mod
         [OptionFlag] public static bool EnableBodyPlansThatAreRobotic;
         [OptionFlag] public static bool EnableRoboticBodyPlansMakingYouRobotic;
 
-        [ModSensitiveStaticCache]
         public static bool SortByCategory = true;
+
+        [ModSensitiveCacheInit]
+        public static void SetSortByCategory()
+        {
+            SortByCategory = true;
+        }
     }
 }

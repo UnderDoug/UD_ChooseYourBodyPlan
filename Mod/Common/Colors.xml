@@ -5,19 +5,26 @@
     <solidcolor Name="UD_BPS_default" Color="W" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_animal" Color="w" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_bone" Color="Y" ShowInPicker="false" />
-    <solidcolor Name="UD_BPS_fungus" Color="m" ShowInPicker="false" />
+    <solidcolor Name="UD_BPS_fungal" Color="m" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_leather" Color="w" ShowInPicker="false" />
-    <solidcolor Name="UD_BPS_light" Color="W" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_mechanical" Color="c" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_metal" Color="c" ShowInPicker="false" />
-    <solidcolor Name="UD_BPS_plant" Color="g" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_stone" Color="y" ShowInPicker="false" />
     <solidcolor Name="UD_BPS_wooden" Color="w" ShowInPicker="false" />
   </solidcolors>
   
   <shaders>
-    <shader Name="UD_BPS_glass" Type="sequence" Colors="Y-Y-y" />
-    <shader Name="UD_BPS_mollusk" Type="sequence" Colors="w-W-Y-y" />
+    <shader Name="UD_BPS_arthropod" Type="sequence" Colors="w-w-K-w-K-w-W" ShowInPicker="false" />
+    <shader Name="UD_BPS_crystal" Type="sequence" Colors="m-m-m-b-B-Y-B-b-m-m-m" ShowInPicker="false" />
+    <shader Name="UD_BPS_cloth" Type="sequence" Colors="g-K-G-W-G" ShowInPicker="false" />
+    <shader Name="UD_BPS_glass" Type="sequence" Colors="Y-Y-y" ShowInPicker="false" />
+    <shader Name="UD_BPS_jelly" Type="sequence" Colors="g-G-Y-Y-G-g" ShowInPicker="false" />
+    <shader Name="UD_BPS_light" Type="sequence" Colors="y-W-y-Y" ShowInPicker="false" />
+    <shader Name="UD_BPS_liquid" Type="alternation" Colors="B-C-Y-C-B" ShowInPicker="false" />
+    <shader Name="UD_BPS_mollusk" Type="sequence" Colors="w-W-Y-y" ShowInPicker="false" />
+    <shader Name="UD_BPS_plant" Type="sequence" Colors="g-g-G-g-K-g-g-G-G-K" ShowInPicker="false" />
+    <shader Name="UD_BPS_plastic" Type="sequence" Colors="K-y-Y-y" ShowInPicker="false" />
+    <shader Name="UD_BPS_protoplasmic" Type="sequence" Colors="c-C-C-c-C" ShowInPicker="false" />
   </shaders>
   
 </colors>
