@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace UD_BodyPlan_Selection.Mod
+namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
-    public class TextAddition
+    public class TextElement
     {
         public struct Symbol
         {
@@ -25,9 +25,12 @@ namespace UD_BodyPlan_Selection.Mod
                 : Value.ToString()
                 ;
         }
+
         public string Name;
-        public List<string> Description;
-        public List<string> Summary;
+        public List<string> DescriptionBefore;
+        public List<string> DescriptionAfter;
+        public List<string> SummaryBefore;
+        public List<string> SummaryAfter;
         public List<Symbol> Symbols;
     }
 }

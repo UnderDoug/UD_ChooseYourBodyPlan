@@ -3,6 +3,9 @@
     public static class Const
     {
         public const string THIS_MOD_ID = "UD_BodyPlan_Selection";
+
+        public const string XML_BODYPLANS = "cybp_bodyplans";
+        public const string XML_TEXTELEMENTS = "cybp_textElements";
         public static string REMOVE_TAG => "*remove";
 
         public const char SQRE = '\u00fe'; // ■

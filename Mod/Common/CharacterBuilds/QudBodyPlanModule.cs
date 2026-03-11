@@ -12,11 +12,10 @@ using XRL.World.Anatomy;
 using XRL.World.Parts;
 
 using Event = XRL.World.Event;
-
-using UD_BodyPlan_Selection.Mod;
 using static UD_BodyPlan_Selection.Mod.AnatomyConfiguration;
 using XRL.CharacterBuilds;
 using XRL.CharacterBuilds.Qud;
+using UD_BodyPlan_Selection.Mod.BodyPlans;
 
 namespace UD_BodyPlan_Selection.Mod.CharacterBuilds
 {

@@ -9,7 +9,7 @@ using XRL.World;
 
 using static UD_BodyPlan_Selection.Mod.Const;
 
-namespace UD_BodyPlan_Selection.Mod
+namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
     [HasModSensitiveStaticCache]
     public class BodyPlanRenderable : Renderable

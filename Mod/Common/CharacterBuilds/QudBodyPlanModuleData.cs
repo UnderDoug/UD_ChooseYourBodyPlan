@@ -1,4 +1,6 @@
-﻿using XRL.CharacterBuilds;
+﻿using UD_BodyPlan_Selection.Mod.BodyPlans;
+
+using XRL.CharacterBuilds;
 using XRL.World.Anatomy;
 
 using static UD_BodyPlan_Selection.Mod.AnatomyConfiguration;

@@ -1,5 +1,7 @@
 ﻿using System;
 
+using UD_BodyPlan_Selection.Mod.BodyPlans;
+
 using static UD_BodyPlan_Selection.Mod.AnatomyConfiguration;
 
 namespace UD_BodyPlan_Selection.Mod.CharacterBuilds

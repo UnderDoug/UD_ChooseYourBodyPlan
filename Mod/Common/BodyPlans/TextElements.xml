@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<cybp_textElements>
+  
+  <symbol Name="Difficult" Color="r" Value="&#x13;" />
+  <symbol Name="Warning" Color="W" Value="&#x7f;" />
+  <symbol Name="Mechanical" Color="c" Value="&#xf;" />
+  <symbol Name="Transformation" Color="m" Value="&#xf1;" />
+  <symbol Name="NoImplant">
+    <color>r</color>
+    <value>&#x9b;</value>
+  </symbol>
+
+  <textElement Name="Difficult">
+    <descriptionBefore>This body plan will be {{r|difficult}} to play with.</descriptionBefore>
+    <summaryAfter>{{r|Difficult to play}}</summaryAfter>
+    <symbol Name="Difficult" />
+  </textElement>
+
+  <textElement Name="Warning">
+    <descriptionBefore>This body plan may be {{W|challenging}} to play with.</descriptionBefore>
+    <summaryAfter>{{W|May be challenging}}</summaryAfter>
+    <symbol Name="Warning" />
+  </textElement>
+
+  <textElement Name="Mechanical">
+    <descriptionBefore>{{c|You will be made mechanical with this body plan.}}</descriptionBefore>
+    <summaryAfter>{{c|You are mechanical}}</summaryAfter>
+    <symbol Name="Mechanical" />
+  </textElement>
+  
+</cybp_textElements>

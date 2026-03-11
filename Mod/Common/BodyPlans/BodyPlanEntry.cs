@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace UD_BodyPlan_Selection.Mod
+namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
     public class BodyPlanEntry
     {
@@ -10,6 +10,8 @@ namespace UD_BodyPlan_Selection.Mod
         public string DisplayName;
         public BodyPlanRenderable Renderable;
         public TransformationData Transformation;
-        public 
+        public List<TextElement> TextElements;
+
+        public bool IsBase;
     }
 }

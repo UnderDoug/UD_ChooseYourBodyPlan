@@ -215,6 +215,20 @@ namespace UD_BodyPlan_Selection.Mod
             : 1
             ;
 
+        public static void Merge<TKey, TValue>(
+            IDictionary<TKey, TValue> This,
+            ref Dictionary<TKey, TValue> Into
+            )
+        {
+            Into ??= new Dictionary<TKey, TValue>();
+
+            if (This.IsNullOrEmpty())
+                return;
+
+            foreach ((TKey key, TValue value) in This)
+                Into[key] = value;
+        }
+
         #region Wishes
 
         public static string UD_BPS_Output => DataManager.SavePath("AnatomyTiles.xml");

@@ -14,6 +14,7 @@ using static UD_BodyPlan_Selection.Mod.Utils;
 using static UD_BodyPlan_Selection.Mod.Const;
 using System.Collections.Concurrent;
 using XRL.Collections;
+using System.Reflection;
 
 namespace UD_BodyPlan_Selection.Mod
 {
@@ -412,5 +413,30 @@ namespace UD_BodyPlan_Selection.Mod
                 || String.IsColor()
             ? String
             : null;
+
+        public static IEnumerable<string> GetFieldNames(this Type Type, Predicate<FieldInfo> Filter = null)
+        {
+            if (Type == null)
+                yield break;
+
+            if (Type.GetFields() is FieldInfo[] fields
+                && !fields.IsNullOrEmpty())
+            {
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    if (fields[i] is FieldInfo field
+                        && (Filter == null
+                            || Filter(field)))
+                        yield return field.Name;
+                }
+            }
+        }
+
+        public static void AddRangeIf<T>(this List<T> List, IEnumerable<T> Elements, Predicate<T> Condition)
+        {
+            foreach (var element in Elements)
+                if (Condition(element))
+                    List.Add(element);
+        }
     }
 }

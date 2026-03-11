@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<cybp_bodyplans>
+
+  <category Name="Default" Color="W" />
+  <category Name="Animal" Color="w" />
+  <category Name="Arthropod" Shader="filthy" Color="w" />
+  <category Name="Bone" Color="Y" />
+  <category Name="Chitin" Shader="filthy" Color="w" />
+  <category Name="Cloth" Shader="plaid" Color="y" />
+  <category Name="Crystal" Shader="crystalline" Color="B" />
+  <category Name="Cybernetic" Color="c" />
+  <category Name="Extradimensional" Shader="extradimensional" Color="O" />
+  <category Name="Fungal" Color="m" />
+  <category Name="Glass" Shader="pearly" Color="Y" />
+  <category Name="Jelly" Shader="plasma" Color="g" />
+  <category Name="Leather">
+  <category Name="Light">
+    <shader Type="sequence" Colors="y-W-y-Y" Color="W" />
+  </category>
+  <category Name="Liquid" Shader="watery" Color="B" />
+  <category Name="Mechanical" Color="c" />
+  <category Name="Metal" Color="c" />
+  <category Name="Mollusk" Shader="snail-encrusted" Color="G" />
+    <shader Type="sequence" Colors="w-r-w" Color="w" />
+  </category>
+  <category Name="Plant" Shader="camoflage" Color="g" />
+  <category Name="Plastic" Shader="plastifer" Color="y" />
+  <category Name="Protoplasmic">
+    <shader Type="sequence" Colors="c-C-C-c-C" Color="C" />
+  </category>
+  <category Name="Psionic" Shader="psionic" Color="b" />
+  <category Name="Stone" Color="y" />
+  <category Name="Wooden" Color="c" />
+  <category Name="Miscellaneous" Color="y" />
+  
+  <bodyplan Name="BaseRestricted">
+    <tag Name="Restricted" />
+    <base>NoInherit</base>
+  </bodyplan>
+  <bodyplan Name="HumanoidWithHandsFace" Inherits="BaseRestricted" />
+
+  <bodyplan Name="BaseDifficult">
+    <tag Name="Difficult" />
+    <textElement Name="Difficult" />
+    <base>NoInherit</base>
+  </bodyplan>
+  <bodyplan Name="BipedalRobot" DisplayName="Bipedal Robot" Inherits="BaseDifficult" />
+  <bodyplan Name="Clam" Inherits="BaseDifficult" />
+  <bodyplan Name="Echinoid" Inherits="BaseDifficult" />
+  <bodyplan Name="Mirror" Inherits="BaseDifficult" />
+  <bodyplan Name="Motes" Inherits="BaseDifficult" />
+  <bodyplan Name="Nest" Inherits="BaseDifficult" />
+  <bodyplan Name="Oddity" Inherits="BaseDifficult" />
+  <bodyplan Name="Slug" Inherits="BaseDifficult" />
+  <bodyplan Name="Snail" Inherits="BaseDifficult" />
+  <bodyplan Name="Snake" Inherits="BaseDifficult" />
+  <bodyplan Name="Turret" Inherits="BaseDifficult" />
+  <bodyplan Name="Worm" Inherits="BaseDifficult" />
+
+  <!--bodyplan Name="BaseWarning">
+    <textElement Name="Warning" />
+    <base>NoInherit</base>
+  </bodyplan>
+  <bodyplan Name="Warning">
+    <dynamic Requires="Any" Mixin="Merge">
+      <condition Name="LimbCount" Type="Hand" Under="1" />
+      <condition Name="MoveSpeed" Type="Penalty" AtOrOver="60" />
+      <condition Name="Tag" Type="Not" Value="Difficult" />
+    </dynamic>
+  </bodyplan-->
+  
+  <bodyplan Name="Three-Pointed Star" DisplayName="Three-Pointed Star" />
+
+  <bodyplan Name="BaseMechanical">
+    <tag Name="Mechanical" />
+    <textElement Name="Mechanical" />
+    <base>NoInherit</base>
+  </bodyplan>
+  <bodyplan Name="Mechanical" Inherits="BaseMechanical">
+    <dynamic When="BodyCategory" Is="Mechanical" Mixin="Merge" />
+  </bodyplan>
+
+  <bodyplan Name="BaseTransformation">
+    <optionID>EnableBodyPlansAvailableViaRecipe</optionID>
+    <textElement Name="Transformation" />
+    <base>NoInherit</base>
+  </bodyplan>
+  
+  <bodyplan Name="SlugWithHands" Category="Mollusk" Inherits="BaseTransformation">
+    <render>
+      <displayName>Slug With Hands</displayName>
+      <tile>Creatures/sw_slog.bmp</tile>
+      <renderString>Q</renderString>
+      <colorString>&amp;G</colorString>
+      <tileColor>&amp;M</tileColor>
+      <detailColor>G</detailColor>
+    </render>
+    <transformation>
+      <property Name="AteCloacaSurprise" Value="true" />
+      <mutations>Bilge Sphincter</mutations>
+      <render>
+        <tile>Creatures/sw_slog.bmp</tile>
+        <renderString>Q</renderString>
+      </render>
+      <species>slug</species>
+    </transformation>
+  </bodyplan>
+  
+  <bodyplan Name="HumanoidOctohedron" Category="Crystal" Inherits="BaseTransformation">
+    <render>
+      <displayName>Humanoid Octohedron</displayName>
+      <tile>Creatures/sw_crystal_body.png</tile>
+      <renderString>µ</renderString>
+      <colorString>&amp;Y</colorString>
+      <tileColor>&amp;Y</tileColor>
+      <detailColor>m</detailColor>
+    </render>
+    <transformation>
+      <property Name="AteCrystalDelight" Value="true" />
+      <mutations>Crystallinity</mutations>
+      <render>
+        <tile>Creatures/sw_crystal_body.png</tile>
+        <renderString>µ</renderString>
+      </render>
+      <species>crystal</species>
+    </transformation>
+  </bodyplan>
+  
+</cybp_bodyplans>

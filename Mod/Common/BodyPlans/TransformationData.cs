@@ -9,10 +9,11 @@ using XRL.World;
 
 using static UD_BodyPlan_Selection.Mod.Const;
 
-namespace UD_BodyPlan_Selection.Mod
+namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
     public class TransformationData
     {
+        public BodyPlanEntry ParentBodyPlan;
         public string RenderString;
         public string Tile;
         public string TileColor;
@@ -23,6 +24,7 @@ namespace UD_BodyPlan_Selection.Mod
 
         public TransformationData()
         {
+            ParentBodyPlan = null;
             RenderString = null;
             Tile = null;
             TileColor = null;
