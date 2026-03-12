@@ -4,6 +4,8 @@ using System.Text;
 
 using ConsoleLib.Console;
 
+using UD_BodyPlan_Selection.Mod.XML;
+
 using XRL;
 using XRL.World;
 
@@ -11,8 +13,40 @@ using static UD_BodyPlan_Selection.Mod.Const;
 
 namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
-    public class TransformationData
+    public class TransformationData : IXmlLoaded<TransformationData>
     {
+        public IXmlFactory<TransformationData> Factory => BodyPlanFactory.Factory;
+
+        public XmlMetaData<TransformationData> XmlMetaData => new()
+        {
+            DataNodeName = "transformation",
+            KnownAttributes = new()
+            {
+                "Property",
+                "Mutations",
+                "Tile",
+                "RenderString",
+                "TileColor",
+                "DetailColor",
+                "Species",
+                "UseBodyPlanRender",
+            },
+            KnownNodes = new()
+            {
+                "property",
+                "mutations",
+                "species",
+            },
+            XmlLoadedNodes = new()
+            {
+                { "render", typeof(BodyPlanRenderable) },
+            },
+            IsInheritable = false,
+            IsMergable = true,
+        };
+
+        public bool XmlMetaDataFromFieldReflection => false;
+
         public BodyPlanEntry ParentBodyPlan;
         public string RenderString;
         public string Tile;

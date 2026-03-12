@@ -2,12 +2,20 @@
 using System.Collections.Generic;
 using System.Text;
 
+using UD_BodyPlan_Selection.Mod.XML;
+
 namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
     public class TextElement
     {
-        public struct Symbol
+        public struct Symbol : IXmlLoaded<Symbol>
         {
+            public IXmlFactory<Symbol> Factory => BodyPlanFactory.Factory;
+
+            public XmlDataLoader DataLoader => throw new NotImplementedException();
+
+            public XmlMetaData<Symbol> XmlMetaData => throw new NotImplementedException();
+
             public string Name;
             public char Color;
             public char Value;

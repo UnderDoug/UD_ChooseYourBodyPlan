@@ -4,6 +4,8 @@ using System.Text;
 
 using ConsoleLib.Console;
 
+using UD_BodyPlan_Selection.Mod.XML;
+
 using XRL;
 using XRL.World;
 
@@ -12,7 +14,9 @@ using static UD_BodyPlan_Selection.Mod.Const;
 namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
     [HasModSensitiveStaticCache]
-    public class BodyPlanRenderable : Renderable
+    public class BodyPlanRenderable
+        : Renderable
+        , IXmlLoaded<BodyPlanRenderable>
     {
         public static string xTagPrefix => "UD_BDS_";
 
@@ -22,7 +26,20 @@ namespace UD_BodyPlan_Selection.Mod.BodyPlans
             ?.GetBlueprintIfExists("UD_BodyPlan_Slection_AnatomyTiles")
             ?.xTags;
 
+        public IXmlFactory<BodyPlanRenderable> Factory => BodyPlanFactory.Factory;
+
+        public XmlMetaData<BodyPlanRenderable> XmlMetaData => new()
+        {
+
+        };
+
+        public bool XmlMetaDataFromFieldReflection => false;
+
         public bool HFlip;
+
+        public BodyPlanRenderable()
+            : base()
+        { }
 
         public BodyPlanRenderable(
             string Tile,

@@ -8,11 +8,19 @@ using XRL.World;
 using static UD_BodyPlan_Selection.Mod.Const;
 using static UD_BodyPlan_Selection.Mod.BodyPlans.TextElement;
 using XRL.UI;
+using UD_BodyPlan_Selection.Mod.XML;
+using static UD_BodyPlan_Selection.Mod.BodyPlans.BodyPlanCategory;
 
 namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
     [HasModSensitiveStaticCache]
     public class BodyPlanFactory
+        : IXmlFactory<Symbol>
+        , IXmlFactory<BodyPlanCategory>
+        , IXmlFactory<TextShader>
+        , IXmlFactory<BodyPlanEntry>
+        , IXmlFactory<BodyPlanRenderable>
+        , IXmlFactory<TransformationData>
     {
         protected Dictionary<string, Action<XmlDataHelper>> TextElementsRootNode;
         protected Dictionary<string, Action<XmlDataHelper>> TextElementsNodeChildren;
@@ -48,8 +56,8 @@ namespace UD_BodyPlan_Selection.Mod.BodyPlans
             }
         }
 
-        private BodyPlanFactory _Factory;
-        public BodyPlanFactory Factory
+        private static BodyPlanFactory _Factory;
+        public static BodyPlanFactory Factory
         {
             get
             {
@@ -224,6 +232,45 @@ namespace UD_BodyPlan_Selection.Mod.BodyPlans
             NewSkill.HandleXMLNode(reader);
             reader.HandleNodes(skillNodeChildren);
             NewSkill = null;
+        }
+
+        public Symbol LoadFromData(XmlDataLoader<Symbol>.XmlData XmlData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BodyPlanCategory LoadFromData(XmlDataLoader<BodyPlanCategory>.XmlData XmlData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TextShader LoadFromData(XmlDataLoader<TextShader>.XmlData XmlData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BodyPlanEntry LoadFromData(XmlDataLoader<BodyPlanEntry>.XmlData XmlData)
+        {
+            throw new NotImplementedException();
+        }
+        public BodyPlanRenderable LoadFromData(XmlDataLoader<BodyPlanRenderable>.XmlData XmlData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TransformationData LoadFromData(XmlDataLoader<TransformationData>.XmlData XmlData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public XmlDataLoader<Symbol> GetXmlDataLoader()
+        {
+            throw new NotImplementedException();
+        }
+
+        XmlDataLoader<BodyPlanCategory> IXmlFactory<BodyPlanCategory>.GetXmlDataLoader()
+        {
+            throw new NotImplementedException();
         }
     }
 }

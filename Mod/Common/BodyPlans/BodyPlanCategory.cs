@@ -2,12 +2,20 @@
 using System.Collections.Generic;
 using System.Text;
 
+using UD_BodyPlan_Selection.Mod.XML;
+
 namespace UD_BodyPlan_Selection.Mod.BodyPlans
 {
-    public class BodyPlanCategory
+    public class BodyPlanCategory : IXmlLoaded<BodyPlanCategory>
     {
-        public struct TextShader
+        public struct TextShader : IXmlLoaded<TextShader>
         {
+            public IXmlFactory<TextShader> Factory => BodyPlanFactory.Factory;
+            public XmlMetaData<TextShader> XmlMetaData => new(false, false)
+            {
+
+            };
+
             public string Shader;
             public string Type;
             public string Colors;
@@ -44,9 +52,43 @@ namespace UD_BodyPlan_Selection.Mod.BodyPlans
                 : Text;
         }
 
+        public IXmlFactory<BodyPlanCategory> Factory => BodyPlanFactory.Factory;
+
+        public XmlMetaData<BodyPlanCategory> XmlMetaData => new()
+        {
+            DataNodeName = "category",
+            NameAttribute = nameof(Name),
+            KnownAttributes = new()
+            {
+                "Name",
+                "DisplayName",
+                "Shader",
+                "Color",
+                "Load",
+            },
+            KnownNodes = new()
+            {
+                "displayName",
+                "shader",
+                "color",
+            },
+            XmlLoadedNodes = new()
+            {
+                { "shader", typeof(TextShader) },
+            },
+            IsInheritable = true,
+            IsMergable = true,
+        };
+
+        public bool XmlMetaDataFromFieldReflection => false;
+
         public string Name;
         public string DisplayName;
         public TextShader Shader;
+
+        public BodyPlanCategory()
+        {
+        }
 
         public string GetDisplayName()
             => Shader.Apply(DisplayName);
