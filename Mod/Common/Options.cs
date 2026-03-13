@@ -3,7 +3,7 @@
 namespace UD_BodyPlan_Selection.Mod
 {
     [HasModSensitiveStaticCache]
-    [HasOptionFlagUpdate(Prefix = "Option_UD_BodyPlan_Selection_")]
+    [HasOptionFlagUpdate(Prefix = Const.MOD_PREFIX)]
     public static class Options
     {
         // Debug Settings

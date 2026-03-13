@@ -2,6 +2,16 @@
 {
     public static class Const
     {
+        public const string MOD_ID = "UD_ChooseYourBodyPlan";
+        public const string MOD_PREFIX = MOD_ID + "_";
+        public const string MOD_PREFIX_SHORT = "UD_CYBP_";
+
+        public static string CATEGORY_BLUEPRINT => MOD_PREFIX_SHORT + "BaseCategory";
+        public const string CONFIG_BLUEPRINT = MOD_PREFIX_SHORT + "BaseConfiguration";
+        public const string TILES_BLUEPRINT = MOD_PREFIX_SHORT + "AnatomyTiles";
+
+        public const string REMOVE_TAG = "*remove";
+
         public const char SQRE = '\u00fe'; // ■
         public const char NBSP = '\u00ff'; // non-breaking space
 

@@ -292,7 +292,7 @@ namespace UD_BodyPlan_Selection.Mod.CharacterBuilds
             if (PlayerAnatomyChoice != null
                 && !IsPlayerChoice(AnatomyChoices[0]))
             {
-                AnatomyChoices.OrderBy(c => c?.Anatomy?.Name);
+                AnatomyChoices.OrderBy(c => c?.DisplayNameStripped);
                 AnatomyChoices.Remove(PlayerAnatomyChoice);
                 AnatomyChoices.Insert(0, PlayerAnatomyChoice);
                 SetDefaultChoice();

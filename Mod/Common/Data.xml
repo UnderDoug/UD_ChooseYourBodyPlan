@@ -1,14 +1,121 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <objects>
   
-  <object Name="UD_BodyPlan_Selection_BaseConfiguration" Inherits="DataBucket"
+  <object Name="UD_CYBP_BaseCategory" Inherits="DataBucket">
+    <tag Name="BaseObject" Value="*noinherit" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Default" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Default" Color="W" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Animal" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Animal" Color="w" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Arthropod" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Arthropod" Shader="filthy" Color="w" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Bone" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Bone" Color="Y" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Chitin" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Chitin" Shader="filthy" Color="w" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Cloth" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Cloth" Shader="plaid" Color="y" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Crystal" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Crystal" Shader="crystalline" Color="B" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Cybernetic" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Cybernetic" Color="c" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Extradimensional" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Extradimensional" Shader="extradimensional" Color="O" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Fungal" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Fungal" Color="m" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Glass" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Glass" Shader="pearly" Color="Y" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Jelly" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Jelly" Shader="plasma" Color="g" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Leather" Inherits="UD_CYBP_BaseCategory">
+    <tag Name="CategoryName" Value="Leather" />
+    <xtagUD_CYBP_Shader Type="sequence" Colors="w-r-w" Color="w" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Light" Inherits="UD_CYBP_BaseCategory">
+    <tag Name="CategoryName" Value="Light" />
+    <xtagUD_CYBP_Shader Type="sequence" Colors="y-W-y-Y" Color="W" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Liquid" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Liquid" Shader="watery" Color="B" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Mechanical" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Mechanical" Color="c" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Metal" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Metal" Color="c" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Mollusk" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Mollusk" Shader="snail-encrusted" Color="G" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Plant" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Plant" Shader="camouflage" Color="g" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Plastic" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Plastic" Shader="plastifer" Color="y" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Protoplasmic" Inherits="UD_CYBP_BaseCategory">
+    <tag Name="CategoryName" Value="Protoplasmic" />
+    <xtagUD_CYBP_Shader Type="sequence" Colors="c-C-C-c-C" Color="C" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Psionic" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Psionic" Shader="psionic" Color="b" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Stone" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Stone" Color="y" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Wooden" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Wooden" Color="w" />
+  </object>
+  
+  <object Name="UD_CYBP_Category Miscellaneous" Inherits="UD_CYBP_BaseCategory">
+    <xtagUD_CYBP_Category CategoryName="Miscellaneous" DisplayName="Miscellaneous" Color="y" />
+  </object>
+  
+  <object Name="UD_CYBP_BaseConfiguration" Inherits="DataBucket"
           PreviousName="UD_BodyPlan_Selection_BaseExclusion" >
     <tag Name="BaseObject" Value="*noinherit" />
   </object>
 
   <!--object Name="YourPrefix_UD_BodyPlanExclusion" Inherits="UD_BodyPlan_Selection_BaseExclusion">
     <tag Name="Anatomy" Value="AnatomyNameToExclude" />
-    <xtagUD_BPS_Transformation
+    <xtagUD_CYBP_Transformation
       Anatomy="AnatomyToTransformInto"
       Tile="TileWhenTransformed"
       RenderString="%"
@@ -22,7 +129,7 @@
     <tag Name="Symbols" Value="B::&#013;" />
   </object-->
 
-  <object Name="UD_BodyPlan_Selection_Sucks" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+  <object Name="UD_CYBP_Sucks" Inherits="UD_CYBP_BaseConfiguration">
     <tag Name="Anatomies" Value="BipedalRobot,Clam,Echinoid,Mirror,Motes,Nest,Slug,Snail,Snake,Turret,Worm" />
     <tag Name="Difficult" />
     <tag Name="DescriptionAddition" Value="This body plan will be {{r|difficult}} to play with." />
@@ -30,17 +137,17 @@
     <tag Name="Symbols" Value="r::&#x13;" />
   </object>
 
-  <object Name="UD_BodyPlan_Selection_BaseRestricted" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+  <object Name="UD_CYBP_BaseRestricted" Inherits="UD_CYBP_BaseConfiguration">
     <tag Name="Restricted" />
     <tag Name="BaseObject" Value="*noinherit" />
   </object>
 
-  <object Name="UD_BodyPlan_Selection_NotOptional" Inherits="UD_BodyPlan_Selection_BaseRestricted">
+  <object Name="UD_CYBP_NotOptional" Inherits="UD_CYBP_BaseRestricted">
     <tag Name="Anatomies" Value="HumanoidWithHandsFace" />
   </object>
 
-  <object Name="UD_BodyPlan_Selection_CloacaSurprise" Inherits="UD_BodyPlan_Selection_BaseRestricted">
-    <xtagUD_BPS_Transformation
+  <object Name="UD_CYBP_CloacaSurprise" Inherits="UD_CYBP_BaseRestricted">
+    <xtagUD_CYBP_Transformation
       Anatomy="SlugWithHands"
       RenderString="Q"
       Tile="Creatures/sw_slog.bmp"
@@ -55,8 +162,8 @@
     <tag Name="Symbols" Value="m::&#xf1;" />
   </object>
 
-  <object Name="UD_BodyPlan_Selection_CrystalDelight" Inherits="UD_BodyPlan_Selection_BaseRestricted">
-    <xtagUD_BPS_Transformation
+  <object Name="UD_CYBP_CrystalDelight" Inherits="UD_CYBP_BaseRestricted">
+    <xtagUD_CYBP_Transformation
       Anatomy="HumanoidOctohedron"
       RenderString="µ"
       Tile="Creatures/sw_crystal_body.png"

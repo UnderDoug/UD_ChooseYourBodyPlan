@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <options>
-  <!-- Option_UD_BodyPlan_Selection_ 
+  <!-- UD_ChooseYourBodyPlan_ 
   
   Debug Options
   
   -->
   <!--option
-        ID="Option_UD_BodyPlan_Selection_DebugEnableOption"
+        ID="UD_ChooseYourBodyPlan_DebugEnableOption"
         DisplayText="{{Y|Choose Your Body Plan}}: Enable a debug option for this mod."
         Category="Debug"
         Type="Checkbox"
@@ -24,7 +24,7 @@
   
   -->
   <option
-        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansForTK"
+        ID="UD_ChooseYourBodyPlan_EnableBodyPlansForTK"
         DisplayText="Enable body plan selection for True Kin."
         Category="Mod: Choose Your Body Plan"
         Type="Checkbox"
@@ -40,7 +40,7 @@
     </helptext>
   </option>
   <option
-        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansAvailableViaRecipe"
+        ID="UD_ChooseYourBodyPlan_EnableBodyPlansAvailableViaRecipe"
         DisplayText="Enable body plans that are otherwise available via {{m|cooking recipes}}."
         Category="Mod: Choose Your Body Plan"
         Type="Checkbox"
@@ -54,7 +54,7 @@
     </helptext>
   </option>
   <option
-        ID="Option_UD_BodyPlan_Selection_EnableBodyPlansThatAreRobotic"
+        ID="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic"
         DisplayText="Enable body plans that are for robots."
         Category="Mod: Choose Your Body Plan"
         Type="Checkbox"
@@ -68,8 +68,8 @@
     </helptext>
   </option>
   <option
-        ID="Option_UD_BodyPlan_Selection_EnableRoboticBodyPlansMakingYouRobotic"
-		    Requires="Option_UD_BodyPlan_Selection_EnableBodyPlansThatAreRobotic==Yes"
+        ID="UD_ChooseYourBodyPlan_EnableRoboticBodyPlansMakingYouRobotic"
+		    Requires="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic==Yes"
         DisplayText="Enable body plans that are for robots making you {{c|mechanical}}."
         Category="Mod: Choose Your Body Plan"
         Type="Checkbox"

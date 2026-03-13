@@ -155,8 +155,7 @@ namespace UD_BodyPlan_Selection.Mod.CharacterBuilds.UI
 
         private static BallBag<RandomChoice> AggregateBallBag(BallBag<RandomChoice> Bag, RandomChoice Ball)
         {
-            if (!Equals(Ball, default))
-                Bag.Add(Ball, Ball.Weight);
+            Bag.Add(Ball, Ball.Weight);
             return Bag;
         }
 

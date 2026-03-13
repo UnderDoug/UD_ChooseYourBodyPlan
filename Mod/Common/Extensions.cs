@@ -362,12 +362,53 @@ namespace UD_BodyPlan_Selection.Mod
             => ConsoleLib.Console.MarkupShaders.Shaders.Any(s => s.GetName() == String);
 
         public static bool IsColor(this string String)
-            => ConsoleLib.Console.MarkupShaders.Colors.Any(s => s.GetName() == String);
+            => ConsoleLib.Console.MarkupShaders.Colors.Any(s => s.GetName() == String)
+            || ((String?.Length ?? 0) == 1
+                && ConsoleLib.Console.MarkupShaders.GetSolidColor(String[0]) != null);
 
         public static string ShaderColorOrNull(this string String)
             => String.IsShader()
                 || String.IsColor()
             ? String
             : null;
+
+
+
+        public static bool TryGetTagValueForData(this GameObjectBlueprint DataBucket, string TagName, out string Value)
+        {
+            Value = null;
+            if (DataBucket != null)
+            {
+                if (DataBucket.TryGetTag(TagName, out Value))
+                {
+                    if (Value.EqualsNoCase(REMOVE_TAG))
+                        Value = null;
+
+                    return Value != null;
+                }
+            }
+            return false;
+        }
+        public static GameObjectBlueprint AssignStringFieldFromTag(this GameObjectBlueprint DataBucket, string TagName, ref string Field)
+        {
+            DataBucket.TryGetTagValueForData(TagName, out Field);
+            return DataBucket;
+        }
+
+        public static GameObjectBlueprint AssignStringFieldFromXTag(this GameObjectBlueprint DataBucket, string XTagName, string XTagKey, ref string Field)
+        {
+            if (DataBucket != null
+                && (Field = DataBucket.GetxTag(XTagName, XTagKey, Field)).EqualsNoCase(REMOVE_TAG))
+                Field = null;
+
+            return DataBucket;
+        }
+
+        public static void AssignStringFieldFromXTag(this Dictionary<string, string> XTag, string Key, ref string Field)
+        {
+            if (!XTag.IsNullOrEmpty()
+                && (Field = XTag.GetValue(Key, Field)).EqualsNoCase(REMOVE_TAG))
+                Field = null;
+        }
     }
 }

@@ -42,7 +42,7 @@ A "selection" or "choice" refers to an entry in the list stored by the body plan
 
 An "anatomy configuration" (`AnatomyConfiguration`) is one the members of an anatomy choice, and represents a bunch of meta data about the `Anatomy` member of the `AnatomyChoice` it's assigned to. It includes things such as additional display data, whether the anatomy should show up in the list or not (including which option controls that), and also includes information about a "transformation" that might be linked to the anatomy.
 
-A "configuration object" or "configuration blueprint" is a game object blueprint that inherits from `UD_BodyPlan_Selection_BaseConfiguration` and represents the data side of an anatomy configuration.
+A "configuration object" or "configuration blueprint" is a game object blueprint that inherits from `UD_CYBP_BaseConfiguration` and represents the data side of an anatomy configuration.
 
 A "transformation anatomy" (sometimes "recipe anatomy") refers to an anatomy that can be accessed in-game, during normal play, by way of a cooking recipe that applies a given anatomy to the player.
 
@@ -51,19 +51,19 @@ A "transformation" or "xForm" is one of the members of an anatomy configuration,
 ## Configuring Anatomy Selection
 Choose Your Body Plan makes use of the base game's data bucket object blueprints and object blueprint xtags to make configuring anatomies a very straight forward process that doesn't require any scripting.
 
-The first step is to create `Data.xml` somewhere in your mod's folder (if you don't already have one), and make a new object blueprint that inherits from `UD_BodyPlan_Selection_BaseConfiguration`.
+The first step is to create `Data.xml` somewhere in your mod's folder (if you don't already have one), and make a new object blueprint that inherits from `UD_CYBP_BaseConfiguration`.
 
 You then want a `tag` element with a `Name` attribute of "Anatomy", and `Value` attribute of the name of your custom anatomy (which you've already made in a separate file).
 
 Below is an example without any additional components:
     
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_Configuration" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+    <object Name="YourModPrefix_UD_CYBP_Configuration" Inherits="UD_CYBP_BaseConfiguration">
         <tag Name="Anatomy" Value="YourModPrefix_CustomAnatomy" />
     </object>
 
 On its own this doesn't do anything other than create an anatomy configuration and include it in your anatomy's selection.
 
-Note: What you name your blueprint doesn't matter, only that it inherits from `UD_BodyPlan_Selection_BaseConfiguration`, however it's always worth prefixing the things you add to the game to minimise the potential for conflicts. Besides, it's the perfect opportunity to be vain, naming things after yourself, because there's a legitimate reason to do so.
+Note: What you name your blueprint doesn't matter, only that it inherits from `UD_CYBP_BaseConfiguration`, however it's always worth prefixing the things you add to the game to minimise the potential for conflicts. Besides, it's the perfect opportunity to be vain, naming things after yourself, because there's a legitimate reason to do so.
 
 ### Displaying Text
 The first most straight forward method of customizing how an anatomy apears in the body plan window (and, later, the summary window) is by adding some display text.
@@ -97,7 +97,7 @@ To add a blue musical note symbol (uneven legs?), add the below tag:
 
 If you added all three, you'll have something like this:
 
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_Configuration" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+    <object Name="YourModPrefix_UD_CYBP_Configuration" Inherits="UD_CYBP_BaseConfiguration">
         <tag Name="Anatomy" Value="YourModPrefix_CustomAnatomy" />
         <tag Name="DescriptionAddition" Value="This body plan is {{B|wonky}}, and you'll fall over, a lot!" />
         <tag Name="SummaryAddition" Value="{{B|Wonky, lots of falling!}}" />
@@ -114,7 +114,7 @@ Restricting an anatomy is as simply as adding a "Restricted" tag to your configu
 
 Because it would be redundant to add display data to an anatomy that is restricted outright, we can drop the other tags (except for the "Anatomy" one), and we'll change the blueprint name while we're at it, to indicate the intent.
 
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_NotOptional" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+    <object Name="YourModPrefix_UD_CYBP_NotOptional" Inherits="UD_CYBP_BaseConfiguration">
         <tag Name="Anatomy" Value="YourModPrefix_CustomAnatomy" />
         <tag Name="Restricted" />
     </object>
@@ -125,7 +125,7 @@ If you have reason to, you can also restrict base game anatomies or anatomies ad
 
 Multiple anatomies can be restricted with the same tag with a small alteration, per below:
     
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_NotOptional" Inherits="UD_BodyPlan_Selection_BaseExclusion">
+    <object Name="YourModPrefix_UD_CYBP_NotOptional" Inherits="UD_CYBP_BaseExclusion">
         <tag Name="Anatomies" Value="YourModPrefix_CustomAnatomy,SomeOtherMod_ModdedAnatomy,Bird,Fish" />
         <tag Name="Restricted" />
     </object>
@@ -142,7 +142,7 @@ There are a couple of ways to do this.
 
 The first is to add the "Optional" tag to the configuration blueprint and specify an option ID as the value, which I'll do below to the earlier example with the display text:
 
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_Configuration" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+    <object Name="YourModPrefix_UD_CYBP_Configuration" Inherits="UD_CYBP_BaseConfiguration">
         <tag Name="Anatomies" Value="YourModPrefix_CustomAnatomy" />
         <tag Name="Optional" Value="Option_YourModPrefix_EnableYourCustomAnatomy" />
         <tag Name="DescriptionAddition" Value="This body plan is {{B|wonky}}, and you'll fall over, a lot!" />
@@ -186,7 +186,7 @@ All together the below three examples can serve as something of a template for o
 `Data.xml`
 
     <objects>
-        <object Name="YourModPrefix_UD_BodyPlan_Selection_Configuration" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+        <object Name="YourModPrefix_UD_CYBP_Configuration" Inherits="UD_CYBP_BaseConfiguration">
             <tag Name="Anatomies" Value="YourModPrefix_CustomAnatomy" />
             <tag Name="Optional" Value="Option_YourModPrefix_EnableYourCustomAnatomy" />
             <tag Name="DescriptionAddition" Value="This body plan is {{B|wonky}}, and you'll fall over, a lot!" />
@@ -251,7 +251,7 @@ Note: Passing `""` will breaks things. Instead specifying "\*remove" as an xtag 
 
 The targeted anatomy can be specified directly in the `xtag`, too.
     
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_WonkyBoiConfig" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+    <object Name="YourModPrefix_UD_CYBP_WonkyBoiConfig" Inherits="UD_CYBP_BaseConfiguration">
         <xtagUD_BPS_Transformation
             Anatomy="YourModPrefix_WonkyBoi"
             RenderString="R"
@@ -268,7 +268,7 @@ The targeted anatomy can be specified directly in the `xtag`, too.
 
 To achieve the same as the above with individual `tag`s instead, the blow is the correct format.
 
-    <object Name="YourModPrefix_UD_BodyPlan_Selection_WonkyBoiConfig" Inherits="UD_BodyPlan_Selection_BaseConfiguration">
+    <object Name="YourModPrefix_UD_CYBP_WonkyBoiConfig" Inherits="UD_CYBP_BaseConfiguration">
         <tag Name="Anatomy" Value="YourModPrefix_WonkyBoi" />
         <tag Name="Transformation" />
         <tag Name="xFormRenderString" Value="R" />

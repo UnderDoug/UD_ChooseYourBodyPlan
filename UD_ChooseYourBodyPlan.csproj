@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<AssemblyName>UD_BodyPlan_Selection</AssemblyName>
-		<PackageId>UD_BodyPlan_Selection</PackageId>
+		<AssemblyName>UD_ChooseYourBodyPlan</AssemblyName>
+		<PackageId>UD_ChooseYourBodyPlan</PackageId>
 		<Authors>UnderDoug</Authors>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <BaseIntermediateOutputPath>.dotnet\obj\</BaseIntermediateOutputPath>

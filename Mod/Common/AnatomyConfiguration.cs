@@ -11,13 +11,12 @@ namespace UD_BodyPlan_Selection.Mod
 {
     public class AnatomyConfiguration
     {
-        public static  string TransformXTagPrefix => "UD_BPS_Transformation";
 
         public delegate bool BooleanOptionDelegate();
 
         public class TransformationData
         {
-            public static string RemoveTag => "*remove";
+            public static string RemoveTag => Const.REMOVE_TAG;
 
             public string RenderString;
             public string Tile;
@@ -42,29 +41,12 @@ namespace UD_BodyPlan_Selection.Mod
             {
                 if (xTag != null)
                 {
-                    if (xTag.TryGetValue(nameof(RenderString), out RenderString)
-                        && RenderString.EqualsNoCase(RemoveTag))
-                        RenderString = null;
-
-                    if (xTag.TryGetValue(nameof(Tile), out Tile)
-                        && Tile.EqualsNoCase(RemoveTag))
-                        Tile = null;
-
-                    if (xTag.TryGetValue(nameof(TileColor), out TileColor)
-                        && TileColor.EqualsNoCase(RemoveTag))
-                        TileColor = null;
-
-                    if (xTag.TryGetValue(nameof(DetailColor), out DetailColor)
-                        && DetailColor.EqualsNoCase(RemoveTag))
-                        DetailColor = null;
-
-                    if (xTag.TryGetValue(nameof(Species), out Species)
-                        && Species.EqualsNoCase(RemoveTag))
-                        Species = null;
-
-                    if (xTag.TryGetValue(nameof(Property), out Property)
-                        && Property.EqualsNoCase(RemoveTag))
-                        Property = null;
+                    xTag.AssignStringFieldFromXTag(nameof(RenderString), ref RenderString);
+                    xTag.AssignStringFieldFromXTag(nameof(Tile), ref Tile);
+                    xTag.AssignStringFieldFromXTag(nameof(TileColor), ref TileColor);
+                    xTag.AssignStringFieldFromXTag(nameof(DetailColor), ref DetailColor);
+                    xTag.AssignStringFieldFromXTag(nameof(Species), ref Species);
+                    xTag.AssignStringFieldFromXTag(nameof(Property), ref Property);
 
                     if (xTag.TryGetValue(nameof(Mutations), out string mutations)
                         && !mutations.EqualsNoCase(RemoveTag))
@@ -88,10 +70,18 @@ namespace UD_BodyPlan_Selection.Mod
                         Utils.Log($"::{mutation}", Indent: Indent + 1);
             }
         }
+
+        public static string RemoveTag => Const.REMOVE_TAG;
+
+        public static string TransformXTag => Const.MOD_PREFIX_SHORT + "Transformation";
         
         private readonly IReadOnlyList<string> Anatomies;
 
         public string Anatomy;
+
+        public string DisplayName;
+
+        public string Category;
 
         public bool IsDifficult;
 
@@ -122,6 +112,8 @@ namespace UD_BodyPlan_Selection.Mod
         {
             Anatomies = null;
             Anatomy = null;
+            DisplayName = null;
+            Category = null;
             IsDifficult = false;
             IsMechanical = false;
             Transformation = null;
@@ -135,6 +127,8 @@ namespace UD_BodyPlan_Selection.Mod
         public AnatomyConfiguration(
             IReadOnlyList<string> Anatomies,
             string Anatomy,
+            string DisplayName,
+            string Category,
             bool IsDifficult,
             bool IsMechanical,
             TransformationData Transformation,
@@ -149,6 +143,8 @@ namespace UD_BodyPlan_Selection.Mod
         {
             this.Anatomies = Anatomies;
             this.Anatomy = Anatomy;
+            this.DisplayName = DisplayName;
+            this.Category = Category;
             this.IsDifficult = IsDifficult;
             this.IsMechanical = IsMechanical;
             this.Transformation = Transformation;
@@ -163,6 +159,7 @@ namespace UD_BodyPlan_Selection.Mod
             {
                 Utils.Log($"{typeof(AnatomyConfiguration).CallChain(".ctor")}()");
                 Utils.Log($"{nameof(Anatomy)}: {Anatomy}", Indent: 1);
+                Utils.Log($"{nameof(DisplayName)}: {DisplayName}", Indent: 1);
                 Utils.Log($"{nameof(IsDifficult)}: {IsDifficult}", Indent: 1);
                 Utils.Log($"{nameof(IsMechanical)}: {IsMechanical}", Indent: 1);
                 Utils.Log($"{nameof(IsTransformation)}: {IsTransformation}", Indent: 1);
@@ -180,10 +177,10 @@ namespace UD_BodyPlan_Selection.Mod
         public AnatomyConfiguration(GameObjectBlueprint DataBucket)
             : this()
         {
-            if (DataBucket.TryGetTag("Anatomies", out string anatomies))
+            if (DataBucket.TryGetTagValueForData("Anatomies", out string anatomies))
                 Anatomies = Utils.GetVersionSafeParser<List<string>>()?.Invoke(anatomies);
 
-            if (DataBucket.TryGetTag("Anatomy", out string anatomy))
+            if (DataBucket.TryGetTagValueForData("Anatomy", out string anatomy))
             {
                 var anatomyList = new List<string>() { anatomy };
                 if (!Anatomies.IsNullOrEmpty())
@@ -192,7 +189,7 @@ namespace UD_BodyPlan_Selection.Mod
             }
 
             if (!DataBucket.xTags.IsNullOrEmpty()
-                && DataBucket.xTags.TryGetValue(TransformXTagPrefix, out var transformationData))
+                && DataBucket.xTags.TryGetValue(TransformXTag, out var transformationData))
             {
                 if (transformationData.ContainsKey("Anatomies"))
                 {
@@ -210,6 +207,12 @@ namespace UD_BodyPlan_Selection.Mod
                 }
                 Transformation = new(transformationData);
             }
+
+            if (Anatomies.IsNullOrEmpty()
+                || Anatomies.Count() <= 1)
+                DataBucket.AssignStringFieldFromTag(nameof(DisplayName), ref DisplayName);
+
+            DataBucket.AssignStringFieldFromTag(nameof(Category), ref Category);
 
             IsDifficult = DataBucket.HasTag("Difficult")
                 || DataBucket.HasTag("Sucks");
@@ -240,7 +243,7 @@ namespace UD_BodyPlan_Selection.Mod
 
             IsRestricted = DataBucket.HasTag("Restricted");
 
-            if (DataBucket.TryGetTag("Optional", out string optionID))
+            if (DataBucket.TryGetTagValueForData("Optional", out string optionID))
             {
                 IsOptional = true;
                 IsRestricted = true;
@@ -273,17 +276,17 @@ namespace UD_BodyPlan_Selection.Mod
             else
                 Utils.Log($"{nameof(IsOptional)}: {IsOptional}", Indent: 1);
 
-            DataBucket.TryGetTag(nameof(ExceptionMessage), out DescriptionAddition);
-            DataBucket.TryGetTag(nameof(ExceptionSummary), out SummaryAddition);
+            DataBucket.AssignStringFieldFromTag(nameof(ExceptionMessage), ref DescriptionAddition);
+            DataBucket.AssignStringFieldFromTag(nameof(ExceptionSummary), ref SummaryAddition);
 
-            DataBucket.TryGetTag(nameof(DescriptionAddition), out DescriptionAddition);
-            DataBucket.TryGetTag(nameof(SummaryAddition), out SummaryAddition);
+            DataBucket.AssignStringFieldFromTag(nameof(DescriptionAddition), ref DescriptionAddition);
+            DataBucket.AssignStringFieldFromTag(nameof(SummaryAddition), ref SummaryAddition);
 
             Utils.Log($"{nameof(DescriptionAddition)}: {DescriptionAddition}", Indent: 1);
             Utils.Log($"{nameof(SummaryAddition)}: {SummaryAddition}", Indent: 1);
 
             Symbols = new();
-            if (DataBucket.TryGetTag(nameof(Symbols), out string symbols))
+            if (DataBucket.TryGetTagValueForData(nameof(Symbols), out string symbols))
             {
                 if (symbols.Split(";;") is string[] entries)
                     foreach (string entry in entries)
@@ -296,6 +299,8 @@ namespace UD_BodyPlan_Selection.Mod
             : this(
                 Anatomies: null,
                 Anatomy: Anatomy,
+                DisplayName: Source.DisplayName,
+                Category: Source.Category,
                 IsDifficult: Source.IsDifficult,
                 IsMechanical: Source.IsMechanical,
                 Transformation: Source.Transformation,
@@ -310,6 +315,8 @@ namespace UD_BodyPlan_Selection.Mod
             : this(
                 Anatomies: null,
                 Anatomy: Anatomy.Name,
+                DisplayName: null,
+                Category: null,
                 IsDifficult: false,
                 IsMechanical: false,
                 Transformation: null,
@@ -396,6 +403,13 @@ namespace UD_BodyPlan_Selection.Mod
         public static bool IsOptional(this IEnumerable<AnatomyConfiguration> AnatomyConfigurations)
             => AnatomyConfigurations?.Any(e => e.IsOptional)
             ?? false
+            ;
+
+        public static string GetDisplayName(this IEnumerable<AnatomyConfiguration> AnatomyConfigurations)
+            => AnatomyConfigurations?.LastOrDefault(c => c.DisplayName != null)?.DisplayName
+            ;
+        public static string GetCategoryName(this IEnumerable<AnatomyConfiguration> AnatomyConfigurations)
+            => AnatomyConfigurations?.LastOrDefault(c => c.Category != null)?.Category
             ;
 
         public static TransformationData FirstTransformationOrDefault(this IEnumerable<AnatomyConfiguration> AnatomyConfigurations)

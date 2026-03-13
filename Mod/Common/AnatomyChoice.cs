@@ -23,12 +23,12 @@ namespace UD_BodyPlan_Selection.Mod
         public class ChoiceRenderable : Renderable
         {
             public static string RemoveTag => "*remove";
-            public static string xTagPrefix => "UD_BDS_";
+            public static string xTagPrefix => Const.MOD_PREFIX_SHORT;
 
             [ModSensitiveStaticCache]
             private static Dictionary<string, Dictionary<string, string>> _AnatomyTiles;
             public static Dictionary<string, Dictionary<string, string>> AnatomyTiles => _AnatomyTiles ??= GameObjectFactory.Factory
-                ?.GetBlueprintIfExists("UD_BodyPlan_Slection_AnatomyTiles")
+                ?.GetBlueprintIfExists(Const.TILES_BLUEPRINT)
                 ?.xTags;
 
             public bool HFlip;
@@ -93,21 +93,13 @@ namespace UD_BodyPlan_Selection.Mod
 
                 if (!xTag.IsNullOrEmpty())
                 {
-                    if (xTag.TryGetValue(nameof(Tile), out Tile)
-                        && Tile.EqualsNoCase(RemoveTag))
-                        Tile = null;
+                    xTag.AssignStringFieldFromXTag(nameof(Tile), ref Tile);
 
-                    if (xTag.TryGetValue(nameof(RenderString), out RenderString)
-                        && RenderString.EqualsNoCase(RemoveTag))
-                        RenderString = null;
+                    xTag.AssignStringFieldFromXTag(nameof(RenderString), ref RenderString);
 
-                    if (xTag.TryGetValue(nameof(ColorString), out ColorString)
-                        && ColorString.EqualsNoCase(RemoveTag))
-                        ColorString = null;
+                    xTag.AssignStringFieldFromXTag(nameof(ColorString), ref ColorString);
 
-                    if (xTag.TryGetValue(nameof(TileColor), out TileColor)
-                        && TileColor.EqualsNoCase(RemoveTag))
-                        TileColor = null;
+                    xTag.AssignStringFieldFromXTag(nameof(TileColor), ref TileColor);
 
                     if (xTag.TryGetValue(nameof(DetailColor), out string detailColor)
                         && !detailColor.EqualsNoCase(RemoveTag))
@@ -142,6 +134,8 @@ namespace UD_BodyPlan_Selection.Mod
 
         private List<AnatomyConfiguration> _AnatomyConfigurations;
         public List<AnatomyConfiguration> AnatomyConfigurations => _AnatomyConfigurations ??= new(Utils.GetAnatomyConfigurations(this));
+
+        public string DisplayNameStripped => GetDescription()?.Strip();
 
         public ChoiceRenderable Renderable;
 
@@ -221,7 +215,13 @@ namespace UD_BodyPlan_Selection.Mod
         {
             SB.Clear();
 
-            SB.Append(Anatomy?.Name.SplitCamelCase() ?? MISSING_ANATOMY);
+            string displayName = Anatomy?.Name?.SplitCamelCase();
+
+            if (displayName != null
+                && AnatomyConfigurations.GetDisplayName() is string configDisplayName)
+                displayName = configDisplayName;
+
+            SB.Append(displayName ?? MISSING_ANATOMY);
 
             if (SB.ToString() != MISSING_ANATOMY)
             {
@@ -264,7 +264,7 @@ namespace UD_BodyPlan_Selection.Mod
                 SampleCreature.Body.GetLimbTree(
                     SB: SB,
                     IndentProc: s => "{{K|" + s + "}}",
-                    BodyPartProc: bp => GetBodyPartString(bp, IsTrueKin, true),
+                    BodyPartProc: bp => GetBodyPartString(BodyPart: bp, IsTrueKin: IsTrueKin, ExcludeDefaultBehaviorName: true),
                     Treat0DepthPartsAsRoot: true);
                 anyHasNatEquip = SampleCreature.Body.GetFirstPart(bp => !bp.VariantTypeModel().DefaultBehavior.IsNullOrEmpty()) != null;
 
@@ -286,7 +286,6 @@ namespace UD_BodyPlan_Selection.Mod
             }
             else
             {
-
                 if (IncludeOpening)
                     GetLongDescriptionOpening(SB, Summary);
 
@@ -407,19 +406,22 @@ namespace UD_BodyPlan_Selection.Mod
             string defaultBehaviour = BodyPart.VariantTypeModel().DefaultBehavior;
             HasNaturalEquipment = !defaultBehaviour.IsNullOrEmpty();
 
-            string description = BodyPart.GetCardinalDescription();
+            string cardinalDescription = BodyPart.GetCardinalDescription();
+            string description = BodyPart.VariantTypeModel().Description;
 
             if (!SB.IsNullOrEmpty())
                 SB.AppendLine();
 
             if (HasNaturalEquipment
                 && ExcludeDefaultBehaviorName)
-                SB.AppendColored("w", BodyPart.GetCardinalDescription());
+                SB.Append(cardinalDescription.Replace(description, "{{w|" + description + "}}"))
+                    //.AppendColored("w", cardinalDescription)
+                    ;
             else
-                SB.Append(BodyPart.GetCardinalDescription());
+                SB.Append(cardinalDescription);
 
             if (BodyPart.IsVariantType()
-                && !description.ContainsNoCase(BodyPart.Type))
+                && !cardinalDescription.ContainsNoCase(BodyPart.Type))
                 SB
                     .Append(" (")
                     .Append(BodyPart.TypeModel().FinalType)

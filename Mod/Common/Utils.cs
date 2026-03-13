@@ -22,9 +22,7 @@ namespace UD_BodyPlan_Selection.Mod
     [HasModSensitiveStaticCache]
     public static partial class Utils
     {
-        public static string THIS_MOD_ID => "UD_BodyPlan_Selection";
-
-        public static ModInfo ThisMod => ModManager.GetMod(THIS_MOD_ID);
+        public static ModInfo ThisMod => ModManager.GetMod(Const.MOD_ID);
 
         #region Blueprints For Display
 
@@ -112,7 +110,7 @@ namespace UD_BodyPlan_Selection.Mod
             get
             {
                 if (_AnatomyConfigurations.IsNullOrEmpty())
-                    _AnatomyConfigurations = GameObjectFactory.Factory?.GetBlueprintsInheritingFrom("UD_BodyPlan_Selection_BaseConfiguration")
+                    _AnatomyConfigurations = GameObjectFactory.Factory?.GetBlueprintsInheritingFrom(Const.CONFIG_BLUEPRINT)
                         .SelectMany(bp => new AnatomyConfiguration(bp).FromAnatomiesList())
                         .ToList();
 
@@ -168,7 +166,7 @@ namespace UD_BodyPlan_Selection.Mod
         #endregion
         #region Pseudo-Debug
 
-        public static bool DisableDebug = true;
+        public static bool DisableDebug = false;
 
         public static void Log(string Message, int Indent = 0)
         {
@@ -218,25 +216,25 @@ namespace UD_BodyPlan_Selection.Mod
 
         #region Wishes
 
-        public static string UD_BPS_Output => DataManager.SavePath("AnatomyTiles.xml");
+        public static string UD_CYBP_Output => DataManager.SavePath("AnatomyTiles.xml");
 
         [ModSensitiveStaticCache]
         public static List<AnatomyChoice> AnatomyChoices = new();
 
-        [WishCommand(Command = "UD_BPS anatomy tile tags")]
+        [WishCommand(Command = "UD_CYBP anatomy tile tags")]
         public static bool AnatomyTileTags_WishHandler(string Parameters)
         {
             bool IncludeName = Parameters?.Contains("with names") ?? false;
             string forAnatomy = Regex.Replace(Parameters, @" ?\@(\w.?) ?", @"$1");
             if (!AnatomyChoices.IsNullOrEmpty()
-                && new StreamWriter(UD_BPS_Output) is StreamWriter writer)
+                && new StreamWriter(UD_CYBP_Output) is StreamWriter writer)
             {
                 using (var anatomyChoices = ScopeDisposedList<AnatomyChoice>.GetFromPoolFilledWith(AnatomyChoices))
                 {
                     Log("-".ThisManyTimes(25));
                     writer.WriteLine2("<?xml version=\"1.0\" encoding=\"utf-8\" ?>")
                         .WriteLine2("<objects>")
-                            .WriteLine2("<object Name=\"UD_BodyPlan_Slection_AnatomyTiles\" Load=\"Merge\" >", Indent: 1);
+                            .WriteLine2("<object Name=\"UD_CYBP_AnatomyTiles\" Load=\"Merge\" >", Indent: 1);
                     var sB = Event.NewStringBuilder();
                     var attributes = new Dictionary<string, object>();
                     for (int i = 0; i < anatomyChoices.Count; i++)
@@ -274,7 +272,7 @@ namespace UD_BodyPlan_Selection.Mod
 
                                         if (!attributes.IsNullOrEmpty())
                                         {
-                                            sB.Append($"<!--xtagUD_BDS_{anatomy.Name.Replace("-", "_").Replace(" ", "_")} ");
+                                            sB.Append($"<!--xtagUD_CYBP_{anatomy.Name.Replace("-", "_").Replace(" ", "_")} ");
 
                                             if (IncludeName)
                                                 sB.Append($"Blueprint=\"{blueprint.Name}\" ");
@@ -291,7 +289,7 @@ namespace UD_BodyPlan_Selection.Mod
                                     }
                             }
                             else
-                                writer.WriteLine2($"<!--xtagUD_BDS_{anatomy.Name} " +
+                                writer.WriteLine2($"<!--xtagUD_CYBP_{anatomy.Name} " +
                                     (IncludeName ? $"Blueprint=\"default\" " : null) +
                                     $"Tile=\"Creatures/sw_mimic.bmp\" " +
                                     $"RenderString=\"*\" " +
