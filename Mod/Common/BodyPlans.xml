@@ -3,7 +3,9 @@
   
   <object Name="UD_CYBP_BaseBodyPlanEntry" Inherits="DataBucket">
     <tag Name="Anatomy" Value="UNDEFINED" />
+    <tag Name="Merge" Value="Hard" />
     <tag Name="RandomWeight" Value="5" />
+    <part Name="Render" Tile="Creatures/sw_mimic.bmp" RenderString="*" ColorString="&amp;w^y" TileColor="&amp;w" DetailColor="y" />
     <tag Name="BaseObject" Value="*noinherit" />
   </object>
   
@@ -16,6 +18,11 @@
     <tag Name="TextElements.Difficult" />
     <tag Name="RandomWeight" Value="1" />
     <tag Name="BaseObject" Value="*noinherit" />
+  </object>
+
+  <object Name="UD_CYBP_BodyPlanEntry UD_CYBP_NoEntry" Inherits="UD_CYBP_BaseBodyPlanEntry">
+    <tag Name="Anatomy" Value="UD_CYBP_NoEntry" />
+    <tag Name="NoEntry" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry AirWell" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -291,7 +298,6 @@
   <object Name="UD_CYBP_BodyPlanEntry Oddity" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="Oddity" />
     <tag Name="BasedOnBlueprint" Value="default" />
-    <part Name="Render" Tile="Creatures/sw_mimic.bmp" RenderString="*" ColorString="&amp;w^y" TileColor="&amp;w" DetailColor="y" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Ooze" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -475,7 +481,6 @@
   <object Name="UD_CYBP_BodyPlanEntry WheeledRobot" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="WheeledRobot" />
     <tag Name="BasedOnBlueprint" Value="default" />
-    <part Name="Render" Tile="Creatures/sw_mimic.bmp" RenderString="*" ColorString="&amp;w^y" TileColor="&amp;w" DetailColor="y" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry WheelRobot" Inherits="UD_CYBP_BaseBodyPlanEntry">

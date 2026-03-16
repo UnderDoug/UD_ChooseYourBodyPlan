@@ -114,19 +114,34 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
+        public bool SameAs(TransformationData Other)
+            => Anatomy == Other?.Anatomy
+            ;
+
+        public TransformationData Merge(TransformationData Other)
+        {
+            Anatomy ??= Other.Anatomy;
+            Utils.MergeReplaceField(ref Render, new(Other));
+            Utils.MergeReplaceField(ref Species, Other.Species);
+            Utils.MergeReplaceField(ref Property, Other.Property);
+            Utils.MergeReplaceField(ref Mutations, new(Other.Mutations));
+
+            return this;
+        }
+
         public TransformationData Clone()
-            => new(this);
+            => new TransformationData()
+                .Merge(this);
 
         public void Dispose()
         {
             Render = null;
+
             OptionDelegates.Clear();
             OptionDelegates = null;
-        }
 
-        public TransformationData Merge(TransformationData Other)
-        {
-            throw new NotImplementedException();
+            Mutations.Clear();
+            Mutations = null;
         }
     }
 }

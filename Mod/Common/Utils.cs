@@ -29,83 +29,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static bool IsTruekinEmbarking = false;
 
-        #region Blueprints For Display
+        public static BodyPlanRender EmbarkingGenoSubtypeRender = null;
 
-        [ModSensitiveStaticCache]
-        private static IEnumerable<GameObjectBlueprint> _GenerallyEligbleForDisplayBlueprints = null;
-        public static IEnumerable<GameObjectBlueprint> GenerallyEligbleForDisplayBlueprints
-        {
-            get
-            {
-                if (_GenerallyEligbleForDisplayBlueprints.IsNullOrEmpty())
-                    _GenerallyEligbleForDisplayBlueprints = GameObjectFactory.Factory
-                        ?.BlueprintList
-                        ?.Where(IsGenerallyEligbleForDisplay);
-
-                return _GenerallyEligbleForDisplayBlueprints;
-            }
-        }
-
-        [ModSensitiveCacheInit]
-        public static void ClearCacheOfGenerallyEligbleForDisplayBlueprints()
-        {
-            Log(typeof(BodyPlanEntry).CallChain(nameof(ClearCacheOfGenerallyEligbleForDisplayBlueprints)));
-            _GenerallyEligbleForDisplayBlueprints = null;
-        }
-
-        public static string GetTile(GameObjectBlueprint Blueprint)
-            => Blueprint.GetRenderable()?.Tile
-            ;
-        public static string GetAnatomyName(GameObjectBlueprint Blueprint)
-            => Blueprint.GetPartParameter<string>(nameof(Body), nameof(Body.Anatomy))
-            ;
-        public static Anatomy GetAnatomy(GameObjectBlueprint Blueprint)
-            => Anatomies.GetAnatomyOrFail(GetAnatomyName(Blueprint))
-            ;
-        public static bool IsGenerallyEligbleForDisplay(GameObjectBlueprint Blueprint)
-        {
-            if (Blueprint == null)
-                return false;
-
-            if (!Blueprint.InheritsFrom("PhysicalObject"))
-                return false;
-
-            if (Blueprint.HasSTag("Chiliad"))
-                return false;
-
-            if (Blueprint.HasTag("Golem"))
-                return false;
-
-            if (Blueprint.InheritsFromAny(
-                Blueprints: new string[]
-                {
-                    "Templar",
-                }))
-                return false;
-
-            if (Blueprint.InheritsFrom("Chair")
-                && Blueprint.Name.EndsWithAny(" L", " C", " R"))
-                return false;
-
-            if (Blueprint.Name.Contains("Cherub"))
-                return false;
-
-            if (GetTile(Blueprint) is not string renderTile)
-                return false;
-
-            if (renderTile.Contains("sw_farmer")
-                && GetAnatomyName(Blueprint) is string anatomy
-                && !anatomy.EqualsNoCase("Humanoid"))
-                return false;
-
-            if (Blueprint.TryGetPartParameter(nameof(Door), nameof(Door.SyncAdjacent), out bool syncAdjacent)
-                && syncAdjacent)
-                return false;
-
-            return true;
-        }
-
-        #endregion
         #region AnatomyConfigurations
 
         [ModSensitiveStaticCache]
@@ -241,6 +166,32 @@ namespace UD_ChooseYourBodyPlan.Mod
             return Field;
         }
 
+        public static ICollection<T> MergeRequireField<T>(ref ICollection<T> Field, ICollection<T> Becomes)
+		{
+            if (Field.IsNullOrEmpty())
+                Field = Becomes;
+
+            return Field;
+        }
+
+        public static IList<T> MergeRequireField<T>(ref IList<T> Field, IList<T> Becomes)
+		{
+			var field = (ICollection<T>)Field;
+			return Field = MergeRequireField(ref field, Becomes) as IList<T>;
+		}
+
+        public static List<T> MergeRequireField<T>(ref List<T> Field, List<T> Becomes)
+		{
+			var field = (IList<T>)Field;
+			return Field = MergeRequireField(ref field, Becomes) as List<T>;
+		}
+
+        public static HashSet<T> MergeRequireField<T>(ref HashSet<T> Field, HashSet<T> Becomes)
+		{
+			var field = (ICollection<T>)Field;
+			return Field = MergeRequireField(ref field, Becomes) as HashSet<T>;
+		}
+
         public static ICollection<T> MergeReplaceField<T>(ref ICollection<T> Field, ICollection<T> Becomes)
         {
             if (!Becomes.IsNullOrEmpty())
@@ -249,22 +200,32 @@ namespace UD_ChooseYourBodyPlan.Mod
             return Field;
         }
 
-        public static ICollection<T> MergeRequireField<T>(ref ICollection<T> Field, ICollection<T> Becomes)
+        public static IList<T> MergeReplaceField<T>(ref IList<T> Field, IList<T> Becomes)
         {
-            if (Field.IsNullOrEmpty())
-                Field = Becomes;
+            var field = (ICollection<T>)Field;
+			return Field = MergeReplaceField(ref field, Becomes) as IList<T>;
+		}
 
-            return Field;
-        }
+        public static List<T> MergeReplaceField<T>(ref List<T> Field, List<T> Becomes)
+        {
+            var field = (IList<T>)Field;
+			return Field = MergeReplaceField(ref field, Becomes) as List<T>;
+		}
 
-        /// <summary>
-        /// "Merge distinct" adds any <paramref name="Other"/> elements that the <paramref name="Source"/> collection doesn't already contain.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="Source"></param>
-        /// <param name="Other"></param>
-        /// <returns></returns>
-        public static ICollection<T> MergeDistinctInCollection<T>(ref ICollection<T> Source, ICollection<T> Other)
+        public static HashSet<T> MergeReplaceField<T>(ref HashSet<T> Field, HashSet<T> Becomes)
+        {
+            var field = (ICollection<T>)Field;
+			return Field = MergeReplaceField(ref field, Becomes) as HashSet<T>;
+		}
+
+		/// <summary>
+		/// "Merge distinct" adds any <paramref name="Other"/> elements that the <paramref name="Source"/> collection doesn't already contain.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="Source"></param>
+		/// <param name="Other"></param>
+		/// <returns></returns>
+		public static ICollection<T> MergeDistinctInCollection<T>(ref ICollection<T> Source, ICollection<T> Other)
         {
             Source ??= new List<T>();
             if (!Other.IsNullOrEmpty())

@@ -80,24 +80,16 @@ namespace UD_ChooseYourBodyPlan.Mod
         { }
 
         public BodyPlanRender(GenotypeEntry GenotypeEntry)
-            : this(
-                  Tile: GenotypeEntry.Tile,
-                  RenderString: "@",
-                  ColorString: $"&Y^{GenotypeEntry.DetailColor}",
-                  TileColor: "&Y",
-                  DetailColor: GenotypeEntry?.DetailColor?[0] ?? 'y',
-                  HFlip: true)
-        { }
+            : this()
+        {
+            SetFromGenotype(GenotypeEntry);
+        }
 
         public BodyPlanRender(SubtypeEntry SubtypeEntry)
-            : this(
-                  Tile: SubtypeEntry.Tile,
-                  RenderString: "@",
-                  ColorString: $"&Y^{SubtypeEntry.DetailColor}",
-                  TileColor: "&Y",
-                  DetailColor: SubtypeEntry?.DetailColor?[0] ?? 'y',
-                  HFlip: true)
-        { }
+            : this()
+        {
+            SetFromSubtype(SubtypeEntry);
+        }
 
         public BodyPlanRender(Renderable Renderable, bool? HFlip = null)
             : base(Renderable)
@@ -156,8 +148,37 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
-        public BodyPlanRender Clone()
-            => new(this, HFlip);
+        public BodyPlanRender SetFromGenotype(GenotypeEntry Entry)
+        {
+            Tile = Entry.Tile;
+            RenderString = "@";
+            ColorString = $"&Y^{Entry.DetailColor}";
+            TileColor = "&Y";
+            DetailColor = Entry?.DetailColor?[0] ?? 'y';
+            HFlip = true;
+            return this;
+        }
+
+        public BodyPlanRender SetFromSubtype(SubtypeEntry Entry)
+        {
+            Tile = Entry.Tile;
+            RenderString = "@";
+            ColorString = $"&Y^{Entry.DetailColor}";
+            TileColor = "&Y";
+            DetailColor = Entry?.DetailColor?[0] ?? 'y';
+            HFlip = true;
+            return this;
+        }
+
+        public bool SameAs(BodyPlanRender Other)
+            => Other != null
+            && Tile == Other.Tile
+            && RenderString == Other.RenderString
+            && ColorString == Other.ColorString
+            && TileColor == Other.TileColor
+            && DetailColor == Other.DetailColor
+            && HFlip == Other.HFlip
+            ;
 
         public BodyPlanRender Merge(BodyPlanRender Other)
         {
@@ -169,6 +190,9 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref HFlip, Other.HFlip);
             return this;
         }
+
+        public BodyPlanRender Clone()
+            => new(this, HFlip);
 
         public void Dispose()
         {

@@ -10,6 +10,14 @@ namespace UD_ChooseYourBodyPlan.Mod
     public interface ILoadFromDataBucket<T> : IDisposable
         where T : IDisposable, new()
     {
+        public enum MergeType
+        {
+            None,
+            HardReplace,
+            SoftReplace,
+            Require,
+        }
+
         public static string BaseDataBucket => "DataBucket";
         string BaseDataBucketBlueprint { get; }
 
@@ -46,6 +54,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         bool TryLoadFromDataBucket(GameObjectBlueprint DataBucket, out T Result)
             => (Result = LoadFromDataBucket(DataBucket)) != null;
+
+        bool SameAs(T Other);
 
         T Merge(T Other);
 

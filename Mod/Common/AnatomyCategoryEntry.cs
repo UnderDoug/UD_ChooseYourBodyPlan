@@ -286,16 +286,16 @@ namespace UD_ChooseYourBodyPlan.Mod
                 throw new InvalidOperationException($"{nameof(CategoryByID)} not initialized.");
 
             AnatomyCategoryEntry category = null;
-            if (Choice.AnatomyConfigurations.GetCategoryName() is string configCategory)
+            if (Choice.CategoryName is string choiceCategory)
             {
-                CategoryByName.TryGetValue(configCategory, out category);
+                CategoryByName.TryGetValue(choiceCategory, out category);
             }
             else
             {
                 int categoryCode = Choice.Anatomy.BodyCategory
-                        ?? Choice.Anatomy.Category
-                        ?? Choice.Anatomy.Parts?.FirstOrDefault(p => p.Category != null)?.Category
-                        ?? 1;
+                    ?? Choice.Anatomy.Category
+                    ?? Choice.Anatomy.Parts?.FirstOrDefault(p => p.Category != null)?.Category
+                    ?? 1;
 
                 categoryCode = Math.Clamp(categoryCode, LowestCategory, HighestCategory);
                 if (!CategoryByID.TryGetValue(categoryCode, out category))
@@ -380,9 +380,9 @@ namespace UD_ChooseYourBodyPlan.Mod
                 || entries.Any(Filter.Invoke))
             ;
 
-        public bool IsDefaultMatching(BodyPlanEntry Choice)
-            => Choice != null
-            && (ID == 0) == Choice.IsDefault;
+        public bool IsDefaultMatching(BodyPlan BodyPlan)
+            => BodyPlan != null
+            && (ID == 0) == BodyPlan.IsDefault;
 
         public IEnumerable<BodyPlanEntry> GetEntries(Predicate<BodyPlanEntry> Filter = null)
         {
@@ -391,14 +391,12 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             Entries.StableSortInPlace((x, y) => string.Compare(x?.Anatomy?.Name, y?.Anatomy?.Name));
 
-            foreach (var choice in Entries)
+            foreach (var entry in Entries)
             {
-                if (IsDefaultMatching(choice)
-                    && choice.Anatomy != null
-                    && (Filter == null
-                        || Filter(choice)))
+                if ((Filter == null
+                    || Filter(entry)))
                 {
-                    yield return choice;
+                    yield return entry;
                 }
             }
         }
@@ -427,8 +425,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (Entries.IsNullOrEmpty())
                 Utils.Log("::None", Indent: Indent + 1);
             else
-                foreach (var choice in Entries)
-                    Utils.Log($"::{choice.GetDescription()}", Indent: Indent + 1);
+                foreach (var entry in Entries)
+                    Utils.Log($"::{entry.DisplayName}", Indent: Indent + 1);
         }
 
         public AnatomyCategoryEntry LoadFromDataBucket(GameObjectBlueprint DataBucket)
@@ -477,5 +475,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Shader = new(Shader),
                 Entries = new(),
             };
+
+        public bool SameAs(AnatomyCategoryEntry Other)
+            => CategoryName == Other.CategoryName;
     }
 }

@@ -96,6 +96,9 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static string GetAnatomyName(this GameObjectBlueprint Blueprint)
             => Utils.GetAnatomyName(Blueprint)
             ;
+        public static bool HasAnatomy(this GameObjectBlueprint Blueprint)
+            => !Utils.GetAnatomyName(Blueprint).IsNullOrEmpty()
+            ;
         public static Anatomy GetAnatomy(this GameObjectBlueprint Blueprint)
             => Utils.GetAnatomy(Blueprint)
             ;
@@ -691,5 +694,9 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static bool TryGetOption(this string OptionID, out string OptionState)
             => !(OptionState = OptionID.GetOption()).IsNullOrEmpty();
-    }
+
+        public static bool IsMechanical(this Anatomy Anatomy)
+            => Anatomy?.Category == BodyPartCategory.MECHANICAL;
+
+	}
 }

@@ -80,5 +80,26 @@ namespace UD_ChooseYourBodyPlan.Mod
                 }
             }
         }
+
+        public static IEnumerable<string> GetLegends(
+            this IEnumerable<TextElements> TextElements,
+            Predicate<TextElements> Where = null
+            )
+        {
+            foreach (var textElements in TextElements.GetTextElements(Where))
+            {
+                if (!textElements.LegendByName.IsNullOrEmpty())
+                {
+                    foreach ((var name, var legend) in textElements.LegendByName)
+                    {
+                        string output = legend;
+                        if (textElements.SymbolsByName.ContainsKey(name))
+                            output = $"{textElements.SymbolsByName.GetValue(name)} - {output}";
+
+                        yield return output;
+                    }
+                }
+            }
+        }
     }
 }

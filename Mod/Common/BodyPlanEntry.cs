@@ -12,8 +12,7 @@ using XRL.World.Parts;
 
 using Event = XRL.World.Event;
 
-using UD_ChooseYourBodyPlan.Mod;
-using static UD_ChooseYourBodyPlan.Mod.AnatomyConfiguration;
+using static UD_ChooseYourBodyPlan.Mod.ILoadFromDataBucket<UD_ChooseYourBodyPlan.Mod.BodyPlanEntry>;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -29,14 +28,19 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public Anatomy Anatomy;
 
-        protected string CategoryOverride;
+        protected MergeType MergeType = MergeType.HardReplace;
+
+        protected string _CategoryOverride;
+        public string CategoryOverride
+        {
+            get => _CategoryOverride;
+            protected set => _CategoryOverride = value;
+        }
 
         private AnatomyCategoryEntry _Category;
-        public AnatomyCategoryEntry Category => _Category ??= AnatomyCategoryEntry.TryGetFor(this, out var category) ? category : null;
+        public AnatomyCategoryEntry Category => _Category ??= Factory?.GetAnatomyCategoryEntryFor(this);
 
         public string DisplayName;
-
-        public string DisplayNameStripped => GetDescription()?.Strip();
 
         public BodyPlanRender Render;
 
@@ -55,25 +59,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                     _Transformation = Factory.GetTransformationData(this);
                     if (_Transformation != null)
                         Utils.MergeDistinctInCollection(ref OptionDelegates, Transformation.OptionDelegates);
-
                 }
                 return _Transformation;
             }
         }
         protected bool WantsTransformation;
-
-        public bool IsDefault;
-
-        private Dictionary<string, string> LongDescriptions;
-
-        public string LongDescription => GetLongDescription(IncludeOpening: true);
-        public string LongDescriptionNoOpen => GetLongDescription();
-        public string LongDescriptionSummary => GetLongDescription(Summary: true, IncludeOpening: true);
-        public string LongDescriptionNoOpenSummary => GetLongDescription(Summary: true);
-        public string LongDescriptionTK => GetLongDescription(IncludeOpening: true, IsTrueKin: true);
-        public string LongDescriptionNoOpenTK => GetLongDescription(IsTrueKin: true);
-        public string LongDescriptionTKSummary => GetLongDescription(Summary: true, IncludeOpening: true, IsTrueKin: true);
-        public string LongDescriptionNoOpenTKSummary => GetLongDescription(Summary: true, IsTrueKin: true);
 
         private HashSet<string> TextElementsNames;
 
@@ -88,16 +78,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                 {
                     WantsTextElements = false;
                     _TextElements = new();
+
                     if (!TextElementsNames.IsNullOrEmpty())
-                    {
                         foreach (var textElementsName in TextElementsNames)
-                        {
                             if (Factory.TextElementsByName.TryGetValue(textElementsName, out var textElements))
-                            {
                                 _TextElements.Add(textElements);
-                            }
-                        }
-                    }
                 }
                 return _TextElements;
             }
@@ -108,43 +93,26 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public int RandomWeight;
 
-        protected static StringBuilder SB = new();
-
-        protected static GameObject SampleCreature = null;
-
-        #region Obsolete
-
-        private List<AnatomyConfiguration> _AnatomyConfigurations;
-        public List<AnatomyConfiguration> AnatomyConfigurations => _AnatomyConfigurations ??= new(Utils.GetAnatomyConfigurations(this));
-
-        #endregion
-
         public BodyPlanEntry()
         {
             Anatomy = null;
             _Category = null;
-            _AnatomyConfigurations = null;
             Render = null;
 
             _Transformation = null;
             WantsTransformation = true;
-
-            IsDefault = false;
 
             TextElementsNames = null;
             _TextElements = null;
             WantsTextElements = true;
 
             Tags = null;
-
-            LongDescriptions = null;
         }
         public BodyPlanEntry(Anatomy Anatomy, bool IsDefault, BodyPlanRender Render)
             : this()
         {
             this.Anatomy = Anatomy;
             this.Render = Render;
-            this.IsDefault = IsDefault;
 
             _ = Category;
         }
@@ -161,25 +129,71 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
         }
 
+        public static bool IsAvailable(BodyPlanEntry BodyPlanEntry)
+            => BodyPlanEntry !=null
+            && BodyPlanEntry.IsAvailable();
+
+        public BodyPlanEntry ClearCaches()
+        {
+            _Category = null;
+
+            _Transformation = null;
+            WantsTransformation = true;
+
+            _TextElements.Clear();
+            _TextElements = null;
+
+            return this;
+        }
+
         public BodyPlanEntry LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
-            if (!ILoadFromDataBucket<BodyPlanEntry>.CheckIsValidDataBucket(this, DataBucket))
+            if (!CheckIsValidDataBucket(this, DataBucket))
+            {
+                Dispose();
+                return null;
+            }
+
+            if (!DataBucket.TryGetTagValueForData(nameof(Anatomy), out string anatomyName))
                 return null;
 
-            if (DataBucket.TryGetTagValueForData(nameof(Anatomy), out string anatomyName))
+            if (anatomyName != "UD_CYBP_NoEntry")
             {
                 if (Anatomies.GetAnatomy(anatomyName) is not Anatomy anatomy)
+                {
+                    Dispose();
                     return null;
-
+                }
                 Anatomy = anatomy;
             }
 
-            DataBucket.AssignStringFieldFromTag(nameof(Category), ref CategoryOverride);
-            DataBucket.AssignStringFieldFromTag(nameof(CategoryOverride), ref CategoryOverride);
+            MergeType = DataBucket.GetTag("Merge")?.ToLower() switch
+            {
+                "hard" or
+                "hardreplace" or
+                "overwrite" => MergeType.HardReplace,
+
+                "soft" or
+                "softreplace" or
+                "after" => MergeType.SoftReplace,
+
+                "require" or
+                "onlynull" or
+                "fill" or 
+                "before" => MergeType.Require,
+
+                _ => MergeType.None,
+            };
+
+            DisplayName = anatomyName?.SplitCamelCase();
+            
+            DataBucket.AssignStringFieldFromTag(nameof(Category), ref _CategoryOverride);
+            DataBucket.AssignStringFieldFromTag(nameof(CategoryOverride), ref _CategoryOverride);
             DataBucket.AssignStringFieldFromTag(nameof(DisplayName), ref DisplayName);
 
             Render = new BodyPlanRender().LoadFromDataBucket(DataBucket);
 
+            OptionDelegates ??= new();
             OptionDelegates.ParseDataBucket(DataBucket);
 
             if (DataBucket.GetTextElementsTags() is IEnumerable<KeyValuePair<string, string>> textElementsTags)
@@ -200,57 +214,126 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
+        public BodyPlanEntry LoadFromAnatomy(Anatomy Anatomy)
+        {
+            if (Anatomy == null)
+            {
+                Dispose();
+                return null;
+            }
+            this.Anatomy = Anatomy;
+            DisplayName = Anatomy?.Name?.SplitCamelCase();
+            if (Anatomy.IsMechanical())
+            {
+                TextElementsNames ??= new();
+                TextElementsNames.Add("Mechanical");
+            }
+            return this;
+        }
+
+        public bool SameAs(BodyPlanEntry Other)
+            => Anatomy?.Name == Other?.Anatomy?.Name
+            ;
+
+        public BodyPlanEntry MergeHardReplace(BodyPlanEntry Other)
+        {
+            CategoryOverride = Other.CategoryOverride ?? Other.Category?.CategoryName;
+            DisplayName = Other.DisplayName;
+            Render = new(Other.Render);
+
+            TextElementsNames = new(Other.TextElementsNames);
+            WantsTextElements = true;
+
+            RandomWeight = Other.RandomWeight;
+            Tags = new(Other.Tags);
+            return this;
+        }
+
+        public BodyPlanEntry MergeSoftReplace(BodyPlanEntry Other)
+        {
+            Anatomy ??= Other.Anatomy;
+
+            Utils.MergeReplaceField(ref _CategoryOverride, Other.CategoryOverride ?? Other.Category?.CategoryName);
+            Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
+            Render.Merge(Other.Render);
+
+            Utils.MergeReplaceField(ref TextElementsNames, new(Other.TextElementsNames));
+            WantsTextElements = true;
+
+            Utils.MergeReplaceField(ref RandomWeight, Other.RandomWeight);
+
+            IDictionary<string, string> tags = Tags;
+            Tags = Utils.MergeReplaceDictionary(ref tags, new Dictionary<string, string>(Other.Tags)) as Dictionary<string, string>;
+            return this;
+        }
+
+        public BodyPlanEntry MergeRequire(BodyPlanEntry Other)
+        {
+            Utils.MergeRequireField(ref _CategoryOverride, Other.CategoryOverride ?? Other.Category?.CategoryName);
+            Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
+            Render = new BodyPlanRender(Other.Render).Merge(Render);
+
+            Utils.MergeRequireField(ref TextElementsNames, new(Other.TextElementsNames));
+            WantsTextElements = true;
+
+            Utils.MergeRequireField(ref RandomWeight, Other.RandomWeight);
+
+            IDictionary<string, string> tags = Tags;
+            Tags = Utils.MergeRequireDictionary(ref tags, new Dictionary<string, string>(Other.Tags)) as Dictionary<string, string>;
+
+            return this;
+        }
+
         public BodyPlanEntry Merge(BodyPlanEntry Other)
         {
-            throw new NotImplementedException();
+            ClearCaches();
+            Anatomy ??= Other.Anatomy;
+
+            return Other.MergeType switch
+            {
+                MergeType.Require => MergeRequire(Other),
+                MergeType.SoftReplace => MergeSoftReplace(Other),
+                _ => MergeHardReplace(Other),
+            };
         }
 
         public BodyPlanEntry Clone()
-        {
-            throw new NotImplementedException();
-        }
+            => new BodyPlanEntry()
+                .Merge(this);
 
         public override string ToString()
-            => $"{GetDescription(ShowDefault: true, ShowSymbols: true)}{(Render?.Tile is string tile ? " " + tile : null)}";
+            => $"{DisplayName}{(Render?.Tile is string tile ? " " + tile : null)}";
 
-        public void ClearLongDescriptionCaches()
+        public BodyPlanRender GetRender()
         {
-            LongDescriptions.Clear();
+            if (Transformation != null
+                && !Transformation.Tile.IsNullOrEmpty()
+                && Transformation.DetailColor != '\0')
+                return Transformation.Render;
+
+            return Render ??= new(GetExampleBlueprint(), false);
         }
 
-        public BodyPlanRender GetRenderable()
-        {
-            if (Render == null
-                && Anatomy != null)
-            {
-                if (AnatomyConfigurations?.FirstTransformationOrDefault() is TransformationData xForm
-                    && !xForm.Tile.IsNullOrEmpty()
-                    && xForm.DetailColor != '\0')
-                    Render = new(xForm, true);
-                else
-                if (BodyPlanRender.BodyPlanRenderables?.ContainsKey(Anatomy.Name) ?? false)
-                    Render = BodyPlanRender.BodyPlanRenderables[Anatomy.Name];
-                else
-                    Render = new(GetExampleBlueprint()?.GetRenderable(), false);
-            }
-
-            return Render;
-        }
         public void OverrideRender(BodyPlanRender Render)
         {
             if (Render != null)
                 this.Render = Render;
         }
 
+        public int BestGuessForCategoryID()
+            => Anatomy.BodyCategory
+            ?? Anatomy.Category
+            ?? Anatomy.Parts?.FirstOrDefault(p => p.Category != null)?.Category
+            ?? 1
+            ;
+
         public bool HasTag(string Name)
-        {
-            throw new NotImplementedException();
-        }
+            => Tags
+                ?.ContainsKey(Name)
+            ?? false;
 
         public string GetTag(string Name)
-        {
-            throw new NotImplementedException();
-        }
+            => Tags?.GetValueOrDefault(Name);
 
         public bool HasMatchingAnatomy(GameObjectBlueprint Blueprint)
             => Anatomy != null
@@ -269,44 +352,70 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public IEnumerable<GameObjectBlueprint> GetExampleBlueprints()
         {
-            var blueprints = Utils.GenerallyEligbleForDisplayBlueprints;
+            bool any = false;
+            foreach (var blueprint in BodyPlanFactory.GenerallyEligbleForDisplayBlueprints)
+            {
+                if (HasMatchingAnatomy(blueprint))
+                {
+                    any = true;
+                    yield return blueprint;
+                }
+            }
+            if (any)
+                yield break;
 
-            if (blueprints
-                ?.Where(HasMatchingAnatomy) is IEnumerable<GameObjectBlueprint> objectsWithAnatomy
-                && !objectsWithAnatomy.IsNullOrEmpty())
-                return objectsWithAnatomy;
+            foreach (var blueprint in BodyPlanFactory.GenerallyEligbleForDisplayBlueprints)
+            {
+                if (ObjectAnimatesWithAnatomy(blueprint))
+                {
+                    any = true;
+                    yield return blueprint;
+                }
+            }
+            if (any)
+                yield break;
 
-            if (blueprints
-                ?.Where(ObjectAnimatesWithAnatomy) is IEnumerable<GameObjectBlueprint> objectsAnimatingWithAnatomy
-                && !objectsAnimatingWithAnatomy.IsNullOrEmpty())
-                return objectsAnimatingWithAnatomy;
+            foreach (var blueprint in BodyPlanFactory.GenerallyEligbleForDisplayBlueprints)
+            {
+                if (InheritsFromAnatomy(blueprint))
+                {
+                    any = true;
+                    yield return blueprint;
+                }
+            }
+            if (any)
+                yield break;
 
-            if (blueprints
-                ?.Where(InheritsFromAnatomy) is IEnumerable<GameObjectBlueprint> objectsInheritingAnatomy
-                && !objectsInheritingAnatomy.IsNullOrEmpty())
-                return objectsInheritingAnatomy;
-
-            return new GameObjectBlueprint[0];
+            yield return GameObjectFactory.Factory?.GetBlueprintIfExists("Mimic");
         }
 
         public GameObjectBlueprint GetExampleBlueprint()
-            => GetExampleBlueprints()?.GetRandomElementCosmetic()
-            ?? GameObjectFactory.Factory.GetBlueprintIfExists("Mimic")
+            => GetExampleBlueprints()
+                ?.GetRandomElementCosmetic()
             ;
+
+        public bool IsAvailable()
+            => Anatomy != null
+            && (OptionDelegates?.Check() ?? true)
+            ;
+
+        public BodyPlan GetBodyPlan()
+            => new(Anatomy.Name);
 
         public void Dispose()
         {
+            DisplayName = null;
+
             Render.Dispose();
             Render = null;
 
             OptionDelegates.Clear();
             OptionDelegates = null;
 
-            LongDescriptions.Clear();
-            LongDescriptions = null;
-
             Tags.Clear();
             Tags = null;
+
+            ClearCaches();
         }
     }
 }

@@ -7,7 +7,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
     public partial class QudBodyPlanModuleWindow : EmbarkBuilderModuleWindowPrefabBase<QudBodyPlanModule, CategoryMenusScroller>
     {
         public override void RandomSelectionNoUI()
-            => SelectAnatomy(Stat.Roll(0, module.AnatomyChoices.Count - 1));
+            => SelectAnatomy(Stat.Roll(0, module.BodyPlanChoices.Count - 1));
 
         public bool SkippingUIUpdates()
             => module.builder.SkippingUIUpdates;

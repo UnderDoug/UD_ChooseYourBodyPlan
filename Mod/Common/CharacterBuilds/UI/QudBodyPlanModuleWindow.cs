@@ -48,8 +48,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         }
 
         protected const string COMMAND_SORT_ANATOMIES = "Cmd_UDBPS_SortAnatomies";
-        protected const string EMPTY_CHECK = "[ ]";
-        protected const string CHECKED = "[■]";
+        protected const string EMPTY_CHECK = Const.UNCHECKED;
+        protected const string CHECKED = Const.CHECKED;
 
         protected BallBag<RandomChoice> RandomChoiceBag;
 
@@ -58,7 +58,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
 
         private List<CategoryMenuData> BodyPlanCategoryMenuOptions = new();
 
-        private List<BodyPlanEntry> AnatomyChoices => module?.AnatomyChoices;
+        private List<BodyPlanEntry> AnatomyChoices => module?.BodyPlanChoices;
 
         private PrefixMenuOption Selected;
 
@@ -128,7 +128,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
                 for (int j = 0; j < categoryMenuOption.menuOptions.Count; j++)
                 {
                     if (categoryMenuOption.menuOptions[j] is not PrefixMenuOption menuOption
-                        || BodyPlanFactory.Factory?.GetBodyPlanEntry(menuOption) is not BodyPlanEntry optionEntry)
+                        || BodyPlanFactory.Factory?.GetBodyPlanEntry(menuOption) is not BodyPlanEntry optionEntry
+                        || optionEntry.Anatomy != null)
                         continue;
 
                     RandomChoiceBag.Add(
@@ -174,7 +175,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
 
         public override UIBreadcrumb GetBreadcrumb()
         {
-            var renderable = module?.SelectedChoice()?.GetRenderable();
+            var renderable = module?.SelectedChoice()?.GetRender();
             return new()
             {
                 Id = GetType().FullName,
@@ -287,14 +288,14 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
                 Prefix = IsSelected ? CHECKED : EMPTY_CHECK,
                 Description = SB.ToString(),
                 LongDescription = longDesc,
-                Renderable = Entry.GetRenderable()
+                Renderable = Entry.GetRender()
             };
         }
 
         private IEnumerable<PrefixMenuOption> GetMenuOptions(AnatomyCategoryEntry Category)
         {
             var sB = Event.NewStringBuilder();
-            bool isTK = module?.GenotypeModuleData?.Entry?.IsTrueKin ?? false;
+            bool isTK = Utils.IsTruekinEmbarking;
 
             if (Category?.GetEntries(AnatomyChoiceIsValid) is not IEnumerable<BodyPlanEntry> choices
                 || (Category != null

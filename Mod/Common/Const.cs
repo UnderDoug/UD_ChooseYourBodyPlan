@@ -14,7 +14,10 @@
 
         public const string REMOVE_TAG = "*remove";
 
-        public const char SQRE = '\u00fe'; // ■
+		public const string UNCHECKED = "[ ]";
+		public const string CHECKED = "[■]";
+
+		public const char SQRE = '\u00fe'; // ■
         public const char NBSP = '\u00ff'; // non-breaking space
 
         public const char VERT = '\u00b3'; // vertical

@@ -108,10 +108,33 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
-        public TextElements Clone()
+        public bool SameAs(TextElements Other)
+            => Name == Other?.Name
+            ;
+
+        public TextElements Merge(TextElements Other)
         {
-            throw new NotImplementedException();
+            Name ??= Other.Name;
+            Utils.MergeReplaceField(ref DescriptionBefore, Other.DescriptionBefore);
+            Utils.MergeReplaceField(ref DescriptionAfter, Other.DescriptionAfter);
+            Utils.MergeReplaceField(ref SummaryBefore, Other.SummaryBefore);
+            Utils.MergeReplaceField(ref SummaryAfter, Other.SummaryAfter);
+
+            IDictionary<string, Symbol> symbolsByName = SymbolsByName;
+            Utils.MergeReplaceDictionary(ref symbolsByName, new StringMap<Symbol>(Other.SymbolsByName));
+            SymbolsByName = symbolsByName as StringMap<Symbol>;
+            _Symbols = null;
+
+            IDictionary<string, string> legendByName = LegendByName;
+            Utils.MergeReplaceDictionary(ref legendByName, new StringMap<string>(Other.LegendByName));
+            LegendByName = legendByName as StringMap<string>;
+
+            return this;
         }
+
+        public TextElements Clone()
+            => new TextElements()
+                .Merge(this);
 
         public void Dispose()
         {
@@ -120,20 +143,6 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             _Symbols.Clear();
             _Symbols = null;
-        }
-
-        public TextElements Merge(TextElements Other)
-        {
-            Utils.MergeReplaceField(ref DescriptionBefore, Other.DescriptionBefore);
-            Utils.MergeReplaceField(ref DescriptionAfter, Other.DescriptionAfter);
-            Utils.MergeReplaceField(ref SummaryBefore, Other.SummaryBefore);
-            Utils.MergeReplaceField(ref SummaryAfter, Other.SummaryAfter);
-            IDictionary<string, Symbol> symbolsByName = SymbolsByName;
-            Utils.MergeReplaceDictionary(ref symbolsByName, Other.SymbolsByName);
-            SymbolsByName = symbolsByName as StringMap<Symbol>;
-
-            _Symbols = null;
-            return this;
         }
     }
 }

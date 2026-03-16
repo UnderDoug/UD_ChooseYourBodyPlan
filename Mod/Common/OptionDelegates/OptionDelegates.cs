@@ -28,6 +28,15 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
         }
 
+        public bool Check()
+        {
+            foreach (var optionDelegate in this)
+                if (!Check())
+                    return false;
+
+            return true;
+        }
+
         public OptionDelegates Merge(OptionDelegates Other)
         {
             if (!Other.IsNullOrEmpty())

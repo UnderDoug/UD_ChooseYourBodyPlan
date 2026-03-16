@@ -4,14 +4,44 @@ using System.Linq;
 using System.Text;
 
 using XRL;
+using XRL.Collections;
+using XRL.UI.Framework;
 using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
+using UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI;
+
+using Event = XRL.World.Event;
+
 namespace UD_ChooseYourBodyPlan.Mod
 {
-    public class BodyPlan
+    public class BodyPlan : IDisposable
     {
+        public readonly struct BodyPlanEqualityComparer : IEqualityComparer<BodyPlan>, IDisposable
+        {
+            public readonly bool ByRef;
+            public BodyPlanEqualityComparer(bool ByRef)
+            {
+                this.ByRef = ByRef;
+            }
+
+            public readonly bool Equals(BodyPlan x, BodyPlan y)
+                => ByRef
+                ? x == y
+                : x?.Anatomy == y?.Anatomy
+                ;
+
+            public int GetHashCode(BodyPlan obj)
+                => ByRef
+                ? obj.GetHashCode()
+                : (obj?.Anatomy?.GetHashCode() ?? 0);
+
+            public void Dispose()
+            {
+            }
+        }
+
         public class LimbTreeBranch
         {
             public static bool IsTrueKin = Utils.IsTruekinEmbarking;
@@ -54,36 +84,116 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
         }
 
-        public string Anatomy;
-        public BodyPlanEntry Entry => BodyPlanFactory.Factory?.GetBodyPlanEntry(Anatomy);
+        protected ref StringBuilder SB => ref BodyPlanFactory.SB;
 
-        public string DisplayName => GetDescription();
+        protected ref GameObject SampleCreature => ref BodyPlanFactory.SampleCreature;
+
+        public static BodyPlanEqualityComparer AnatomyEqualityComparer = new(ByRef: false);
+
+        public string Anatomy;
+        public BodyPlanEntry Entry => BodyPlanFactory.Factory?.RequireBodyPlanEntry(Anatomy);
+
+        public string CategoryName => Entry?.Category?.CategoryName;
+
+        public AnatomyCategory Category;
+
+        public string DisplayName => GetDisplayName();
+
+        public string DisplayNameShowDefault => GetDisplayName(ShowDefault: true);
+
+        public string DisplayNameWithSymbols => GetDisplayName(ShowSymbols: true);
+
+        public string DisplayNameShowDefaultWithSymbols => GetDisplayName(ShowDefault: true, ShowSymbols: true);
+
+        public string DisplayNameStripped => DisplayName?.Strip();
+
+        public BodyPlanRender Render => IsDefault ? Utils.EmbarkingGenoSubtypeRender : Entry?.GetRender();
+
+        private string _Description;
+        public string Description => _Description ??= GetDescription();
+
+        private string _Summary;
+        public string Summary => _Summary ??= GetSummary();
 
         public List<TextElements> TextElements => Entry?.TextElements;
 
-        protected static StringBuilder SB = new();
+        public bool IsDefault;
 
-        protected static GameObject SampleCreature = null;
+        #region CachedCollections
+
+        protected List<LimbTreeBranch> LimbTreeBranches;
+        protected List<string> BodyLimbTreeLines;
+
+        protected Dictionary<BodyPartType, int> LimbCounts;
+        protected List<string> LimbCountLines;
+
+        protected List<string> DescriptionLines;
+
+        protected List<string> SummaryLines;
+
+        #endregion
 
         public BodyPlan()
         {
+        }
 
+        public BodyPlan(string Anatomy)
+            : this()
+        {
+            this.Anatomy = Anatomy;
+        }
+
+        public void ClearCachedValues()
+        {
+            _Description = null;
+            _Summary = null;
+
+            LimbTreeBranches.Clear();
+            LimbTreeBranches = null;
+            BodyLimbTreeLines.Clear();
+            BodyLimbTreeLines = null;
+
+            LimbCounts.Clear();
+            LimbCounts = null;
+            LimbCountLines.Clear();
+            LimbCountLines = null;
+
+            DescriptionLines.Clear();
+            DescriptionLines = null;
+
+            SummaryLines.Clear();
+            SummaryLines = null;
+        }
+
+        public bool SameAs(BodyPlan Other)
+            => AnatomyEqualityComparer.Equals(this, Other);
+
+        public GameObject ConfigureSampleCreature(ref GameObject SampleCreature)
+        {
+            SampleCreature ??= GameObject.CreateSample("Humanoid");
+            if (SampleCreature.Body.Anatomy != Anatomy)
+                Entry.Anatomy.ApplyTo(SampleCreature.Body);
+            return SampleCreature;
         }
 
         public IEnumerable<string> GetDescriptionBefores(Predicate<TextElements> Where = null)
             => TextElements?.GetDescriptionBefores(Where)
+            ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetDescriptionAfters(Predicate<TextElements> Where = null)
             => TextElements?.GetDescriptionAfters(Where)
+            ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSummaryBefores(Predicate<TextElements> Where = null)
             => TextElements?.GetSummaryBefores(Where)
+            ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSummaryAfters(Predicate<TextElements> Where = null)
             => TextElements?.GetSummaryAfters(Where)
+            ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSymbols(
@@ -91,7 +201,40 @@ namespace UD_ChooseYourBodyPlan.Mod
             Predicate<TextElements.Symbol> Filter = null
             )
             => TextElements?.GetSymbols(Where, Filter)
+            ?? Enumerable.Empty<string>()
             ;
+
+        public IEnumerable<string> GetLegends(Predicate<TextElements> Where = null)
+            => TextElements?.GetLegends(Where)
+            ?? Enumerable.Empty<string>()
+            ;
+
+        public string GetDisplayName(bool ShowDefault = false, bool ShowSymbols = false)
+        {
+            SB.Clear();
+
+            string displayName = Anatomy?.SplitCamelCase();
+
+            if (displayName != null
+                && Entry?.DisplayName is string entryDisplayName)
+                displayName = entryDisplayName;
+
+            SB.Append(displayName ?? BodyPlanEntry.MISSING_ANATOMY);
+
+            if (SB.ToString() != BodyPlanEntry.MISSING_ANATOMY)
+            {
+                if (ShowDefault
+                    && IsDefault)
+                    SB.Append(" (default)");
+
+                if (ShowSymbols
+                    && GetSymbols() is IEnumerable<string> symbols
+                    && !symbols.IsNullOrEmpty())
+                    symbols.Aggregate(SB.Append(' '), (a, n) => a.Append(n));
+            }
+
+            return SB.ToString();
+        }
 
         private static string ColorBlack(string String)
             => "{{K|" + String + "}}"
@@ -99,247 +242,66 @@ namespace UD_ChooseYourBodyPlan.Mod
         private static LimbTreeBranch InitializeLimbTreeBranch(BodyPart BodyPart)
             => BodyPart.InitializeLimbTreeBranch()
             ;
-        public IEnumerable<string> GetBodyLimbTree(ref GameObject SampleCreature)
+
+        public IEnumerable<string> GetBodyLimbTreeLines(ref GameObject SampleCreature)
         {
-            SampleCreature ??= GameObject.CreateSample("Humanoid");
-            Entry.Anatomy.ApplyTo(SampleCreature.Body);
-            return SampleCreature.Body.GetLimbTree(
+            if (BodyLimbTreeLines.IsNullOrEmpty()
+                && ConfigureSampleCreature(ref SampleCreature).Body is Body sampleBody)
+            {
+                using var limbTreeBranches = ScopeDisposedList<LimbTreeBranch>.GetFromPoolFilledWith(
+                    items: sampleBody.GetLimbTree(
                         IndentProc: ColorBlack,
                         BodyPartProc: InitializeLimbTreeBranch,
                         Treat0DepthPartsAsRoot: true)
-                    .Select(l => l.ToString());
+                    );
+
+                BodyLimbTreeLines ??= new();
+                foreach (var limbTreeBranch in limbTreeBranches)
+                    BodyLimbTreeLines.Add(limbTreeBranch.ToString());
+            }
+            return BodyLimbTreeLines;
         }
 
-        public IEnumerable<string> GetDescriptionLines()
+        public Dictionary<BodyPartType, int> GetLimbCounts(ref GameObject SampleCreature)
         {
-            bool newline = false;
-            foreach (string descriptionBefore in GetDescriptionBefores())
+            if (LimbCounts.IsNullOrEmpty())
             {
-                newline = true;
-                yield return descriptionBefore;
-            }
+                LimbCounts ??= new();
 
-            if (newline)
-            {
-                newline = false;
-                yield return "";
-            }
+                using var limbs = ScopeDisposedList<BodyPartType>.GetFromPool();
 
-            bool didLimbs = false;
-            foreach (var limbTreeBranch in GetBodyLimbTree(ref SampleCreature))
-            {
-                didLimbs = true;
-                newline = true;
-                yield return limbTreeBranch.ToString();
-            }
+                if (ConfigureSampleCreature(ref SampleCreature)?.Body?.GetParts() is not List<BodyPart> bodyParts)
+                    return LimbCounts;
 
-            if (newline)
-            {
-                newline = false;
-                yield return "";
-            }
+                foreach (var part in bodyParts)
+                    limbs.Add(part.VariantTypeModel());
 
-            if (didLimbs
-                && SampleCreature.Body.GetFirstPart(bp => !bp.VariantTypeModel().DefaultBehavior.IsNullOrEmpty()) != null)
-            {
-                newline = true;
-                yield return "{{W|Has natural equipment}}";
-            }
+                if (limbs.IsNullOrEmpty())
+                    return LimbCounts;
 
-            if (newline)
-            {
-                newline = false;
-                yield return "";
-            }
-
-            foreach (string descriptionAfter in GetDescriptionAfters())
-            {
-                newline = true;
-                yield return descriptionAfter;
-            }
-        }
-
-        public string GetDescription(bool ShowDefault = false, bool ShowSymbols = false)
-        {
-            SB.Clear();
-
-            string displayName = Anatomy?.Name?.SplitCamelCase();
-
-            if (displayName != null
-                && AnatomyConfigurations.GetDisplayName() is string configDisplayName)
-                displayName = configDisplayName;
-
-            SB.Append(displayName ?? MISSING_ANATOMY);
-
-            if (SB.ToString() != MISSING_ANATOMY)
-            {
-                if (ShowDefault
-                    && IsDefault)
-                    SB.Append(" (default)");
-
-                if (ShowSymbols
-                    && !AnatomyConfigurations.IsNullOrEmpty()
-                    && AnatomyConfigurations.HasSymbols())
-                    SB.Append($" {AnatomyConfigurations.Symbols().Aggregate("", (a, n) => a + n)}");
-            }
-
-            return SB.ToString();
-        }
-
-        public string GetLongDescription(
-            bool Summary = false,
-            bool IncludeOpening = false,
-            bool IsTrueKin = false
-            )
-        {
-            SB.Clear();
-
-            if (Anatomy == null)
-                return SB.ToString();
-
-            string cacheKey = "LongDesc";
-
-            if (Summary)
-                cacheKey += $";{nameof(Summary)}";
-
-            if (IncludeOpening)
-                cacheKey += $";{nameof(IncludeOpening)}";
-
-            if (IsTrueKin)
-                cacheKey += $";{nameof(IsTrueKin)}";
-
-            LongDescriptions ??= new();
-
-            if (!LongDescriptions.ContainsKey(cacheKey)
-                || LongDescriptions[cacheKey].IsNullOrEmpty())
-            {
-                SampleCreature ??= GameObject.CreateSample("Humanoid");
-                Anatomy.ApplyTo(SampleCreature.Body);
-
-                if (!Summary)
-                    GetLongDescriptionInternal(SB, IncludeOpening, IsTrueKin);
-                else
-                    GetLongDescriptionSummaryInternal(SB, IncludeOpening, IsTrueKin);
-
-                LongDescriptions[cacheKey] = SB.ToString();
-            }
-            return LongDescriptions[cacheKey];
-        }
-
-        public void GetLongDescriptionOpening(StringBuilder SB, bool Summary = false)
-        {
-            if (!Summary)
-                SB.Append("Includes the following body part slots:");
-            else
-                SB.Append("Included parts:");
-        }
-
-        public void GetLongDescriptionExtras(StringBuilder SB, bool Summary = false)
-        {
-            if (Summary)
-                SB.AppendLine();
-
-            if (Anatomy.HasRecipe())
-            {
-                if (!Summary)
-                    SB.AppendColored("m", "There is a cooking recipe to get this body plan.")
-                        .AppendLine()
-                        ;
-                else
-                    SB.AppendColored("m", "Avaialable via cooking");
-                SB.AppendLine();
-            }
-
-            if (((AnatomyConfigurations?.IsMechanical() ?? false)
-                    || Anatomy?.Category == BodyPartCategory.MECHANICAL)
-                && Options.EnableRoboticBodyPlansMakingYouRobotic)
-            {
-                if (!Summary)
-                    SB.AppendColored("c", "You will be made mechanical with this body plan.")
-                        .AppendLine()
-                        ;
-                else
-                    SB.AppendColored("c", "You are mechanical");
-                SB.AppendLine();
-            }
-
-            if (!Summary
-                && (AnatomyConfigurations?.HasDescriptionAddition() ?? false))
-                foreach (string exceptionMessage in AnatomyConfigurations.DescriptionAdditions())
-                    SB.Append(exceptionMessage)
-                        .AppendLine()
-                        .AppendLine()
-                        ;
-
-            if (Summary
-                && (AnatomyConfigurations?.HasSummaryAddition() ?? false))
-                foreach (string exceptionSummary in AnatomyConfigurations.SummaryAdditions())
-                    SB.Append(exceptionSummary)
-                    .AppendLine()
-                    ;
-        }
-
-        private StringBuilder GetLongDescriptionInternal(
-            StringBuilder SB,
-            bool IncludeOpening,
-            bool IsTrueKin
-            )
-        {
-            GetLongDescriptionExtras(SB, false);
-
-            if (IncludeOpening)
-                GetLongDescriptionOpening(SB, false);
-
-            bool anyHasNatEquip = false;
-
-            SampleCreature.Body.GetLimbTree(
-                SB: SB,
-                IndentProc: s => "{{K|" + s + "}}",
-                BodyPartProc: bp => GetBodyPartString(BodyPart: bp, IsTrueKin: IsTrueKin, ExcludeDefaultBehaviorName: true),
-                Treat0DepthPartsAsRoot: true);
-            anyHasNatEquip = SampleCreature.Body.GetFirstPart(bp => !bp.VariantTypeModel().DefaultBehavior.IsNullOrEmpty()) != null;
-
-            SB.AppendLine();
-            if (IsTrueKin)
-                SB
-                    .AppendLine()
-                    .AppendNoCybernetics(false).Append(" - Incompatible with {{c|cybernetics}}")
-                    ;
-
-            if (anyHasNatEquip)
-                SB
-                    .AppendLine()
-                    //.AppendColored("w", "Indicates natural equipment")
-                    .AppendColored("w", "Has natural equipment")
-                    ;
-
-            return SB.AppendLines(2);
-        }
-
-        private StringBuilder GetLongDescriptionSummaryInternal(
-            StringBuilder SB,
-            bool IncludeOpening,
-            bool IsTrueKin
-            )
-        {
-            if (IncludeOpening)
-                GetLongDescriptionOpening(SB, true);
-
-            var limbCounts = new Dictionary<BodyPartType, int>();
-            if (SampleCreature.Body.GetParts().Select(p => p.VariantTypeModel()) is IEnumerable<BodyPartType> limbs)
-                foreach (BodyPartType limb in limbs)
+                foreach (var limb in limbs)
                 {
-                    if (limbCounts.ContainsKey(limb))
-                        limbCounts[limb]++;
+                    if (LimbCounts.ContainsKey(limb))
+                        LimbCounts[limb]++;
                     else
-                        limbCounts[limb] = 1;
+                        LimbCounts[limb] = 1;
                 }
+            }
+            return LimbCounts;
+        }
 
-            foreach ((BodyPartType limb, int count) in limbCounts)
+        public IEnumerable<string> GetLimbCountLines(Dictionary<BodyPartType, int> LimbCounts)
+        {
+            if (!LimbCountLines.IsNullOrEmpty())
             {
-                if (!SB.IsNullOrEmpty())
-                    SB.AppendLine();
+                foreach (var limbCountLine in LimbCountLines)
+                    yield return limbCountLine;
+                yield break;
+            }
 
+            LimbCountLines ??= new();
+            foreach ((var limb, var count) in LimbCounts)
+            {
                 string timesColored = "}}x {{Y|";
                 string limbName = limb.FinalType ?? limb.Type;
                 string limbPluralName = null;
@@ -358,133 +320,142 @@ namespace UD_ChooseYourBodyPlan.Mod
 
                 limbName = timesColored + limbName;
 
-                SB.AppendColored("Y", count.Things(limbName, limbPluralName));
+                string output = "{{Y|" + count.Things(limbName, limbPluralName) + "}}";
 
                 if (limb.FinalType.EqualsNoCase("body")
                     && SampleCreature.Body.CalculateMobilitySpeedPenalty() is int moveSpeedPenalty
                     && moveSpeedPenalty > 0)
-                    SB
-                        .Append(' ')
-                        .AppendColored("r", $"{-moveSpeedPenalty} MS");
+                {
+                    output = $"{output} {"{{r|"}{-moveSpeedPenalty} MS{"}}"}";
+                }
 
-                if (GameObjectFactory.Factory.GetBlueprintIfExists(limb.DefaultBehavior) is GameObjectBlueprint defaultBehvaiour)
-                    GetDefaultBehaviorString(SB, defaultBehvaiour, true);
+                if (GetDefaultBehaviorString(limb.DefaultBehavior) is string defaultBehaviourString)
+                    output = $"{output} {defaultBehaviourString}";
 
-                if (IsTrueKin
-                    && (limb?.Category ?? BodyPartCategory.ANIMAL) != BodyPartCategory.ANIMAL)
-                    SB.AppendNoCybernetics();
+                LimbCountLines.Add(output);
+                yield return output;
             }
-            GetLongDescriptionExtras(SB, true);
-            return SB;
         }
 
-        public static StringBuilder GetBodyPartString(
-            StringBuilder SB,
-            BodyPart BodyPart,
-            out bool HasNaturalEquipment,
-            bool IsTrueKin = false,
-            bool ExcludeDefaultBehaviorName = false
-            )
+        private static bool HasDefaultEquipment(BodyPart BodyPart)
+            => !BodyPart
+                ?.VariantTypeModel()
+                ?.DefaultBehavior.IsNullOrEmpty()
+            ?? false
+            ;
+        public IEnumerable<string> GetDescriptionLines()
         {
-            string defaultBehaviour = BodyPart.VariantTypeModel().DefaultBehavior;
-            HasNaturalEquipment = !defaultBehaviour.IsNullOrEmpty();
-
-            string cardinalDescription = BodyPart.GetCardinalDescription();
-            string description = BodyPart.VariantTypeModel().Description;
-
-            if (!SB.IsNullOrEmpty())
-                SB.AppendLine();
-
-            if (HasNaturalEquipment
-                && ExcludeDefaultBehaviorName)
-                SB.Append(cardinalDescription.Replace(description, "{{w|" + description + "}}"))
-                    //.AppendColored("w", cardinalDescription)
-                    ;
-            else
-                SB.Append(cardinalDescription);
-
-            if (BodyPart.IsVariantType()
-                && !cardinalDescription.ContainsNoCase(BodyPart.Type))
-                SB
-                    .Append(" (")
-                    .Append(BodyPart.TypeModel().FinalType)
-                    .Append(")")
-                    ;
-
-            if (BodyPart.VariantTypeModel().FinalType.EqualsNoCase("body")
-                && BodyPart.ParentBody.CalculateMobilitySpeedPenalty() is int moveSpeedPenalty
-                && moveSpeedPenalty > 0)
-                SB
-                    .Append(' ')
-                    .AppendColored("r", $"{-moveSpeedPenalty} Move Speed Penalty");
-
-            if (GameObjectFactory.Factory.GetBlueprintIfExists(BodyPart.VariantTypeModel().DefaultBehavior) is GameObjectBlueprint defaultBehvaiour)
+            if (DescriptionLines.IsNullOrEmpty())
             {
-                HasNaturalEquipment = true;
-                GetDefaultBehaviorString(SB, defaultBehvaiour, ExcludeDefaultBehaviorName);
+                DescriptionLines ??= new();
+
+                string empty = "";
+                bool newline = false;
+                foreach (string descriptionBefore in GetDescriptionBefores())
+                {
+                    newline = true;
+                    DescriptionLines.Add(descriptionBefore);
+                }
+
+                if (newline)
+                {
+                    newline = false;
+                    DescriptionLines.Add(empty);
+                }
+
+                bool didLimbs = false;
+                if (GetBodyLimbTreeLines(ref SampleCreature) is IEnumerable<string> bodyLimbTree)
+                {
+                    DescriptionLines.Add("Includes the following body part slots:");
+
+                    if (bodyLimbTree.IsNullOrEmpty())
+                    {
+                        foreach (var limbTreeBranch in bodyLimbTree)
+                        {
+                            didLimbs = true;
+                            newline = true;
+                            DescriptionLines.Add(limbTreeBranch.ToString());
+                        }
+                    }
+                    else
+                        DescriptionLines.Add("{{R|" + Const.RTRNG + "}} {{W|Something's gone wrong!}}");
+
+                    if (newline)
+                    {
+                        newline = false;
+                        DescriptionLines.Add(empty);
+                    }
+
+                    if (didLimbs
+                        && SampleCreature.Body.GetFirstPart(HasDefaultEquipment) != null)
+                    {
+                        newline = true;
+                        DescriptionLines.Add("{{w|Has natural equipment}}");
+                    }
+                }
+
+                if (newline)
+                {
+                    newline = false;
+                    DescriptionLines.Add(string.Empty);
+                }
+
+                foreach (string descriptionAfter in GetDescriptionAfters())
+                {
+                    newline = true;
+                    DescriptionLines.Add(descriptionAfter);
+                }
+
+                if (newline)
+                {
+                    newline = false;
+                    DescriptionLines.Add(empty);
+                }
+
+                foreach (var legend in GetLegends())
+                {
+                    newline = true;
+                    DescriptionLines.Add(legend);
+                }
             }
-
-            if (IsTrueKin
-                && !BodyPart.CanReceiveCyberneticImplant())
-                SB.AppendNoCybernetics();
-
-            return SB;
+            return DescriptionLines;
         }
-        public static string GetBodyPartString(
-            BodyPart BodyPart,
-            bool IsTrueKin = false,
-            bool ExcludeDefaultBehaviorName = false
-            )
-            => Event.FinalizeString(
-                SB: GetBodyPartString(
-                    SB: Event.NewStringBuilder(),
-                    BodyPart: BodyPart,
-                    HasNaturalEquipment: out _,
-                    IsTrueKin: IsTrueKin,
-                    ExcludeDefaultBehaviorName: ExcludeDefaultBehaviorName));
 
-        public static StringBuilder GetDefaultBehaviorString(
-            StringBuilder SB,
-            GameObjectBlueprint DefaultBehvaiour,
-            bool ExcludeName = false
-            )
+        public IEnumerable<string> GetSummaryLines()
         {
-            var sampleDefaultBehaviour = DefaultBehvaiour.createSample();
+            if (SummaryLines.IsNullOrEmpty())
+            {
+                SummaryLines ??= new();
 
-            if (!ExcludeName)
-                SB
-                    //.Append(" - ")
-                    .Append(' ')
-                    .AppendColored("w", sampleDefaultBehaviour.ShortDisplayNameStripped);
+                foreach (string summaryBefore in GetSummaryBefores())
+                    SummaryLines.Add(summaryBefore);
 
-            var mw = sampleDefaultBehaviour.GetPart<MeleeWeapon>();
-            bool mwNotImprovisedAndNull = !(mw?.IsImprovisedWeapon() ?? true);
-            string damage = mwNotImprovisedAndNull ? mw?.BaseDamage : null;
+                foreach (var limbCountLine in GetLimbCountLines(GetLimbCounts(ref SampleCreature)))
+                    SummaryLines.Add(limbCountLine);
 
-            int pVCap = mwNotImprovisedAndNull ? mw?.MaxStrengthBonus ?? 0 : 0;
-            int pV = mwNotImprovisedAndNull ? 4 : 0;
-            string pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleDefaultBehaviour);
-
-            var armor = sampleDefaultBehaviour.GetPart<Armor>();
-            int aV = armor != null ? armor.AV : 0;
-            int dV = armor != null ? armor.DV : 0;
-
-            if (armor != null)
-                SB.Append(' ').AppendArmor("y", aV, dV);
-
-            if (pV > 0
-                && pVCap > 0)
-                SB.Append(' ').AppendPV(pVSymbolColor, "y", pV, pVCap);
-
-            if (!damage.IsNullOrEmpty())
-                SB.Append(' ').AppendDamage("y", damage);
-
-            sampleDefaultBehaviour?.Obliterate();
-            return SB;
+                foreach (string summaryAfter in GetSummaryAfters())
+                    SummaryLines.Add(summaryAfter);
+            }
+            return SummaryLines;
         }
-        public static string GetDefaultBehaviorString(string DefaultBehvaiour)
+
+        public string GetDescription()
+            => GetDescriptionLines()
+                ?.Aggregate(
+                    seed: SB.Clear(),
+                    func: Utils.AggregateNewline)
+            .ToString();
+
+        public string GetSummary()
+            => GetSummaryLines()
+                ?.Aggregate(
+                    seed: SB.Clear(),
+                    func: Utils.AggregateNewline)
+            .ToString();
+
+        public static string GetDefaultBehaviorString(GameObjectBlueprint DefaultBehvaiour)
         {
-            if (GameObject.CreateSample(DefaultBehvaiour) is not GameObject sampleDefaultBehaviour)
+            if (DefaultBehvaiour?.createSample() is not GameObject sampleDefaultBehaviour)
                 return null;
 
             var mw = sampleDefaultBehaviour.GetPart<MeleeWeapon>();
@@ -513,6 +484,23 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             sampleDefaultBehaviour?.Obliterate();
             return Event.FinalizeString(sB);
+        }
+        public static string GetDefaultBehaviorString(string DefaultBehvaiour)
+            => GetDefaultBehaviorString(GameObjectFactory.Factory.GetBlueprintIfExists(DefaultBehvaiour));
+
+        public BodyPlanMenuOption GetMenuOption(bool IsSelected = false)
+            => new()
+            {
+                ID = Entry.Anatomy.Name,
+                IsSelected = IsSelected,
+                Name = GetDisplayName(),
+                Details = GetDescription(),
+                Render = Render,
+            };
+
+        public void Dispose()
+        {
+            ClearCachedValues();
         }
     }
 }
