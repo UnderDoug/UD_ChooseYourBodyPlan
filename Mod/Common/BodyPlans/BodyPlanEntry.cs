@@ -330,9 +330,9 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public int BestGuessForCategoryID()
-            => Anatomy.BodyCategory
-            ?? Anatomy.Category
-            ?? Anatomy.Parts?.FirstOrDefault(p => p.Category != null)?.Category
+            => Anatomy?.BodyCategory
+            ?? Anatomy?.Category
+            ?? Anatomy?.Parts?.FirstOrDefault(p => p.Category != null)?.Category
             ?? 1
             ;
 
