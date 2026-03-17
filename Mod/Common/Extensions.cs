@@ -612,7 +612,11 @@ namespace UD_ChooseYourBodyPlan.Mod
             ? String
             : null;
 
-        public static bool TryGetTagValueForData(this GameObjectBlueprint DataBucket, string TagName, out string Value)
+        public static bool TryGetTagValueForData(
+            this GameObjectBlueprint DataBucket,
+            string TagName,
+            out string Value
+            )
         {
             Value = null;
             if (DataBucket != null)
@@ -622,35 +626,58 @@ namespace UD_ChooseYourBodyPlan.Mod
                     if (Value.EqualsNoCase(REMOVE_TAG))
                         Value = null;
 
+                    Utils.Log($"{DataBucket.Name}.{nameof(TryGetTagValueForData)}({TagName}): {Value}", Indent: 2);
                     return Value != null;
                 }
             }
+            Utils.Log($"{DataBucket.Name}.{nameof(TryGetTagValueForData)}({TagName}): {Value}", Indent: 2);
             return false;
         }
 
-        public static GameObjectBlueprint AssignStringFieldFromTag(this GameObjectBlueprint DataBucket, string TagName, ref string Field)
+        public static GameObjectBlueprint AssignStringFieldFromTag(
+            this GameObjectBlueprint DataBucket,
+            string TagName,
+            ref string Field
+            )
         {
             DataBucket.TryGetTagValueForData(TagName, out Field);
+            Utils.Log($"{DataBucket.Name}.{nameof(AssignStringFieldFromTag)}({TagName}): {Field}", Indent: 3);
             return DataBucket;
         }
 
-        public static GameObjectBlueprint AssignStringFieldFromXTag(this GameObjectBlueprint DataBucket, string XTagName, string XTagKey, ref string Field)
+        public static GameObjectBlueprint AssignStringFieldFromXTag(
+            this GameObjectBlueprint DataBucket,
+            string XTagName,
+            string XTagKey,
+            ref string Field
+            )
         {
             if (DataBucket != null
                 && (Field = DataBucket.GetxTag(XTagName, XTagKey, Field)).EqualsNoCase(REMOVE_TAG))
                 Field = null;
 
+            Utils.Log($"{XTagName}.{nameof(AssignStringFieldFromXTag)}({XTagKey}): {Field}", Indent: 3);
             return DataBucket;
         }
 
-        public static void AssignStringFieldFromXTag(this Dictionary<string, string> XTag, string Key, ref string Field)
+        public static void AssignStringFieldFromXTag(
+            this Dictionary<string, string> XTag,
+            string Key,
+            ref string Field
+            )
         {
             if (!XTag.IsNullOrEmpty()
                 && (Field = XTag.GetValue(Key, Field)).EqualsNoCase(REMOVE_TAG))
                 Field = null;
+
+            Utils.Log($"{Key}.{nameof(AssignStringFieldFromXTag)}: {Field}", Indent: 3);
         }
 
-        public static bool TryGetXtag(this GameObjectBlueprint DataBucket, string XTagName, out Dictionary<string, string> XTag)
+        public static bool TryGetXtag(
+            this GameObjectBlueprint DataBucket,
+            string XTagName,
+            out Dictionary<string, string> XTag
+            )
             => (XTag = DataBucket?.xTags?.GetValue(XTagName)) != null;
 
         public static int Count<T>(this IEnumerable<T> Source, Predicate<T> Basis)
@@ -698,13 +725,5 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static bool IsMechanical(this Anatomy Anatomy)
             => Anatomy?.Category == BodyPartCategory.MECHANICAL;
-
-        public static T handleTypedUIEvent<T>(this EmbarkBuilder Builder, string id, T element = default)
-        {
-            if (Builder.handleUIEvent(id, element) is T typedElement)
-                element = typedElement;
-
-			return element;
-		}
 	}
 }

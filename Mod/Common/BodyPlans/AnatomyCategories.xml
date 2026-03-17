@@ -6,51 +6,51 @@
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Default" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Default" Color="W" />
+    <xtagUD_CYBP_Category CategoryName="Default" Color="W" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Animal" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Animal" Color="w" />
+    <xtagUD_CYBP_Category CategoryName="Animal" Color="w" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Arthropod" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Arthropod" Shader="filthy" Color="w" />
+    <xtagUD_CYBP_Category CategoryName="Arthropod" Shader="filthy" Color="w" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Bone" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Bone" Color="Y" />
+    <xtagUD_CYBP_Category CategoryName="Bone" Color="Y" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Chitin" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Chitin" Shader="filthy" Color="w" />
+    <xtagUD_CYBP_Category CategoryName="Chitin" Shader="filthy" Color="w" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Cloth" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Cloth" Shader="plaid" Color="y" />
+    <xtagUD_CYBP_Category CategoryName="Cloth" Shader="plaid" Color="y" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Crystal" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Crystal" Shader="crystalline" Color="B" />
+    <xtagUD_CYBP_Category CategoryName="Crystal" Shader="crystalline" Color="B" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Cybernetic" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Cybernetic" Color="c" />
+    <xtagUD_CYBP_Category CategoryName="Cybernetic" Color="c" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Extradimensional" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Extradimensional" Shader="extradimensional" Color="O" />
+    <xtagUD_CYBP_Category CategoryName="Extradimensional" Shader="extradimensional" Color="O" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Fungal" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Fungal" Color="m" />
+    <xtagUD_CYBP_Category CategoryName="Fungal" Color="m" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Glass" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Glass" Shader="pearly" Color="Y" />
+    <xtagUD_CYBP_Category CategoryName="Glass" Shader="pearly" Color="Y" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Jelly" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Jelly" Shader="plasma" Color="g" />
+    <xtagUD_CYBP_Category CategoryName="Jelly" Shader="plasma" Color="g" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Leather" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
@@ -64,27 +64,27 @@
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Liquid" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Liquid" Shader="watery" Color="B" />
+    <xtagUD_CYBP_Category CategoryName="Liquid" Shader="watery" Color="B" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Mechanical" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Mechanical" Color="c" />
+    <xtagUD_CYBP_Category CategoryName="Mechanical" Color="c" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Metal" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Metal" Color="c" />
+    <xtagUD_CYBP_Category CategoryName="Metal" Color="c" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Mollusk" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Mollusk" Shader="snail-encrusted" Color="G" />
+    <xtagUD_CYBP_Category CategoryName="Mollusk" Shader="snail-encrusted" Color="G" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Plant" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Plant" Shader="camouflage" Color="g" />
+    <xtagUD_CYBP_Category CategoryName="Plant" Shader="camouflage" Color="g" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Plastic" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Plastic" Shader="plastifer" Color="y" />
+    <xtagUD_CYBP_Category CategoryName="Plastic" Shader="plastifer" Color="y" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Protoplasmic" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
@@ -93,19 +93,19 @@
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Psionic" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Psionic" Shader="psionic" Color="b" />
+    <xtagUD_CYBP_Category CategoryName="Psionic" Shader="psionic" Color="b" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Stone" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Stone" Color="y" />
+    <xtagUD_CYBP_Category CategoryName="Stone" Color="y" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Wooden" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Wooden" Color="w" />
+    <xtagUD_CYBP_Category CategoryName="Wooden" Color="w" />
   </object>
 
   <object Name="UD_CYBP_AnatomyCategoryEntry Miscellaneous" Inherits="UD_CYBP_BaseAnatomyCategoryEntry">
-    <xtagUD_CYBP_AnatomyCategoryEntry CategoryName="Miscellaneous" DisplayName="Miscellaneous" Color="y" />
+    <xtagUD_CYBP_Category CategoryName="Miscellaneous" DisplayName="Miscellaneous" Color="y" />
   </object>
   
 </objects>

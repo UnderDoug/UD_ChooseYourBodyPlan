@@ -121,7 +121,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             {
                 if (DataBucket.TryGetTagValueForData(nameof(HFlip), out string hFlip)
                     && !hFlip.EqualsNoCase(Const.REMOVE_TAG))
-                   if (bool.TryParse(hFlip, out bool hFlipValue))
+                    if (bool.TryParse(hFlip, out bool hFlipValue))
                         this.HFlip = hFlipValue;
             }
             else
@@ -180,12 +180,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanRender Merge(BodyPlanRender Other)
         {
-            Utils.MergeReplaceField(ref Tile, Other.Tile);
-            Utils.MergeReplaceField(ref RenderString, Other.RenderString);
-            Utils.MergeReplaceField(ref ColorString, Other.ColorString);
-            Utils.MergeReplaceField(ref TileColor, Other.TileColor);
-            Utils.MergeReplaceField(ref DetailColor, Other.DetailColor);
-            Utils.MergeReplaceField(ref HFlip, Other.HFlip);
+            Copy(Other);
+            HFlip = Other.HFlip;
             return this;
         }
 

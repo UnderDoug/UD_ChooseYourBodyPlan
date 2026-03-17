@@ -195,12 +195,21 @@ namespace UD_ChooseYourBodyPlan.Mod
             {
                 foreach (var dataBucket in GetDataBuckets<T>())
                 {
+                    Utils.Log($"{nameof(BodyPlanFactory)} {dataBucket.Name}:", Indent: 0);
                     if (TryLoadFromDataBucket(dataBucket, out T loaded))
                     {
-                        if (CacheByName.ContainsKey(loaded.CacheKey))
-                            CacheByName[loaded.CacheKey].Merge(loaded);
+                        if (loaded.CacheKey is not string cacheKey
+                            || cacheKey.IsNullOrEmpty())
+                        {
+                            Utils.Error($"{loaded.GetType()} with empty or null {nameof(loaded.CacheKey)} from DataBucket \"{dataBucket.Name}\"");
+                        }
                         else
-                            CacheByName[loaded.CacheKey] = loaded;
+                        {
+                            if (CacheByName.ContainsKey(cacheKey))
+                                CacheByName[cacheKey].Merge(loaded);
+                            else
+                                CacheByName[cacheKey] = loaded;
+                        }
                     }
                 }
             }

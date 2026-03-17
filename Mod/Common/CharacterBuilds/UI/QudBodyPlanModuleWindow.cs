@@ -283,7 +283,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
             }
 
             foreach (var choice in choices)
-                if (choice.GetMenuOption(module.IsSelected(choice)) is BodyPlanMenuOption menuOption)
+                if (choice.GetMenuOption(module.SelectedChoice()) is BodyPlanMenuOption menuOption)
                     yield return menuOption;
         }
 
@@ -323,24 +323,12 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
             }
         }
 
-        protected List<AnatomyCategoryMenuData> HandleCategorySortedChoicesUIEvent(ref List<AnatomyCategoryMenuData> BodyPlanMenuOptions)
+        public void UpdateControls(bool OverrideHasShown = false)
         {
             BodyPlanMenuOptions ??= new();
             BodyPlanMenuOptions?.Clear();
 
-            var bodyPlanMenuOptions = new List<AnatomyCategoryMenuData>(GetCategoryMenuOptions());
-
-            if (SortByCategory)
-                bodyPlanMenuOptions = (module?.builder?.handleTypedUIEvent(GetCategorySortedChoicesUIEvent, bodyPlanMenuOptions))
-                    .Coalesce(bodyPlanMenuOptions);
-
-            BodyPlanMenuOptions = bodyPlanMenuOptions;
-
-            return BodyPlanMenuOptions;
-        }
-        public void UpdateControls(bool OverrideHasShown = false)
-        {
-            HandleCategorySortedChoicesUIEvent(ref BodyPlanMenuOptions);
+            BodyPlanMenuOptions.AddRange(GetCategoryMenuOptions());
 
             if (BodyPlanMenuOptions.IsNullOrEmpty())
             {

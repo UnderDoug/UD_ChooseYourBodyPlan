@@ -14,7 +14,7 @@ namespace UD_ChooseYourBodyPlan.Mod
     {
         public struct TextShader
         {
-            public static string TextShaderXTag => Const.MOD_PREFIX_SHORT + "Shader";
+            public static string XTagName => Const.MOD_PREFIX_SHORT + "Shader";
 
             public string Shader;
             public string Type;
@@ -166,7 +166,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static string DataBucketFile => "AnatomyCategories.xml";
 
-        public static string CategoryXTag => Const.MOD_PREFIX_SHORT + "Category";
+        public static string XTagName => Const.MOD_PREFIX_SHORT + "Category";
 
         public static int LowestCategory => 1;
         public static int HighestCategory => 23;
@@ -280,34 +280,38 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (!ILoadFromDataBucket<AnatomyCategoryEntry>.CheckIsValidDataBucket(this, DataBucket))
                 return null;
 
-            if (!DataBucket.TryGetTagValueForData(nameof(CategoryName), out CategoryName))
-                return null;
+            DataBucket.TryGetTagValueForData(nameof(CategoryName), out CategoryName);
 
             ID = -1;
 
             DataBucket.AssignStringFieldFromTag(nameof(DisplayName), ref DisplayName);
 
             if (DataBucket.TryGetTagValueForData(nameof(TextShader.Color), out string color))
-                Shader.Merge(color);
+                Shader = Shader.Merge(color);
 
             if (DataBucket.TryGetTagValueForData(nameof(TextShader.Shader), out string shader)
                 && shader.ShaderColorOrNull() is string validShader)
-                Shader.Merge(validShader);
+                Shader = Shader.Merge(validShader);
 
             if (DataBucket.xTags is Dictionary<string, Dictionary<string, string>> xTags)
             {
-                if (xTags.TryGetValue(CategoryXTag, out Dictionary<string, string> categoryXTag))
+                if (xTags.TryGetValue(XTagName, out Dictionary<string, string> categoryXTag))
                 {
                     categoryXTag.AssignStringFieldFromXTag(nameof(CategoryName), ref CategoryName);
                     categoryXTag.AssignStringFieldFromXTag(nameof(DisplayName), ref DisplayName);
 
                     categoryXTag.TryGetValue(nameof(TextShader.Shader), out string xtagShader);
                     categoryXTag.TryGetValue(nameof(TextShader.Color), out string xtagShaderColor);
-                    Shader.Merge(xtagShader, Color: xtagShaderColor);
+                    Shader = Shader.Merge(xtagShader, Color: xtagShaderColor);
                 }
 
-                if (xTags.TryGetValue(TextShader.TextShaderXTag, out Dictionary<string, string> textShaderXTag))
-                    Shader.Merge(textShaderXTag);
+                if (xTags.TryGetValue(TextShader.XTagName, out Dictionary<string, string> textShaderXTag))
+                    Shader = Shader.Merge(textShaderXTag);
+            }
+            if (CategoryName.IsNullOrEmpty())
+            {
+                Dispose();
+                return null;
             }
             return this;
         }

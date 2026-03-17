@@ -40,28 +40,25 @@ namespace UD_ChooseYourBodyPlan.Mod
         public OptionDelegates Merge(OptionDelegates Other)
         {
             if (!Other.IsNullOrEmpty())
-            {
-                foreach (var spec in Other)
-                {
-                    if (spec is BaseOptionDelegate optionDelegateSpec)
-                        Merge(optionDelegateSpec);
-                    else
-                        if (!Contains(spec))
-                        Add(spec);
-                }
-            }
+                foreach (var otherOptionDelegate in Other)
+                    Merge(otherOptionDelegate);
+
             return this;
         }
 
-        public void Merge(BaseOptionDelegate OptionDelegate)
+        public void Merge(BaseOptionDelegate Other)
         {
-            foreach (var spec in this)
+            bool any = false;
+            foreach (var optionDelegate in this)
             {
-                if (spec is BaseOptionDelegate optionDelegateSpec)
+                if (optionDelegate.SameAs(Other))
                 {
-                    optionDelegateSpec.Merge(OptionDelegate);
+                    optionDelegate.Merge(Other);
+                    any = true;
                 }
             }
+            if (!any)
+                Add(Other);
         }
     }
 }

@@ -65,6 +65,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (OptionDelegates.IsNullOrEmpty())
                 return false;
 
+            Utils.Log($"{OptionTag.Key}: {OptionTag.Value}", Indent: 3);
             string tagName = OptionTag.Key;
             string tagValue = OptionTag.Value;
 
@@ -128,6 +129,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (optionID.IsNullOrEmpty())
                 Utils.ThisMod.Error($"{new ArgumentException($"Failed to parse into valid {nameof(BaseOptionDelegate)}", nameof(OptionTag))}");
 
+            Utils.Log($"{nameof(BaseOptionDelegate)}: {optionID} {operatorString} {trueWhen}", Indent: 4);
+
             return !optionID.IsNullOrEmpty()
                 && OptionDelegates.Merge(optionID, operatorString, trueWhen);
         }
@@ -144,6 +147,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 || tags.IsNullOrEmpty())
                 return true;
 
+            Utils.Log($"{DataBucket.Name}: {nameof(BaseOptionDelegate)}:", Indent: 2);
             bool any = false;
             foreach (var optionTag in tags)
                 any = OptionDelegates.ParseOptionTag(optionTag) || any;

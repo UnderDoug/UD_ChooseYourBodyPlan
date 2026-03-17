@@ -40,7 +40,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                 if (_DefaultBodyPlanChoice == null
                     && !_BodyPlanChoices.IsNullOrEmpty())
                 {
-                    HandleDefaultSelectionUIEvent(ref _DefaultBodyPlanChoice);
+                    string choiceAnatomy = GetDefaultBodyPlanAnatomy();
+                    DefaultBodyPlanChoice = _BodyPlanChoices.FirstOrDefault(a => a?.Anatomy == choiceAnatomy);
                 }
                 return _DefaultBodyPlanChoice;
             }
@@ -67,10 +68,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                             && bodyPlan.IsValid())
                             _BodyPlanChoices.Add(bodyPlan);
                     }
-                    if (builder?.handleTypedUIEvent(GetAlphabeticalChoicesUIEvent, _BodyPlanChoices) is List<BodyPlan> uIEventChoices)
-                        _BodyPlanChoices = uIEventChoices;
 
-                    _BodyPlanChoices.RemoveAll(BodyPlan.IsInvalid);
                     SetDefaultChoice();
                     SelectDefaultChoice();
                 }
@@ -168,8 +166,6 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                 {
                     string defaultSpecies = SubtypeModuleData?.Entry?.Species
                         .Coalesce(GenotypeModuleData?.Entry.Species);
-                    string defaultTile = SubtypeModuleData?.Entry?.Tile
-                        .Coalesce(GenotypeModuleData?.Entry.Tile);
 
                     if (data.Selection.Transformation is TransformationData xForm)
                     {
@@ -240,7 +236,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         {
             if (data?.Selection == null)
                 return "You have not selected a body plan.\n" +
-                    $"The default for your selected genotype/subtype is {GetDefaultBodyPlan().SplitCamelCase()}";
+                    $"The default for your selected genotype/subtype is {DefaultBodyPlanChoice.DisplayName}";
             return base.DataWarnings();
         }
 
@@ -290,10 +286,10 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             }
 
             DefaultBodyPlanChoice = null;
+            BodyPlanChoices.OrderBy(c => c?.DisplayNameStripped);
             if (DefaultBodyPlanChoice != null
-                && !IsPlayerChoice(BodyPlanChoices[0]))
+                && !IsDefaultChoice(BodyPlanChoices[0]))
             {
-                BodyPlanChoices.OrderBy(c => c?.DisplayNameStripped);
                 BodyPlanChoices.Remove(DefaultBodyPlanChoice);
                 BodyPlanChoices.Insert(0, DefaultBodyPlanChoice);
                 SetDefaultChoice();
@@ -335,58 +331,38 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                     .Coalesce(SubtypeModuleData?.Entry?.BodyObject)
                     .Coalesce("Humanoid"));
 
-        public string GetDefaultBodyPlan()
+        public string GetDefaultBodyPlanAnatomy()
             => GameObjectFactory.Factory
                 ?.GetBlueprintIfExists(GetPlayerBlueprint())
-                ?.GetPartParameter<string>(nameof(Body), nameof(Body.Anatomy));
+                ?.GetAnatomyName();
 
         public QudBodyPlanModuleData GetDefaultData()
             => new(DefaultBodyPlanChoice);
-
-
-        public BodyPlan HandleDefaultSelectionUIEvent(ref BodyPlan DefaultBodyPlanChoice)
-        {
-            var uIEvent = builder?.handleUIEvent(GetDefaultSelectionUIEvent, _BodyPlanChoices);
-
-            string choiceName = GetDefaultBodyPlan();
-            List<BodyPlan> anatomyChoices = _BodyPlanChoices;
-
-            if (uIEvent is List<BodyPlan> uIEventAnatomyChoices)
-                anatomyChoices = uIEventAnatomyChoices;
-            else
-            if (uIEvent is string uIEventChoiceName
-                && anatomyChoices.Any(a => a?.Anatomy == choiceName))
-                choiceName = uIEventChoiceName;
-            else
-            if (uIEvent is BodyPlan uIEventChoice
-                && anatomyChoices.Any(p => p.SameAs(uIEventChoice)))
-                DefaultBodyPlanChoice = uIEventChoice;
-
-            return DefaultBodyPlanChoice ??= anatomyChoices.FirstOrDefault(a => a?.Anatomy == choiceName);
-        }
 
         public void SetDefaultChoice()
         {
             if (BodyPlanChoices.IsNullOrEmpty())
                 return;
 
-            if (BodyPlanChoices.FirstOrDefault(c => c?.IsDefault ?? false) is BodyPlan defaultChoice
+            if (BodyPlanChoices.FirstOrDefault(c => c?.IsDefault is true) is BodyPlan defaultChoice
                 && defaultChoice != DefaultBodyPlanChoice)
             {
                 defaultChoice.IsDefault = false;
                 DefaultBodyPlanChoice = null;
             }
-            if (DefaultBodyPlanChoice is BodyPlan playerChoice
-                && !playerChoice.IsDefault)
+            if (DefaultBodyPlanChoice is BodyPlan newDefaultChoice
+                && !newDefaultChoice.IsDefault)
             {
-                playerChoice.IsDefault = true;
+                newDefaultChoice.IsDefault = true;
                 if (data != null)
                     setData(data);
             }
         }
-        public bool IsPlayerChoice(BodyPlan Choice)
+
+        public bool IsDefaultChoice(BodyPlan Choice)
             => Choice?.SameAs(DefaultBodyPlanChoice) is true
             ;
+
         public void SelectDefaultChoice(bool Override = false)
         {
             if (data != null)
@@ -394,7 +370,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                     || data.Selection == null
                     || data.Selection.Anatomy.IsNullOrEmpty())
                 {
-                    int playerIndex = BodyPlanChoices.FindIndex(IsPlayerChoice);
+                    int playerIndex = BodyPlanChoices.FindIndex(IsDefaultChoice);
                     if (playerIndex < 0)
                         playerIndex = 0;
 

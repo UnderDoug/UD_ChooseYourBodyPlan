@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <objects>
-  
-  <object Name="UD_CYBP_BaseAnatomyCategoryEntry" Inherits="DataBucket">
+
+  <!--object Name="UD_CYBP_BaseAnatomyCategoryEntry" Inherits="DataBucket">
     <tag Name="BaseObject" Value="*noinherit" />
   </object>
   
@@ -160,6 +160,6 @@
     <tag Name="DescriptionAddition" Value="Has the {{C|Crystallinity}} mutation." />
     <tag Name="SummaryAddition" Value="Has {{C|Crystallinity}}" />
     <tag Name="Symbols" Value="m::&#xf1;" />
-  </object>
+  </object-->
 
 </objects>

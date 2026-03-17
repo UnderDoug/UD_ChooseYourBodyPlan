@@ -143,6 +143,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             return OperatorDelegates[Operator ?? "=="];
         }
 
+        public bool SameAs(BaseOptionDelegate Other)
+            => Other != null
+            && OptionID != null
+            && OptionID == Other.OptionID
+            ;
+
         public virtual void Merge(BaseOptionDelegate Other)
         {
             Utils.MergeRequireField(ref OptionID, Other.OptionID);

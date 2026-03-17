@@ -32,10 +32,26 @@ namespace UD_ChooseYourBodyPlan.Mod
                 {
                     if (XTagEntry.Value.Split(":") is string[] pair)
                     {
-                        Color = pair[0][0];
-                        Value = pair[1][0];
+                        if (pair.Length > 1)
+                        {
+                            if (pair[0] is string dualColorString
+                                && !dualColorString.IsNullOrEmpty())
+                                Color = dualColorString[0];
+
+                            if (pair[1] is string dualValueString
+                                && !dualValueString.IsNullOrEmpty())
+                                Value = dualValueString[0];
+                        }
+                        else
+                        if (pair.Length == 1)
+                        {
+                            if (pair[0] is string singleValueString
+                                && !singleValueString.IsNullOrEmpty())
+                                Value = singleValueString[0];
+                        }
                     }
                 }
+                Utils.Log($"new {nameof(Symbol)} {Name}: {Color}|{Value}", Indent: 1);
             }
 
             public override readonly string ToString()
@@ -47,6 +63,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static string DataBucketFile => "TextElements.xml";
 
         public string CacheKey => Name;
+
+        public string BaseDataBucketBlueprint => Const.TEXT_ELEMENTS_BLUEPRINT;
 
         public string Name;
         public string DescriptionBefore;
@@ -74,14 +92,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
         }
 
-        public string BaseDataBucketBlueprint => Const.TEXT_ELEMENTS_BLUEPRINT;
-
         public TextElements LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
             if (!ILoadFromDataBucket<TextElements>.CheckIsValidDataBucket(this, DataBucket))
                 return null;
 
-            if(!DataBucket.TryGetTagValueForData(nameof(TextElements), out Name))
+            if (!DataBucket.TryGetTagValueForData(nameof(TextElements), out Name))
                 DataBucket.TryGetTagValueForData(nameof(Name), out Name);
 
             if (Name.IsNullOrEmpty())
@@ -93,14 +109,15 @@ namespace UD_ChooseYourBodyPlan.Mod
             DataBucket.AssignStringFieldFromTag(nameof(SummaryBefore), ref SummaryBefore);
             DataBucket.AssignStringFieldFromTag(nameof(SummaryAfter), ref SummaryAfter);
 
-            if (DataBucket.TryGetXtag(nameof(Symbols), out Dictionary<string, string> symbolsXTag))
+            Utils.Log($"{DataBucket.Name} {nameof(SymbolsByName)}:", Indent: 0);
+            if (DataBucket.TryGetXtag($"{Const.MOD_PREFIX_SHORT}{nameof(Symbols)}", out Dictionary<string, string> symbolsXTag))
             {
                 SymbolsByName = new();
                 foreach (var xTagEntry in symbolsXTag)
                     SymbolsByName[xTagEntry.Key] = new(xTagEntry);
             }
 
-            if (DataBucket.TryGetXtag(nameof(LegendByName), out Dictionary<string, string> legendXTag))
+            if (DataBucket.TryGetXtag($"{Const.MOD_PREFIX_SHORT}Legend", out Dictionary<string, string> legendXTag))
             {
                 LegendByName = new();
                 foreach (var xTagEntry in legendXTag)
@@ -121,14 +138,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref SummaryBefore, Other.SummaryBefore);
             Utils.MergeReplaceField(ref SummaryAfter, Other.SummaryAfter);
 
-            IDictionary<string, Symbol> symbolsByName = SymbolsByName;
-            Utils.MergeReplaceDictionary(ref symbolsByName, new StringMap<Symbol>(Other.SymbolsByName));
-            SymbolsByName = symbolsByName as StringMap<Symbol>;
+            Utils.MergeReplaceDictionary(SymbolsByName ??= new(), new StringMap<Symbol>(Other.SymbolsByName));
             _Symbols = null;
 
-            IDictionary<string, string> legendByName = LegendByName;
-            Utils.MergeReplaceDictionary(ref legendByName, new StringMap<string>(Other.LegendByName));
-            LegendByName = legendByName as StringMap<string>;
+            Utils.MergeReplaceDictionary(LegendByName ??= new(), new StringMap<string>(Other.LegendByName));
 
             return this;
         }

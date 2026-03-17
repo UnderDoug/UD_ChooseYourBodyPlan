@@ -30,7 +30,11 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public string AnatomyName;
 
-        public Anatomy Anatomy => Anatomies.GetAnatomy(AnatomyName);
+        public Anatomy Anatomy
+            => !AnatomyName.IsNullOrEmpty()
+            ? Anatomies.GetAnatomy(AnatomyName)
+            : null
+            ;
 
         protected MergeType MergeType = MergeType.HardReplace;
 
@@ -62,7 +66,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     WantsTransformation = false;
                     _Transformation = Factory.GetTransformationData(this);
                     if (_Transformation != null)
-                        Utils.MergeDistinctInCollection(ref OptionDelegates, Transformation.OptionDelegates);
+                        Utils.MergeDistinctInCollection(OptionDelegates ??= new(), Transformation.OptionDelegates);
                 }
                 return _Transformation;
             }
@@ -158,7 +162,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
 
             if (!DataBucket.TryGetTagValueForData(nameof(Anatomy), out AnatomyName))
+            {
+                Dispose();
                 return null;
+            }
 
             if (AnatomyName != "UD_CYBP_NoEntry")
             {
@@ -198,10 +205,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             OptionDelegates ??= new();
             OptionDelegates.ParseDataBucket(DataBucket);
 
-            if (DataBucket.GetTextElementsTags() is IEnumerable<KeyValuePair<string, string>> textElementsTags)
+            if (DataBucket.GetTextElementsTags() is IEnumerable<string> textElementsTags)
             {
                 TextElementsNames = new();
-                foreach ((var textElementsName, var _) in textElementsTags)
+                foreach (var textElementsName in textElementsTags)
                     TextElementsNames.Add(textElementsName);
             }
 
@@ -213,6 +220,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             foreach ((string tagName, string tagValue) in DataBucket.Tags)
                 Tags[tagName] = tagValue;
 
+            Utils.Log($"{AnatomyName}.{nameof(LoadFromDataBucket)}", Indent: 0);
+            LogDebug(1);
             return this;
         }
 
@@ -230,6 +239,9 @@ namespace UD_ChooseYourBodyPlan.Mod
                 TextElementsNames ??= new();
                 TextElementsNames.Add("Mechanical");
             }
+
+            Utils.Log($"{AnatomyName}.{nameof(LoadFromAnatomy)}", Indent: 0);
+            LogDebug(1);
             return this;
         }
 
@@ -244,12 +256,16 @@ namespace UD_ChooseYourBodyPlan.Mod
             CategoryOverride = Other.CategoryOverride ?? Other.Category?.CategoryName;
             DisplayName = Other.DisplayName;
             Render = new(Other.Render);
+            OptionDelegates = new(Other.OptionDelegates);
 
             TextElementsNames = new(Other.TextElementsNames);
             WantsTextElements = true;
 
             RandomWeight = Other.RandomWeight;
             Tags = new(Other.Tags);
+
+            Utils.Log($"{AnatomyName}.{nameof(MergeHardReplace)}", Indent: 0);
+            LogDebug(1);
             return this;
         }
 
@@ -262,13 +278,17 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
             Render.Merge(Other.Render);
 
-            Utils.MergeReplaceField(ref TextElementsNames, new(Other.TextElementsNames));
+            OptionDelegates.Merge(OptionDelegates);
+
+            Utils.MergeReplaceField(TextElementsNames ??= new(), new HashSet<string>(Other.TextElementsNames));
             WantsTextElements = true;
 
             Utils.MergeReplaceField(ref RandomWeight, Other.RandomWeight);
 
-            IDictionary<string, string> tags = Tags;
-            Tags = Utils.MergeReplaceDictionary(ref tags, new Dictionary<string, string>(Other.Tags)) as Dictionary<string, string>;
+            Utils.MergeReplaceDictionary(Tags ??= new(), new Dictionary<string, string>(Other.Tags));
+
+            Utils.Log($"{AnatomyName}.{nameof(MergeSoftReplace)}", Indent: 0);
+            LogDebug(1);
             return this;
         }
 
@@ -281,14 +301,17 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
             Render = new BodyPlanRender(Other.Render).Merge(Render);
 
-            Utils.MergeRequireField(ref TextElementsNames, new(Other.TextElementsNames));
+            OptionDelegates = new OptionDelegates(Other.OptionDelegates).Merge(OptionDelegates);
+
+            Utils.MergeRequireField(TextElementsNames ??= new(), new HashSet<string>(Other.TextElementsNames));
             WantsTextElements = true;
 
             Utils.MergeRequireField(ref RandomWeight, Other.RandomWeight);
 
-            IDictionary<string, string> tags = Tags;
-            Tags = Utils.MergeRequireDictionary(ref tags, new Dictionary<string, string>(Other.Tags)) as Dictionary<string, string>;
+            Utils.MergeRequireDictionary(Tags ??= new(), new Dictionary<string, string>(Other.Tags));
 
+            Utils.Log($"{AnatomyName}.{nameof(MergeRequire)}", Indent: 0);
+            LogDebug(1);
             return this;
         }
 
@@ -405,6 +428,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public bool IsAvailable()
             => Anatomy != null
+            && !HasTag("Restricted")
             && (OptionDelegates?.Check() ?? true)
             ;
 
@@ -425,6 +449,36 @@ namespace UD_ChooseYourBodyPlan.Mod
             Tags = null;
 
             ClearCaches();
+        }
+
+        public void LogDebug(int Indent = 0)
+        {
+            Utils.Log($"{nameof(AnatomyName)}: {AnatomyName ?? "MISSING_ANATOMY_NAME"}", Indent: Indent);
+            Utils.Log($"{nameof(MergeType)}: {MergeType}", Indent: Indent + 1);
+            Utils.Log($"{nameof(CategoryOverride)}: {CategoryOverride ?? "NO_CATEGORY_OVERRIDE"}", Indent: Indent + 1);
+            Utils.Log($"{nameof(DisplayName)}: {DisplayName ?? "NO_DISPLAY_NAME"}", Indent: Indent + 1);
+            Utils.Log($"{nameof(Render)}: {Render?.ToString() ?? "NO_RENDER"}", Indent: Indent + 1);
+            Utils.Log($"{nameof(OptionDelegates)}: {OptionDelegates?.Count ?? 0}", Indent: Indent + 1);
+            if (OptionDelegates.IsNullOrEmpty())
+                Utils.Log($"::None", Indent: Indent + 2);
+            else
+                foreach (var optionDelegate in OptionDelegates)
+                    Utils.Log($"::{optionDelegate.OptionID} {optionDelegate.Operator} {optionDelegate.TrueState}", Indent: Indent + 2);
+            Utils.Log($"{nameof(WantsTransformation)}: {WantsTransformation}", Indent: Indent + 1);
+            Utils.Log($"{nameof(TextElementsNames)}: {TextElementsNames?.Count ?? 0}", Indent: Indent + 1);
+            if (TextElementsNames.IsNullOrEmpty())
+                Utils.Log($"::None", Indent: Indent + 2);
+            else
+                foreach (var textElements in TextElementsNames)
+                    Utils.Log($"::{textElements}", Indent: Indent + 2);
+            Utils.Log($"{nameof(WantsTextElements)}: {WantsTextElements}", Indent: Indent + 1);
+            Utils.Log($"{nameof(Tags)}: {Tags?.Count ?? 0}", Indent: Indent + 1);
+            if (Tags.IsNullOrEmpty())
+                Utils.Log($"::None", Indent: Indent + 2);
+            else
+                foreach ((var tagNme, var tagValue) in Tags)
+                    Utils.Log($"::{tagNme}: {tagValue}", Indent: Indent + 2);
+            Utils.Log($"{nameof(RandomWeight)}: {RandomWeight}", Indent: Indent + 1);
         }
     }
 }

@@ -83,10 +83,12 @@ namespace UD_ChooseYourBodyPlan.Mod
                 DataBucket.TryGetTagValueForData(nameof(Species), out Species);
                 DataBucket.TryGetTagValueForData(nameof(Property), out Property);
 
-                Render = new(DataBucket);
+                Render = new BodyPlanRender().LoadFromDataBucket(DataBucket);
+
                 if (!DataBucket.Mutations.IsNullOrEmpty())
                     Mutations = new(DataBucket.Mutations.Keys);
 
+                OptionDelegates ??= new();
                 OptionDelegates.ParseDataBucket(DataBucket);
 
                 if (DataBucket.TryGetTag(nameof(Mutations), out string mutations)
@@ -120,10 +122,14 @@ namespace UD_ChooseYourBodyPlan.Mod
         public TransformationData Merge(TransformationData Other)
         {
             Anatomy ??= Other.Anatomy;
-            Utils.MergeReplaceField(ref Render, new(Other));
+            if (Other?.Render?.Tile != null)
+                Render = Other.Render.Clone();
+
             Utils.MergeReplaceField(ref Species, Other.Species);
             Utils.MergeReplaceField(ref Property, Other.Property);
             Utils.MergeReplaceField(ref Mutations, new(Other.Mutations));
+
+            OptionDelegates.Merge(OptionDelegates);
 
             return this;
         }

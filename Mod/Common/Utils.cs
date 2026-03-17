@@ -101,6 +101,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static T MergeReplaceField<T>(ref T Field, T Becomes)
         {
+            Utils.Log($"{nameof(MergeReplaceField)}({Field}, {Becomes})", Indent: 3);
             if (!Equals(Becomes, default))
                 Field = Becomes;
 
@@ -109,63 +110,36 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static T MergeRequireField<T>(ref T Field, T Becomes)
         {
+            Utils.Log($"{nameof(MergeRequireField)}({Field}, {Becomes})", Indent: 3);
             if (Equals(Field, default))
 				Field = Becomes;
 
             return Field;
         }
 
-        public static ICollection<T> MergeRequireField<T>(ref ICollection<T> Field, ICollection<T> Becomes)
-		{
+        public static ICollection<T> MergeRequireField<T>(
+            ICollection<T> Field,
+            ICollection<T> Becomes
+            )
+        {
+            Utils.Log($"{nameof(MergeRequireField)}({Field}({Field?.Count ?? -1}), {Becomes}({Becomes?.Count ?? -1}))", Indent: 3);
             if (Field.IsNullOrEmpty())
                 Field = Becomes;
 
             return Field;
         }
 
-        public static IList<T> MergeRequireField<T>(ref IList<T> Field, IList<T> Becomes)
-		{
-			var field = (ICollection<T>)Field;
-			return Field = MergeRequireField(ref field, Becomes) as IList<T>;
-		}
-
-        public static List<T> MergeRequireField<T>(ref List<T> Field, List<T> Becomes)
-		{
-			var field = (IList<T>)Field;
-			return Field = MergeRequireField(ref field, Becomes) as List<T>;
-		}
-
-        public static HashSet<T> MergeRequireField<T>(ref HashSet<T> Field, HashSet<T> Becomes)
-		{
-			var field = (ICollection<T>)Field;
-			return Field = MergeRequireField(ref field, Becomes) as HashSet<T>;
-		}
-
-        public static ICollection<T> MergeReplaceField<T>(ref ICollection<T> Field, ICollection<T> Becomes)
+        public static ICollection<T> MergeReplaceField<T>(
+            ICollection<T> Field,
+            ICollection<T> Becomes
+            )
         {
+            Utils.Log($"{nameof(MergeReplaceField)}({Field}({Field?.Count ?? -1}), {Becomes}({Becomes?.Count ?? -1}))", Indent: 3);
             if (!Becomes.IsNullOrEmpty())
                 Field = Becomes;
 
             return Field;
         }
-
-        public static IList<T> MergeReplaceField<T>(ref IList<T> Field, IList<T> Becomes)
-        {
-            var field = (ICollection<T>)Field;
-			return Field = MergeReplaceField(ref field, Becomes) as IList<T>;
-		}
-
-        public static List<T> MergeReplaceField<T>(ref List<T> Field, List<T> Becomes)
-        {
-            var field = (IList<T>)Field;
-			return Field = MergeReplaceField(ref field, Becomes) as List<T>;
-		}
-
-        public static HashSet<T> MergeReplaceField<T>(ref HashSet<T> Field, HashSet<T> Becomes)
-        {
-            var field = (ICollection<T>)Field;
-			return Field = MergeReplaceField(ref field, Becomes) as HashSet<T>;
-		}
 
 		/// <summary>
 		/// "Merge distinct" adds any <paramref name="Other"/> elements that the <paramref name="Source"/> collection doesn't already contain.
@@ -174,26 +148,9 @@ namespace UD_ChooseYourBodyPlan.Mod
 		/// <param name="Source"></param>
 		/// <param name="Other"></param>
 		/// <returns></returns>
-		public static ICollection<T> MergeDistinctInCollection<T>(ref ICollection<T> Source, ICollection<T> Other)
+		public static ICollection<T> MergeDistinctInCollection<T>(ICollection<T> Source, ICollection<T> Other)
         {
-            Source ??= new List<T>();
-            if (!Other.IsNullOrEmpty())
-                foreach (var element in Other)
-                    if (!Source.Contains(element))
-                        Source.Add(element);
-
-            return Source;
-        }
-
-        /// <summary>
-        /// "Merge distinct" adds any <paramref name="Other"/> elements that the <paramref name="Source"/> collection doesn't already contain.
-        /// </summary>
-        /// <param name="Source"></param>
-        /// <param name="Other"></param>
-        /// <returns></returns>
-        public static OptionDelegates MergeDistinctInCollection(ref OptionDelegates Source, OptionDelegates Other)
-        {
-            Source ??= new OptionDelegates();
+            Utils.Log($"{nameof(MergeDistinctInCollection)}({Source}({Source?.Count ?? -1}), {Other}({Other?.Count ?? -1}))", Indent: 3);
             if (!Other.IsNullOrEmpty())
                 foreach (var element in Other)
                     if (!Source.Contains(element))
@@ -210,9 +167,12 @@ namespace UD_ChooseYourBodyPlan.Mod
 		/// <param name="Source"></param>
 		/// <param name="Other"></param>
 		/// <returns>The modified <paramref name="Source"/> dictionary.</returns>
-		public static IDictionary<TKey, TValue> MergeReplaceDictionary<TKey, TValue>(ref IDictionary<TKey, TValue> Source, IDictionary<TKey, TValue> Other)
+		public static IDictionary<TKey, TValue> MergeReplaceDictionary<TKey, TValue>(
+            IDictionary<TKey, TValue> Source,
+            IDictionary<TKey, TValue> Other
+            )
         {
-            Source ??= new Dictionary<TKey, TValue>();
+            Utils.Log($"{nameof(MergeReplaceDictionary)}({Source}({Source?.Count ?? -1}), {Other}({Other?.Count ?? -1}))", Indent: 3);
             if (!Other.IsNullOrEmpty())
                 foreach ((TKey key, TValue value) in Other)
                     Source[key] = value;
@@ -228,9 +188,12 @@ namespace UD_ChooseYourBodyPlan.Mod
         /// <param name="Source"></param>
         /// <param name="Other"></param>
         /// <returns>The modified <paramref name="Source"/> dictionary.</returns>
-        public static IDictionary<TKey, TValue> MergeRequireDictionary<TKey, TValue>(ref IDictionary<TKey, TValue> Source, IDictionary<TKey, TValue> Other)
+        public static IDictionary<TKey, TValue> MergeRequireDictionary<TKey, TValue>(
+            IDictionary<TKey, TValue> Source,
+            IDictionary<TKey, TValue> Other
+            )
         {
-            Source ??= new Dictionary<TKey, TValue>();
+            Utils.Log($"{nameof(MergeRequireDictionary)}({Source}({Source?.Count ?? -1}), {Other}({Other?.Count ?? -1}))", Indent: 3);
             if (!Other.IsNullOrEmpty())
                 foreach ((TKey key, TValue value) in Other)
                     if (!Source.ContainsKey(key))

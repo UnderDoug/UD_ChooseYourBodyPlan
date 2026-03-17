@@ -10,12 +10,19 @@ namespace UD_ChooseYourBodyPlan.Mod
 {
     public static class TextElementsExtensions
     {
-        public static IEnumerable<KeyValuePair<string, string>> GetTextElementsTags(this GameObjectBlueprint DataBucket)
+        public static IEnumerable<string> GetTextElementsTags(this GameObjectBlueprint DataBucket)
         {
             string startsWith = $"{nameof(TextElements)}.";
-            int startsWithIndex = startsWith.Length - 1;
-            foreach ((var tagName, var tagValue) in DataBucket.GetTagsStartingWith(startsWith))
-                yield return new(tagName[startsWithIndex..], tagValue);
+            int startsWithIndex = startsWith.Length;
+            if (DataBucket.GetTagsStartingWith(startsWith) is Dictionary<string, string> tags)
+            {
+                Utils.Log($"{nameof(DataBucket)} {DataBucket.Name} {nameof(GetTextElementsTags)}", Indent: 0);
+                foreach ((var tagName, var _) in tags)
+                {
+                    Utils.Log($"{nameof(tagName)}: {tagName[startsWithIndex..]}", Indent: 1);
+                    yield return tagName[startsWithIndex..];
+                }
+            }
         }
 
         public static IEnumerable<TextElements> GetTextElements(

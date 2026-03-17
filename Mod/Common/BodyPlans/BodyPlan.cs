@@ -65,7 +65,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     output = $"{output} ({FinalType})";
 
                 if (HasNaturalEquipment)
-                    output = $"{output} {NaturalEquipment}";
+                    output = $"{output}{NaturalEquipment}";
 
                 if (!Extra.IsNullOrEmpty())
                     output = $"{output} {Extra}";
@@ -110,10 +110,38 @@ namespace UD_ChooseYourBodyPlan.Mod
         public BodyPlanRender Render => IsDefault ? Utils.EmbarkingGenoSubtypeRender : Entry?.GetRender();
 
         private string _Description;
-        public string Description => _Description ??= GetDescription();
+        public string Description
+        {
+            get
+            {
+                string description = _Description;
+                if (description.IsNullOrEmpty())
+                {
+                    description = GetDescription();
+                    if (CacheDescription)
+                        _Description = description;
+                }
+                return description;
+            }
+        }
+        private bool CacheDescription;
 
         private string _Summary;
-        public string Summary => _Summary ??= GetSummary();
+        public string Summary
+        {
+            get
+            {
+                string summary = _Summary;
+                if (summary.IsNullOrEmpty())
+                {
+                    summary = GetSummary();
+                    if (CacheSummary)
+                        _Summary = summary;
+                }
+                return summary;
+            }
+        }
+        private bool CacheSummary;
 
         public List<TextElements> TextElements => Entry?.TextElements;
 
@@ -128,6 +156,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         protected List<string> LimbCountLines;
 
         protected List<string> DescriptionLines;
+        private bool CacheDescriptionLines;
 
         protected List<string> SummaryLines;
 
@@ -148,20 +177,20 @@ namespace UD_ChooseYourBodyPlan.Mod
             _Description = null;
             _Summary = null;
 
-            LimbTreeBranches.Clear();
+            LimbTreeBranches?.Clear();
             LimbTreeBranches = null;
-            BodyLimbTreeLines.Clear();
+            BodyLimbTreeLines?.Clear();
             BodyLimbTreeLines = null;
 
-            LimbCounts.Clear();
+            LimbCounts?.Clear();
             LimbCounts = null;
-            LimbCountLines.Clear();
+            LimbCountLines?.Clear();
             LimbCountLines = null;
 
-            DescriptionLines.Clear();
+            DescriptionLines?.Clear();
             DescriptionLines = null;
 
-            SummaryLines.Clear();
+            SummaryLines?.Clear();
             SummaryLines = null;
         }
 
@@ -243,7 +272,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             => BodyPart.InitializeLimbTreeBranch()
             ;
 
-        public IEnumerable<string> GetBodyLimbTreeLines(ref GameObject SampleCreature)
+        public IEnumerable<string> GetBodyLimbTreeLines()
         {
             if (BodyLimbTreeLines.IsNullOrEmpty()
                 && ConfigureSampleCreature(ref SampleCreature).Body is Body sampleBody)
@@ -262,7 +291,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             return BodyLimbTreeLines;
         }
 
-        public Dictionary<BodyPartType, int> GetLimbCounts(ref GameObject SampleCreature)
+        public Dictionary<BodyPartType, int> GetLimbCounts()
         {
             if (LimbCounts.IsNullOrEmpty())
             {
@@ -330,7 +359,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 }
 
                 if (GetDefaultBehaviorString(limb.DefaultBehavior) is string defaultBehaviourString)
-                    output = $"{output} {defaultBehaviourString}";
+                    output = $"{output}{defaultBehaviourString}";
 
                 LimbCountLines.Add(output);
                 yield return output;
@@ -345,80 +374,96 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
         public IEnumerable<string> GetDescriptionLines()
         {
-            if (DescriptionLines.IsNullOrEmpty())
+            var descriptionLines = new List<string>();
+            if (DescriptionLines != null)
+                descriptionLines.AddRange(DescriptionLines);
+
+            if (DescriptionLines.IsNullOrEmpty()
+                || !CacheDescriptionLines)
             {
-                DescriptionLines ??= new();
+                descriptionLines.Clear();
 
                 string empty = "";
                 bool newline = false;
                 foreach (string descriptionBefore in GetDescriptionBefores())
                 {
                     newline = true;
-                    DescriptionLines.Add(descriptionBefore);
+                    descriptionLines.Add(descriptionBefore);
                 }
 
                 if (newline)
                 {
                     newline = false;
-                    DescriptionLines.Add(empty);
+                    descriptionLines.Add(empty);
                 }
 
                 bool didLimbs = false;
-                if (GetBodyLimbTreeLines(ref SampleCreature) is IEnumerable<string> bodyLimbTree)
+                if (GetBodyLimbTreeLines() is IEnumerable<string> bodyLimbTree)
                 {
-                    DescriptionLines.Add("Includes the following body part slots:");
+                    descriptionLines.Add("Includes the following body part slots:");
 
-                    if (bodyLimbTree.IsNullOrEmpty())
+                    if (!bodyLimbTree.IsNullOrEmpty())
                     {
                         foreach (var limbTreeBranch in bodyLimbTree)
                         {
                             didLimbs = true;
                             newline = true;
-                            DescriptionLines.Add(limbTreeBranch.ToString());
+                            descriptionLines.Add(limbTreeBranch.ToString());
                         }
+                        CacheDescriptionLines = didLimbs;
                     }
                     else
-                        DescriptionLines.Add("{{R|" + Const.RTRNG + "}} {{W|Something's gone wrong!}}");
+                    {
+                        CacheDescriptionLines = false;
+                        descriptionLines.Add("{{R|" + Const.RTRNG + "}} {{W|Something's gone wrong!}}");
+                    }
 
                     if (newline)
                     {
                         newline = false;
-                        DescriptionLines.Add(empty);
+                        descriptionLines.Add(empty);
                     }
 
                     if (didLimbs
                         && SampleCreature.Body.GetFirstPart(HasDefaultEquipment) != null)
                     {
                         newline = true;
-                        DescriptionLines.Add("{{w|Has natural equipment}}");
+                        descriptionLines.Add("{{w|Has natural equipment}}");
                     }
                 }
 
                 if (newline)
                 {
                     newline = false;
-                    DescriptionLines.Add(string.Empty);
+                    descriptionLines.Add(string.Empty);
                 }
 
                 foreach (string descriptionAfter in GetDescriptionAfters())
                 {
                     newline = true;
-                    DescriptionLines.Add(descriptionAfter);
+                    descriptionLines.Add(descriptionAfter);
                 }
 
                 if (newline)
                 {
                     newline = false;
-                    DescriptionLines.Add(empty);
+                    descriptionLines.Add(empty);
                 }
 
                 foreach (var legend in GetLegends())
                 {
                     newline = true;
-                    DescriptionLines.Add(legend);
+                    descriptionLines.Add(legend);
+                }
+                if (CacheDescriptionLines)
+                {
+                    DescriptionLines?.Clear();
+                    DescriptionLines ??= new();
+                    DescriptionLines.AddRange(descriptionLines);
                 }
             }
-            return DescriptionLines;
+            CacheDescription = CacheDescriptionLines;
+            return descriptionLines;
         }
 
         public IEnumerable<string> GetSummaryLines()
@@ -430,11 +475,13 @@ namespace UD_ChooseYourBodyPlan.Mod
                 foreach (string summaryBefore in GetSummaryBefores())
                     SummaryLines.Add(summaryBefore);
 
-                foreach (var limbCountLine in GetLimbCountLines(GetLimbCounts(ref SampleCreature)))
+                foreach (var limbCountLine in GetLimbCountLines(GetLimbCounts()))
                     SummaryLines.Add(limbCountLine);
 
                 foreach (string summaryAfter in GetSummaryAfters())
                     SummaryLines.Add(summaryAfter);
+
+                CacheSummary = !SummaryLines.IsNullOrEmpty();
             }
             return SummaryLines;
         }
@@ -515,7 +562,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
 
         public bool IsInvalid()
-            => IsInvalid(this)
+            => !IsValid()
             ;
 
         public void Dispose()
