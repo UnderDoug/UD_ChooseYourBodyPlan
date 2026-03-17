@@ -164,95 +164,42 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static CategoryComparer Comparer = new(DefaultFirst: false);
         public static CategoryComparer DefaultFirstComparer = new(DefaultFirst: true);
 
+        public static string DataBucketFile => "AnatomyCategories.xml";
+
         public static string CategoryXTag => Const.MOD_PREFIX_SHORT + "Category";
 
         public static int LowestCategory => 1;
         public static int HighestCategory => 23;
 
-        [ModSensitiveStaticCache]
-        private static Dictionary<int, AnatomyCategoryEntry> _CategoryByID;
-        public static Dictionary<int, AnatomyCategoryEntry> CategoryByID
-        {
-            get
-            {
-                if (_CategoryByID.IsNullOrEmpty())
-                {
-                    _CategoryByID ??= new();
-                    Utils.Log($"{nameof(CategoryByID)}:");
-                    Utils.Log($"By {nameof(BodyPartCategory)} Values", Indent: 1);
-                    for (int i = 0; i <= HighestCategory; i++)
-                    {
-                        try
-                        {
-                            _CategoryByID.Add(
-                                key: i,
-                                value: new() 
-                                {
-                                    ID = i,
-                                    CategoryName = GetBodyPartCategoryName(i),
-                                    DisplayName = GetBodyPartCategoryName(i),
-                                    Shader = new TextShader(i).Finalize(),
-                                    Entries = new()
-                                });
+        public static Dictionary<string, AnatomyCategoryEntry> CategoryByName => BodyPlanFactory.Factory?.AnatomyCategoryEntryByCategoryName;
 
-                            Utils.Log($"{i}: {_CategoryByID[i]?.CategoryName}", Indent: 2);
-                        }
-                        catch (Exception x)
-                        {
-                            MetricsManager.LogModWarning(Utils.ThisMod, $"Attempted to make {nameof(AnatomyCategoryEntry)} from invalid {nameof(BodyPartCategory)} value: {i}; {x}");
-                        }
-                    }
-                    Utils.Log($"By Blueprints: {Const.CATEGORY_BLUEPRINT}", Indent: 1);
-                    foreach (var dataBucket in GameObjectFactory.Factory?.GetBlueprintsInheritingFrom(Const.CATEGORY_BLUEPRINT))
-                    {
-                        var category = new AnatomyCategoryEntry(dataBucket);
-                        if (_CategoryByID.Values.FirstOrDefault(c => c.CategoryName == category.CategoryName) is AnatomyCategoryEntry existingCategory)
-                        {
-                            existingCategory.Merge(category);
-                            Utils.Log($"{dataBucket.Name}, {category.CategoryName}: Merged", Indent: 2);
-                        }
-                        else
-                        {
-                            category.ID = _CategoryByID.Count() + 1;
-                            _CategoryByID.Add(category.ID, category);
-                            Utils.Log($"{dataBucket.Name}, {category.CategoryName}: Added with ID {category.ID}", Indent: 2);
-                        }
-                    }
-                    Utils.BodyPlanEntries?.ForEach(c => _ = c?.Category);
-
-                    Utils.Log("Final Categories:");
-                    _CategoryByID.Values.ToList()
-                        .ForEach(c => 
-                        {
-                            Utils.Log(c.CategoryName, Indent: 1);
-                            c.DebugOutput(Indent: 2, SkipCategoryName: true);
-                        });
-                }
-                return _CategoryByID;
-            }
-        }
-
-        [ModSensitiveStaticCache]
-        private static Dictionary<string, AnatomyCategoryEntry> _CategoryByName;
-        public static Dictionary<string, AnatomyCategoryEntry> CategoryByName
-        {
-            get
-            {
-                if (_CategoryByName.IsNullOrEmpty())
-                {
-                    _CategoryByName = new();
-                    foreach (var category in CategoryByID?.Values ?? Enumerable.Empty<AnatomyCategoryEntry>())
-                        _CategoryByName[category.CategoryName] = category;
-                }
-                return _CategoryByName;
-            }
-        }
-
-        public static IEnumerable<AnatomyCategoryEntry> Categories => CategoryByID.Values;
+        public static IEnumerable<AnatomyCategoryEntry> Categories => CategoryByName?.Values ?? Enumerable.Empty<AnatomyCategoryEntry>();
 
         public string BaseDataBucketBlueprint => Const.CATEGORY_BLUEPRINT;
 
         public string CacheKey => CategoryName;
+
+        public int ID;
+        public string CategoryName;
+        public string DisplayName;
+        public TextShader Shader;
+
+        public List<BodyPlanEntry> Entries;
+
+        public AnatomyCategoryEntry()
+        {
+            ID = -1;
+            CategoryName = null;
+            DisplayName = null;
+            Shader = default;
+            Entries = new();
+        }
+
+        public AnatomyCategoryEntry(GameObjectBlueprint DataBucket)
+            : base()
+        {
+            LoadFromDataBucket(DataBucket);
+        }
 
         public static bool IsCodeValid(int Code)
             => Code == Math.Clamp(Code, LowestCategory, HighestCategory);
@@ -277,98 +224,6 @@ namespace UD_ChooseYourBodyPlan.Mod
             return null;
         }
 
-        public static AnatomyCategoryEntry GetFor(BodyPlanEntry Choice)
-        {
-            if (Choice == null)
-                throw new ArgumentNullException(nameof(Choice));
-
-            if (CategoryByID.IsNullOrEmpty())
-                throw new InvalidOperationException($"{nameof(CategoryByID)} not initialized.");
-
-            AnatomyCategoryEntry category = null;
-            if (Choice.CategoryName is string choiceCategory)
-            {
-                CategoryByName.TryGetValue(choiceCategory, out category);
-            }
-            else
-            {
-                int categoryCode = Choice.Anatomy.BodyCategory
-                    ?? Choice.Anatomy.Category
-                    ?? Choice.Anatomy.Parts?.FirstOrDefault(p => p.Category != null)?.Category
-                    ?? 1;
-
-                categoryCode = Math.Clamp(categoryCode, LowestCategory, HighestCategory);
-                if (!CategoryByID.TryGetValue(categoryCode, out category))
-                {
-                    category = new()
-                    {
-                        ID = categoryCode,
-                        DisplayName = GetBodyPartCategoryName(categoryCode),
-                        Shader = new TextShader(categoryCode).Finalize(),
-                        Entries = new(),
-                    };
-                }
-            }
-            category.RequireEntry(Choice);
-            if (CategoryByID.TryGetValue(0, out var defaultCategory))
-            {
-                defaultCategory.RequireEntry(Choice);
-                if (Choice.IsDefault)
-                    category = defaultCategory;
-            }
-            return category;
-        }
-
-        public static bool TryGetFor(BodyPlanEntry Choice, out AnatomyCategoryEntry Category)
-        {
-            Category = null;
-
-            if (CategoryByID.IsNullOrEmpty())
-            {
-                MetricsManager.LogModWarning(Utils.ThisMod, $"{nameof(CategoryByID)} not initialized.");
-                return false;
-            }
-
-            if (Choice?.Anatomy == null)
-                return false;
-
-            return (Category = GetFor(Choice)) != null;
-        }
-
-        public int ID;
-        public string CategoryName;
-        public string DisplayName;
-        public TextShader Shader;
-
-        public List<BodyPlanEntry> Entries;
-
-        public AnatomyCategoryEntry()
-        {
-            ID = -1;
-            CategoryName = null;
-            DisplayName = null;
-            Shader = default;
-            Entries = new();
-        }
-
-        public AnatomyCategoryEntry(GameObjectBlueprint DataBucket)
-            : base()
-        {
-            LoadFromDataBucket(DataBucket);
-        }
-
-        public AnatomyCategoryEntry Merge(AnatomyCategoryEntry Other)
-        {
-            if (Other != null)
-            {
-                if (!Other.DisplayName.IsNullOrEmpty())
-                    DisplayName = Other.DisplayName;
-                
-                Shader.Merge(Other.Shader);
-            }
-            return this;
-        }
-
         public string GetDisplayName()
             => Shader.Apply(DisplayName);
 
@@ -378,6 +233,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             && !entries.IsNullOrEmpty()
             && (Filter == null
                 || entries.Any(Filter.Invoke))
+            ;
+
+        public bool IsValidWithAnyAvailable(Predicate<BodyPlanEntry> Filter = null)
+            => IsValid(c => (Filter == null || Filter(c)) && c.IsAvailable())
             ;
 
         public bool IsDefaultMatching(BodyPlan BodyPlan)
@@ -399,19 +258,6 @@ namespace UD_ChooseYourBodyPlan.Mod
                     yield return entry;
                 }
             }
-        }
-
-        public void RequireEntry(BodyPlanEntry Entry)
-        {
-            if (Entry != null
-                && !Entries.Any(e => e?.Anatomy?.Name == Entry?.Anatomy?.Name))
-                Entries.Add(Entry);
-        }
-
-        public void Dispose()
-        {
-            Entries.Clear();
-            Entries = null;
         }
 
         public void DebugOutput(int Indent = 0, bool SkipCategoryName = false)
@@ -466,6 +312,18 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
+        public AnatomyCategoryEntry Merge(AnatomyCategoryEntry Other)
+        {
+            if (Other != null)
+            {
+                if (!Other.DisplayName.IsNullOrEmpty())
+                    DisplayName = Other.DisplayName;
+                
+                Shader.Merge(Other.Shader);
+            }
+            return this;
+        }
+
         public AnatomyCategoryEntry Clone()
             => new()
             {
@@ -478,5 +336,15 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public bool SameAs(AnatomyCategoryEntry Other)
             => CategoryName == Other.CategoryName;
+
+
+        public AnatomyCategory GetAnatomyCategory()
+            => new(CategoryName);
+
+        public void Dispose()
+        {
+            Entries?.Clear();
+            Entries = null;
+        }
     }
 }

@@ -44,6 +44,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 : Value.ToString()
                 ;
         }
+        public static string DataBucketFile => "TextElements.xml";
 
         public string CacheKey => Name;
 
@@ -138,10 +139,10 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public void Dispose()
         {
-            SymbolsByName.Clear();
+            SymbolsByName?.Clear();
             SymbolsByName = null;
 
-            _Symbols.Clear();
+            _Symbols?.Clear();
             _Symbols = null;
         }
     }

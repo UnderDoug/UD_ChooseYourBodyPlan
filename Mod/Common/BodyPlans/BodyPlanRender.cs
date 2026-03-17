@@ -8,8 +8,6 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
-using static UD_ChooseYourBodyPlan.Mod.AnatomyConfiguration;
-
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [HasModSensitiveStaticCache]

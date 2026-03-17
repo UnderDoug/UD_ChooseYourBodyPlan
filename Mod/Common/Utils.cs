@@ -31,69 +31,6 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static BodyPlanRender EmbarkingGenoSubtypeRender = null;
 
-        #region AnatomyConfigurations
-
-        [ModSensitiveStaticCache]
-        private static List<AnatomyConfiguration> _AnatomyConfigurations = null;
-        public static List<AnatomyConfiguration> AnatomyConfigurations
-        {
-            get
-            {
-                if (_AnatomyConfigurations.IsNullOrEmpty())
-                    _AnatomyConfigurations = GameObjectFactory.Factory?.GetBlueprintsInheritingFrom(Const.CONFIG_BLUEPRINT)
-                        .SelectMany(bp => new AnatomyConfiguration(bp).FromAnatomiesList())
-                        .ToList();
-
-                return _AnatomyConfigurations;
-            }
-        }
-
-        public static IEnumerable<AnatomyConfiguration> GetAnatomyConfigurations(string Anatomy)
-            => AnatomyConfigurations?.Where(e => !e.GetAnatomy().IsNullOrEmpty() && e.GetAnatomy() == Anatomy);
-
-        public static IEnumerable<AnatomyConfiguration> GetAnatomyConfigurations(Anatomy Anatomy)
-        {
-            if (Anatomy == null)
-                yield break;
-
-            bool anyMechanical = false;
-            foreach (AnatomyConfiguration configuration in GetAnatomyConfigurations(Anatomy.Name))
-            {
-                anyMechanical = configuration.IsMechanical
-                    || anyMechanical;
-                yield return configuration;
-            }
-
-            if (!anyMechanical
-                && Anatomy.Category == BodyPartCategory.MECHANICAL)
-            {
-                var configuration = new AnatomyConfiguration(Anatomy)
-                {
-                    IsMechanical = true,
-                    IsRestricted = true,
-                    IsOptional = true,
-                    EnableRestricted = () => Options.EnableBodyPlansThatAreRobotic,
-                    Symbols = new() { new('c', "\x000F") },
-                };
-                AnatomyConfigurations.Add(configuration);
-                yield return configuration;
-            }
-        }
-        public static IEnumerable<AnatomyConfiguration> GetAnatomyConfigurations(BodyPlanEntry Choice)
-            => GetAnatomyConfigurations(Choice?.Anatomy)
-            ;
-
-        public static bool TryGetAnatomyConfigurations(string Anatomy, out IEnumerable<AnatomyConfiguration> AnatomyConfigurations)
-            => (AnatomyConfigurations = GetAnatomyConfigurations(Anatomy)).IsNullOrEmpty()
-            ;
-        public static bool TryGetAnatomyConfigurations(Anatomy Anatomy, out IEnumerable<AnatomyConfiguration> AnatomyConfigurations)
-            => TryGetAnatomyConfigurations(Anatomy?.Name, out AnatomyConfigurations)
-            ;
-        public static bool TryGetAnatomyConfigurations(BodyPlanEntry Choice, out IEnumerable<AnatomyConfiguration> AnatomyConfigurations)
-            => TryGetAnatomyConfigurations(Choice?.Anatomy, out AnatomyConfigurations)
-            ;
-
-        #endregion
         #region Pseudo-Debug
 
         public static void Error(object Message)
@@ -128,9 +65,21 @@ namespace UD_ChooseYourBodyPlan.Mod
             => LogReturnBool(false, Message, Indent)
             ;
 
-        #endregion
+		#endregion
 
-        public static string NewlineAggregator<T>(string Accumulator, T Next)
+		public static string GetTile(GameObjectBlueprint Blueprint)
+	        => Blueprint.GetPartParameter<string>(nameof(Render), nameof(Render.Tile))
+	        ;
+
+		public static string GetAnatomyName(GameObjectBlueprint Blueprint)
+			=> Blueprint.GetPartParameter<string>(nameof(Body), nameof(Body.Anatomy))
+			;
+
+		public static Anatomy GetAnatomy(GameObjectBlueprint Blueprint)
+			=> Anatomies.GetAnatomyOrFail(GetAnatomyName(Blueprint))
+			;
+
+		public static string NewlineAggregator<T>(string Accumulator, T Next)
             => Accumulator + (!Accumulator.IsNullOrEmpty() ? '\n' : null) + Next;
 
         public static StringBuilder AggregateNewline<T>(StringBuilder Accumulator, T Next)
@@ -292,10 +241,9 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         #region Wishes
 
-        public static string UD_CYBP_Output => DataManager.SavePath("BodyPlanEntrys.xml");
+        public static string UD_CYBP_Output => DataManager.SavePath("UD_CYBP_BodyPlans.xml");
 
-        [ModSensitiveStaticCache]
-        public static List<BodyPlanEntry> BodyPlanEntries = new();
+        public static List<BodyPlanEntry> BodyPlanChoices => BodyPlanFactory.Factory?.BodyPlanEntryByAnatomyName?.Values?.ToList();
 
         [WishCommand(Command = "UD_CYBP bodyplans from blueprints")]
         public static bool BodyPlanEntryTags_WishHandler(string Parameters)
@@ -396,7 +344,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 string inherits = Const.BODYPLAN_ENTRY_BLUEPRINT;
                 if (new StreamWriter($"{forAnatomy}{UD_CYBP_Output}") is StreamWriter writer)
                 {
-                    using (var anatomyChoices = ScopeDisposedList<BodyPlanEntry>.GetFromPoolFilledWith(BodyPlanEntries))
+                    using (var anatomyChoices = ScopeDisposedList<BodyPlanEntry>.GetFromPoolFilledWith(BodyPlanChoices))
                     {
                         Log("-".ThisManyTimes(25));
                         writer.WriteLine2("<?xml version=\"1.0\" encoding=\"utf-8\" ?>")

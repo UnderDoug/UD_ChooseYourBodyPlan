@@ -6,13 +6,12 @@ using XRL;
 using XRL.World;
 using XRL.World.Anatomy;
 
-using static UD_ChooseYourBodyPlan.Mod.AnatomyConfiguration;
-
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [Serializable]
     public class TransformationData : ILoadFromDataBucket<TransformationData>
     {
+        public static string DataBucketFile => "TransformationData.xml";
         public string BaseDataBucketBlueprint => Const.XFORM_DATA_BLUEPRINT;
 
         public static string RemoveTag => Const.REMOVE_TAG;
@@ -137,10 +136,10 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
             Render = null;
 
-            OptionDelegates.Clear();
+            OptionDelegates?.Clear();
             OptionDelegates = null;
 
-            Mutations.Clear();
+            Mutations?.Clear();
             Mutations = null;
         }
     }

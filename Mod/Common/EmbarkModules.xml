@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <embarkmodules>
-  <module Class="UD_BodyPlan_Selection.Mod.CharacterBuilds.QudBodyPlanModule">
-    <window ID="Chargen/UD_BodyPlan" Prefab="CategoryMenus" Class="UD_BodyPlan_Selection.Mod.CharacterBuilds.UI.QudBodyPlanModuleWindow">
+  <module Class="UD_ChooseYourBodyPlan.Mod.CharacterBuilds.QudBodyPlanModule">
+    <window ID="Chargen/UD_BodyPlan" Prefab="CategoryMenus" Class="UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI.QudBodyPlanModuleWindow">
       <name>Body Plan</name>
       <title>:choose body plan:</title>
     </window>

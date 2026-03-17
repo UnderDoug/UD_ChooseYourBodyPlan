@@ -13,11 +13,12 @@ using XRL.Collections;
 using XRL.Rules;
 using XRL.UI;
 using XRL.UI.Framework;
+using XRL.World;
 
 using ColorUtility = ConsoleLib.Console.ColorUtility;
 using Event = XRL.World.Event;
+using UnityGameObject = UnityEngine.GameObject;
 
-using UD_ChooseYourBodyPlan.Mod;
 using static UD_ChooseYourBodyPlan.Mod.CharacterBuilds.QudBodyPlanModule;
 
 namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
@@ -56,9 +57,9 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         // don't remove this. It's what allows the first call to UpdateControls() to actually update the controls.
         public EmbarkBuilderModuleWindowDescriptor windowDescriptor;
 
-        private List<CategoryMenuData> BodyPlanCategoryMenuOptions = new();
+        private List<AnatomyCategoryMenuData> BodyPlanMenuOptions = new();
 
-        private List<BodyPlanEntry> AnatomyChoices => module?.BodyPlanChoices;
+        private List<BodyPlan> BodyPlanChoices => module?.BodyPlanChoices;
 
         private PrefixMenuOption Selected;
 
@@ -82,7 +83,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
                 return true;
             }
             if ((module?.HasSelection ?? false)
-                && !AnatomyChoices.Contains(module.SelectedChoice()))
+                && !BodyPlanChoices.Contains(module.SelectedChoice()))
                 ResetSelection();
             return false;
         }
@@ -106,7 +107,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
 
             base.BeforeShow(descriptor);
         }
-        public override GameObject InstantiatePrefab(GameObject prefab)
+        public override UnityGameObject InstantiatePrefab(UnityGameObject prefab)
         {
             prefab.GetComponentInChildren<CategoryMenusScroller>().allowVerticalLayout = false;
             return base.InstantiatePrefab(prefab);
@@ -116,12 +117,12 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         {
             RandomChoiceBag ??= new();
             RandomChoiceBag.Clear();
-            if (BodyPlanCategoryMenuOptions.IsNullOrEmpty())
+            if (BodyPlanMenuOptions.IsNullOrEmpty())
                 return RandomChoiceBag;
 
-            for (int i = 0; i < BodyPlanCategoryMenuOptions.Count; i++)
+            for (int i = 0; i < BodyPlanMenuOptions.Count; i++)
             {
-                if (BodyPlanCategoryMenuOptions[i] is not CategoryMenuData categoryMenuOption
+                if (BodyPlanMenuOptions[i] is not CategoryMenuData categoryMenuOption
                     || !categoryMenuOption.menuOptions.IsNullOrEmpty())
                     continue;
 
@@ -149,7 +150,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         {
             int categoryIndex = 0;
             int choiceIndex = 0;
-            PrefixMenuOption choice = BodyPlanCategoryMenuOptions?[0]?.menuOptions?[0];
+            PrefixMenuOption choice = BodyPlanMenuOptions?[0]?.menuOptions?[0];
             if (RefillRandomChoices().PluckOne() is RandomChoice randomChoice)
             {
                 categoryIndex = randomChoice.CategoryIndex;
@@ -175,11 +176,11 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
 
         public override UIBreadcrumb GetBreadcrumb()
         {
-            var renderable = module?.SelectedChoice()?.GetRender();
+            var renderable = module?.SelectedChoice()?.Render;
             return new()
             {
                 Id = GetType().FullName,
-                Title = module?.SelectedChoice()?.GetDescription() ?? "Body Plan",
+                Title = module?.SelectedChoice()?.DisplayName ?? "Body Plan",
                 IconPath = renderable?.getTile() ?? "Creatures/natural-weapon-fist.bmp",
                 HFlip = renderable?.HFlip ?? false,
                 IconDetailColor = ColorUtility.ColorMap[renderable?.getColorChars().detail ?? 'W'],
@@ -258,111 +259,88 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
                 prefabComponent.onHighlight.Invoke(Selected);
         }
 
-        private PrefixMenuOption MakeMenuOption(BodyPlanEntry Entry, StringBuilder SB, bool IsTK, out bool IsSelected)
+        private IEnumerable<BodyPlanMenuOption> GetMenuOptions(AnatomyCategory Category = null)
         {
-            IsSelected = false;
-
-            if (Entry == null)
-                return null;
-
-            IsSelected = module.IsSelected(Entry);
-
-            if (IsSelected)
-                SB.AppendColored("W", Entry.GetDescription(ShowDefault: !SortByCategory, ShowSymbols: true));
-            else
-                SB.Append(Entry.GetDescription(ShowDefault: !SortByCategory, ShowSymbols: true));
-
-            string longDesc = IsTK ? Entry.LongDescriptionTK : Entry.LongDescription;
-
-            if (Entry.IsDefault)
-            {
-                if (module?.GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry)
-                    Entry.OverrideRender(new(genotypeEntry));
-                if (module?.SubtypeModuleData?.Entry is SubtypeEntry subtypeEntry)
-                    Entry.OverrideRender(new(subtypeEntry));
-            }
-
-            return new PrefixMenuOption
-            {
-                Id = Entry.Anatomy.Name,
-                Prefix = IsSelected ? CHECKED : EMPTY_CHECK,
-                Description = SB.ToString(),
-                LongDescription = longDesc,
-                Renderable = Entry.GetRender()
-            };
-        }
-
-        private IEnumerable<PrefixMenuOption> GetMenuOptions(AnatomyCategoryEntry Category)
-        {
-            var sB = Event.NewStringBuilder();
-            bool isTK = Utils.IsTruekinEmbarking;
-
-            if (Category?.GetEntries(AnatomyChoiceIsValid) is not IEnumerable<BodyPlanEntry> choices
+            if (Category?.GetBodyPlans() is not IEnumerable<BodyPlan> choices
                 || (Category != null
                     && choices.IsNullOrEmpty()))
+                choices = BodyPlanChoices;
+
+            if (choices.IsNullOrEmpty())
             {
-                choices = AnatomyChoices;
+                yield return new()
+                {
+                    ID = "BROKEN",
+                    IsSelected = true,
+                    Name = "NO BODY PLANS",
+                    Details = $"Something has gone wrong and there are no body plans to select from.\n\n" +
+                        $"It shouldn't be possible to see this description, so if you're seeing it, " +
+                        $"please contact the mod author, {Utils.ThisMod.Manifest.Author}, either on the steam workshop page, " +
+                        $"or on the Caves of Qud discord.",
+                    Render = new(GameObjectFactory.Factory?.GetBlueprintIfExists("Fool of the Gyre")?.GetRenderable(), true),
+                };
+                yield break;
             }
 
             foreach (var choice in choices)
-            {
-                if (MakeMenuOption(choice, sB, isTK, out bool isSelected) is PrefixMenuOption menuOption)
-                {
-                    if (isSelected)
-                        Selected = menuOption;
-
-                    sB.Clear();
-
+                if (choice.GetMenuOption(module.IsSelected(choice)) is BodyPlanMenuOption menuOption)
                     yield return menuOption;
-                }
-            }
-
-            Event.ResetTo(sB);
-            yield break;
         }
 
-        protected CategoryMenuData MakeCategoryMenuOption(AnatomyCategoryEntry Category = null)
-            => new()
-            {
-                Title = Category != null ? (Category?.GetDisplayName() ?? "MISSING_DISPLAY_NAME"): "Body Plans",
-                menuOptions = new(GetMenuOptions(Category))
-            };
+        protected AnatomyCategoryMenuData MakeCategoryMenuOption(AnatomyCategory Category = null)
+            => Category == null
+            ? new AnatomyCategoryMenuData
+                {
+                    DisplayName = "Body Plans",
+                    MenuOptions = new(GetMenuOptions()),
+                }
+            : Category.GetMenuData(module.SelectedChoice())
+            ;
 
-        public virtual IEnumerable<CategoryMenuData> GetCategoryMenuOptions(bool ForceNoCategory = false)
+        public virtual IEnumerable<AnatomyCategoryMenuData> GetCategoryMenuOptions(bool ForceNoCategory = false)
         {
-            if (!SortByCategory || ForceNoCategory)
-            {
+            if (!SortByCategory
+                || ForceNoCategory)
                 yield return MakeCategoryMenuOption();
-            }
             else
             {
                 var comparer = AnatomyCategoryEntry.DefaultFirstComparer;
 
-                using var categories = ScopeDisposedList<AnatomyCategoryEntry>.GetFromPoolFilledWith(AnatomyCategoryEntry.Categories);
-                categories.Sort(comparer);
+                using var categoryEntries = ScopeDisposedList<AnatomyCategoryEntry>.GetFromPoolFilledWith(AnatomyCategoryEntry.Categories);
+                categoryEntries.Sort(comparer);
 
-                foreach (AnatomyCategoryEntry category in categories)
+                foreach (AnatomyCategoryEntry categoryEntry in categoryEntries)
                 {
-                    Utils.Log(category?.GetDisplayName());
-                    if (!Utils.DisableDebug)
-                        foreach (var choice in category?.Entries ?? new List<BodyPlanEntry>())
-                            Utils.Log($"    {choice?.Anatomy?.Name}");
+                    // Utils.Log(categoryEntry?.GetDisplayName());
+                    // if (!Utils.DisableDebug)
+                        // foreach (var choice in categoryEntry?.Entries ?? new List<BodyPlanEntry>())
+                            // Utils.Log($"    {choice?.Anatomy?.Name}");
 
-                    if (category.IsValid(c => AnatomyChoices.Any(ch => ch?.Anatomy?.Name == c?.Anatomy?.Name)))
-                    {
+                    if (categoryEntry.IsValidWithAnyAvailable()
+                        && categoryEntry.GetAnatomyCategory() is AnatomyCategory category)
                         yield return MakeCategoryMenuOption(category);
-                    }
                 }
             }
         }
 
+        protected List<AnatomyCategoryMenuData> HandleCategorySortedChoicesUIEvent(ref List<AnatomyCategoryMenuData> BodyPlanMenuOptions)
+        {
+            BodyPlanMenuOptions ??= new();
+            BodyPlanMenuOptions?.Clear();
+
+            var bodyPlanMenuOptions = new List<AnatomyCategoryMenuData>(GetCategoryMenuOptions());
+            BodyPlanMenuOptions = (module?.builder?.handleTypedUIEvent(GetCategorySortedChoicesUIEvent, bodyPlanMenuOptions))
+                .Coalesce(bodyPlanMenuOptions);
+
+            return BodyPlanMenuOptions;
+        }
         public void UpdateControls(bool OverrideHasShown = false)
         {
-            BodyPlanCategoryMenuOptions?.Clear();
-            BodyPlanCategoryMenuOptions = new(GetCategoryMenuOptions());
-            if (BodyPlanCategoryMenuOptions.IsNullOrEmpty())
+            HandleCategorySortedChoicesUIEvent(ref BodyPlanMenuOptions);
+
+            if (BodyPlanMenuOptions.IsNullOrEmpty())
             {
-                BodyPlanCategoryMenuOptions.AddRange(GetCategoryMenuOptions(ForceNoCategory: true));
+                BodyPlanMenuOptions.AddRange(GetCategoryMenuOptions(ForceNoCategory: true));
                 MetricsManager.LogModError(Utils.ThisMod, "Failed to change sort order. Alphabetical used by default.");
             }
 
@@ -373,7 +351,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
                 if (OverrideHasShown)
                     prefabComponent.hasShown = false;
 
-                prefabComponent.BeforeShow(windowDescriptor, BodyPlanCategoryMenuOptions);
+                prefabComponent.BeforeShow(windowDescriptor, BodyPlanMenuOptions);
             }
 
             if (module?.HasSelection ?? false)

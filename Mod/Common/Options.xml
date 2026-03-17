@@ -24,6 +24,22 @@
   
   -->
   <option
+        ID="UD_ChooseYourBodyPlan_EnableSortByCategory"
+        DisplayText="Sort body plans by Category."
+        Category="Mod: Choose Your Body Plan"
+        Type="Checkbox"
+        Default="Yes">
+    <helptext>
+      When enabled, body plan selection is sorted by category, otherwise they are sorted alphabetically.
+
+      Irrespective of sorting method, the {{W|default body plan}} that would result from your other character builder choices will be marked as such and appear at the top.
+
+      {{Y|Note: Changing the sort order in the body plan selection window toggles this option so that your last choice is remembered.}}
+
+      The default is {{W|Enabled}}.
+    </helptext>
+  </option>
+  <option
         ID="UD_ChooseYourBodyPlan_EnableBodyPlansForTK"
         DisplayText="Enable body plan selection for True Kin."
         Category="Mod: Choose Your Body Plan"

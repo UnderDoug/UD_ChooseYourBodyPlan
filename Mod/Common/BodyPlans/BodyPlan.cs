@@ -498,6 +498,26 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Render = Render,
             };
 
+        public BodyPlanMenuOption GetMenuOption(BodyPlan Selected = null)
+            => GetMenuOption(SameAs(Selected))
+            ;
+
+        public static bool IsValid(BodyPlan BodyPlan)
+            => BodyPlan?.Entry != null
+            ;
+
+        public bool IsValid()
+            => IsValid(this)
+            ;
+
+        public static bool IsInvalid(BodyPlan BodyPlan)
+            => !IsValid(BodyPlan)
+            ;
+
+        public bool IsInvalid()
+            => IsInvalid(this)
+            ;
+
         public void Dispose()
         {
             ClearCachedValues();

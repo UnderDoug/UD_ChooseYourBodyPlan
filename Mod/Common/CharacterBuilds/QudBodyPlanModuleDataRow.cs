@@ -1,7 +1,5 @@
 ﻿using System;
 
-using static UD_ChooseYourBodyPlan.Mod.AnatomyConfiguration;
-
 namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 {
     [Serializable]
@@ -24,8 +22,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         {
             this.Anatomy = Anatomy;
         }
-        public QudBodyPlanModuleDataRow(BodyPlanEntry Entry)
-            : this(Entry?.Anatomy?.Name)
+        public QudBodyPlanModuleDataRow(BodyPlan Choice)
+            : this(Choice?.Entry?.Anatomy?.Name)
         { }
     }
 }

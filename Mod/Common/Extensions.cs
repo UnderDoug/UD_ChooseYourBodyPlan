@@ -16,6 +16,7 @@ using Event = XRL.World.Event;
 
 using static UD_ChooseYourBodyPlan.Mod.Utils;
 using static UD_ChooseYourBodyPlan.Mod.Const;
+using XRL.CharacterBuilds;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -698,5 +699,12 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static bool IsMechanical(this Anatomy Anatomy)
             => Anatomy?.Category == BodyPartCategory.MECHANICAL;
 
+        public static T handleTypedUIEvent<T>(this EmbarkBuilder Builder, string id, T element = default)
+        {
+            if (Builder.handleUIEvent(id, element) is T typedElement)
+                element = typedElement;
+
+			return element;
+		}
 	}
 }

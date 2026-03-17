@@ -9,6 +9,8 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
+using static UD_ChooseYourBodyPlan.Mod.AnatomyCategoryEntry;
+
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [HasModSensitiveStaticCache]
@@ -125,14 +127,17 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (_Factory == null)
                 {
                     _Factory = new();
-                    Loading.LoadTask("Loading TransformationData.xml", _Factory.LoadTransformationData);
-                    Loading.LoadTask("Loading BodyPlans.xml", _Factory.LoadBodyPlans);
-                    Loading.LoadTask("Loading BodyPlanCategories.xml", _Factory.LoadAnatomyCategoryEntries);
-                    Loading.LoadTask("Loading TextElements.xml", _Factory.LoadTextElements);
+                    Loading.LoadTask($"Loading {TextElements.DataBucketFile}", _Factory.LoadTextElements);
+                    Loading.LoadTask($"Loading {TransformationData.DataBucketFile}", _Factory.LoadTransformationData);
+                    Loading.LoadTask($"Loading {BodyPlanEntry.DataBucketFile}", _Factory.LoadBodyPlans);
+                    Loading.LoadTask($"Loading {AnatomyCategoryEntry.DataBucketFile}", _Factory.LoadAnatomyCategoryEntries);
                 }
                 return _Factory;
             }
         }
+
+        public static int LowestCategory => 1;
+        public static int HighestCategory => 23;
 
         public Dictionary<string, TextElements> TextElementsByName;
 
@@ -143,11 +148,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         public Dictionary<string, AnatomyCategoryEntry> AnatomyCategoryEntryByCategoryName;
 
         public bool TextElementsInitialized { get; protected set; }
-
         public bool TransformationDataInitialized { get; protected set; }
-
         public bool BodyPlanEntriesInitialized { get; protected set; }
-
         public bool AnatomyCategoryEntriesInitialized { get; protected set; }
 
         public BodyPlanFactory()
@@ -179,6 +181,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public void LoadAnatomyCategoryEntries()
         {
+            LoadFromCategoryIDs();
             Load(ref AnatomyCategoryEntryByCategoryName);
             AssignCategoryEntries();
             AnatomyCategoryEntriesInitialized = true;
@@ -187,16 +190,23 @@ namespace UD_ChooseYourBodyPlan.Mod
         public void Load<T>(ref Dictionary<string, T> CacheByName)
             where T : ILoadFromDataBucket<T>, new()
         {
-            CacheByName = new();
-            foreach (var dataBucket in GetDataBuckets<T>())
+            CacheByName ??= new();
+            try
             {
-                if (TryLoadFromDataBucket(dataBucket, out T loaded))
+                foreach (var dataBucket in GetDataBuckets<T>())
                 {
-                    if (CacheByName.ContainsKey(loaded.CacheKey))
-                        CacheByName[loaded.CacheKey].Merge(loaded);
-                    else
-                        CacheByName[loaded.CacheKey] = loaded;
+                    if (TryLoadFromDataBucket(dataBucket, out T loaded))
+                    {
+                        if (CacheByName.ContainsKey(loaded.CacheKey))
+                            CacheByName[loaded.CacheKey].Merge(loaded);
+                        else
+                            CacheByName[loaded.CacheKey] = loaded;
+                    }
                 }
+            }
+            catch (Exception x)
+            {
+                Utils.Error(x);
             }
         }
 
@@ -224,11 +234,18 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
             else
             {
-                BodyPlanEntryByAnatomyName[NoEntryName] = new BodyPlanEntry().LoadFromDataBucket(noEntryDataBucket);
-                foreach (var anatomy in Anatomies.AnatomyList)
+                try
                 {
-                    if (LoadFromAnatomy(anatomy) is BodyPlanEntry anatomyEntry)
-                        BodyPlanEntryByAnatomyName[anatomy.Name] = anatomyEntry;
+                    BodyPlanEntryByAnatomyName[NoEntryName] = new BodyPlanEntry().LoadFromDataBucket(noEntryDataBucket);
+                    foreach (var anatomy in Anatomies.AnatomyList)
+                    {
+                        if (LoadFromAnatomy(anatomy) is BodyPlanEntry anatomyEntry)
+                            BodyPlanEntryByAnatomyName[anatomy.Name] = anatomyEntry;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Utils.Error(x);
                 }
             }
         }
@@ -242,6 +259,30 @@ namespace UD_ChooseYourBodyPlan.Mod
                 return null;
 
             return emptyEntry.LoadFromAnatomy(Anatomy);
+        }
+
+        public void LoadFromCategoryIDs()
+        {
+            AnatomyCategoryEntryByCategoryName ??= new();
+            for (int i = 0; i <= HighestCategory; i++)
+            {
+                try
+                {
+                    var newCategory = new AnatomyCategoryEntry
+                    {
+                        ID = i,
+                        CategoryName = GetBodyPartCategoryName(i),
+                        DisplayName = GetBodyPartCategoryName(i),
+                        Shader = new TextShader(i).Finalize(),
+                        Entries = new()
+                    };
+                    AnatomyCategoryEntryByCategoryName.Add(newCategory.CategoryName, newCategory);
+                }
+                catch (Exception x)
+                {
+                    MetricsManager.LogModWarning(Utils.ThisMod, $"Attempted to make {nameof(AnatomyCategoryEntry)} from invalid {nameof(BodyPartCategory)} value: {i}; {x}");
+                }
+            }
         }
 
         public void AssignCategoryEntries()
@@ -301,6 +342,19 @@ namespace UD_ChooseYourBodyPlan.Mod
                         ?.LoadFromAnatomy(anatomy);
             }
             return BodyPlanEntryByAnatomyName[Anatomy];
+        }
+
+        public IEnumerable<BodyPlanEntry> GetBodyPlanEntries(Predicate<BodyPlanEntry> Where = null)
+        {
+            if (BodyPlanEntryByAnatomyName.IsNullOrEmpty()
+                && !BodyPlanEntriesInitialized)
+            {
+                Utils.Error($"{nameof(BodyPlanFactory)} attempted to iterate {nameof(BodyPlanEntriesInitialized)} before initialization has been performed.");
+                yield break;
+            }
+            foreach (var bodyPlanEntry in BodyPlanEntryByAnatomyName.Values)
+                if (Where?.Invoke(bodyPlanEntry) is not false)
+                    yield return bodyPlanEntry;
         }
 
         public BodyPlanEntry GetBodyPlanEntry(PrefixMenuOption MenuOption)

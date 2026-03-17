@@ -18,15 +18,19 @@ namespace UD_ChooseYourBodyPlan.Mod
 {
     public class BodyPlanEntry: ILoadFromDataBucket<BodyPlanEntry>
     {
+        public static string DataBucketFile => "BodyPlans.xml";
+
         public static string MISSING_ANATOMY => nameof(MISSING_ANATOMY);
 
         public static BodyPlanFactory Factory => BodyPlanFactory.Factory;
 
         public string BaseDataBucketBlueprint => Const.BODYPLAN_ENTRY_BLUEPRINT;
 
-        public string CacheKey => Anatomy?.Name;
+        public string CacheKey => AnatomyName;
 
-        public Anatomy Anatomy;
+        public string AnatomyName;
+
+        public Anatomy Anatomy => Anatomies.GetAnatomy(AnatomyName);
 
         protected MergeType MergeType = MergeType.HardReplace;
 
@@ -95,7 +99,6 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanEntry()
         {
-            Anatomy = null;
             _Category = null;
             Render = null;
 
@@ -111,7 +114,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public BodyPlanEntry(Anatomy Anatomy, bool IsDefault, BodyPlanRender Render)
             : this()
         {
-            this.Anatomy = Anatomy;
+            AnatomyName = Anatomy.Name;
             this.Render = Render;
 
             _ = Category;
@@ -140,7 +143,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             _Transformation = null;
             WantsTransformation = true;
 
-            _TextElements.Clear();
+            _TextElements?.Clear();
             _TextElements = null;
 
             return this;
@@ -154,17 +157,16 @@ namespace UD_ChooseYourBodyPlan.Mod
                 return null;
             }
 
-            if (!DataBucket.TryGetTagValueForData(nameof(Anatomy), out string anatomyName))
+            if (!DataBucket.TryGetTagValueForData(nameof(Anatomy), out AnatomyName))
                 return null;
 
-            if (anatomyName != "UD_CYBP_NoEntry")
+            if (AnatomyName != "UD_CYBP_NoEntry")
             {
-                if (Anatomies.GetAnatomy(anatomyName) is not Anatomy anatomy)
+                if (Anatomy == null)
                 {
                     Dispose();
                     return null;
                 }
-                Anatomy = anatomy;
             }
 
             MergeType = DataBucket.GetTag("Merge")?.ToLower() switch
@@ -185,7 +187,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 _ => MergeType.None,
             };
 
-            DisplayName = anatomyName?.SplitCamelCase();
+            DisplayName = AnatomyName?.SplitCamelCase();
             
             DataBucket.AssignStringFieldFromTag(nameof(Category), ref _CategoryOverride);
             DataBucket.AssignStringFieldFromTag(nameof(CategoryOverride), ref _CategoryOverride);
@@ -221,7 +223,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Dispose();
                 return null;
             }
-            this.Anatomy = Anatomy;
+            AnatomyName = Anatomy?.Name;
             DisplayName = Anatomy?.Name?.SplitCamelCase();
             if (Anatomy.IsMechanical())
             {
@@ -237,6 +239,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanEntry MergeHardReplace(BodyPlanEntry Other)
         {
+            AnatomyName = Other.AnatomyName;
+
             CategoryOverride = Other.CategoryOverride ?? Other.Category?.CategoryName;
             DisplayName = Other.DisplayName;
             Render = new(Other.Render);
@@ -251,7 +255,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanEntry MergeSoftReplace(BodyPlanEntry Other)
         {
-            Anatomy ??= Other.Anatomy;
+            if (Anatomy == null)
+                AnatomyName = Other.AnatomyName;
 
             Utils.MergeReplaceField(ref _CategoryOverride, Other.CategoryOverride ?? Other.Category?.CategoryName);
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
@@ -269,6 +274,9 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanEntry MergeRequire(BodyPlanEntry Other)
         {
+            if (Anatomy == null)
+                AnatomyName = Other.AnatomyName;
+
             Utils.MergeRequireField(ref _CategoryOverride, Other.CategoryOverride ?? Other.Category?.CategoryName);
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
             Render = new BodyPlanRender(Other.Render).Merge(Render);
@@ -287,7 +295,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         public BodyPlanEntry Merge(BodyPlanEntry Other)
         {
             ClearCaches();
-            Anatomy ??= Other.Anatomy;
+            if (Anatomy == null)
+                AnatomyName = Other.AnatomyName;
 
             return Other.MergeType switch
             {
@@ -406,13 +415,13 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
             DisplayName = null;
 
-            Render.Dispose();
+            Render?.Dispose();
             Render = null;
 
-            OptionDelegates.Clear();
+            OptionDelegates?.Clear();
             OptionDelegates = null;
 
-            Tags.Clear();
+            Tags?.Clear();
             Tags = null;
 
             ClearCaches();

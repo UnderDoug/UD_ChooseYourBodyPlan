@@ -9,10 +9,10 @@ namespace UD_ChooseYourBodyPlan.Mod
     public static partial class Startup
     {
         [ModSensitiveCacheInit]
-        public static void BetaModSensitiveCacheInit()
+        public static void ModSensitiveCacheInit()
         {
             // Called at game startup and whenever mod configuration changes
-
+            _ = BodyPlanFactory.Factory;
         }
 
         [GameBasedCacheInit]

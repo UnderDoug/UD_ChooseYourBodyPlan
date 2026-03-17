@@ -10,6 +10,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         // public static bool DebugEnableOption;
 
         // General Settings
+        [OptionFlag] public static bool EnableSortByCategory;
+
         [OptionFlag] public static bool EnableBodyPlansForTK;
 
         [OptionFlag] public static bool EnableBodyPlansAvailableViaRecipe;
@@ -17,12 +19,10 @@ namespace UD_ChooseYourBodyPlan.Mod
         [OptionFlag] public static bool EnableBodyPlansThatAreRobotic;
         [OptionFlag] public static bool EnableRoboticBodyPlansMakingYouRobotic;
 
-        public static bool SortByCategory = true;
-
-        [ModSensitiveCacheInit]
-        public static void SetSortByCategory()
+        public static bool SortByCategory
         {
-            SortByCategory = true;
+            get => EnableSortByCategory;
+            set => EnableSortByCategory = value;
         }
     }
 }
