@@ -329,8 +329,12 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
             BodyPlanMenuOptions?.Clear();
 
             var bodyPlanMenuOptions = new List<AnatomyCategoryMenuData>(GetCategoryMenuOptions());
-            BodyPlanMenuOptions = (module?.builder?.handleTypedUIEvent(GetCategorySortedChoicesUIEvent, bodyPlanMenuOptions))
-                .Coalesce(bodyPlanMenuOptions);
+
+            if (SortByCategory)
+                bodyPlanMenuOptions = (module?.builder?.handleTypedUIEvent(GetCategorySortedChoicesUIEvent, bodyPlanMenuOptions))
+                    .Coalesce(bodyPlanMenuOptions);
+
+            BodyPlanMenuOptions = bodyPlanMenuOptions;
 
             return BodyPlanMenuOptions;
         }
