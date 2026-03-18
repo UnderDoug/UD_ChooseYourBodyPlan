@@ -72,7 +72,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                             _BodyPlanChoices.Add(bodyPlan);
                     }
 
-                    _BodyPlanChoices.OrderBy(c => c?.DisplayNameStripped);
+                    _BodyPlanChoices.Sort(BodyPlan.DefaultFirstNameComparer);
 
                     SetDefaultChoice();
                     SelectDefaultChoice();
@@ -104,8 +104,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 
         public override bool shouldBeEnabled()
             => GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry
-            && (!genotypeEntry.IsTrueKin
-                || Options.EnableBodyPlansForTK)
+            && (!genotypeEntry.IsTrueKin            // Will eventually make a special kind of option delgate that you marry with an
+                || Options.EnableBodyPlansForTK)    // attribute to call the decorated method to determine whether a body plan is available.
             && SubtypeModuleData?.Subtype != null
             && !BodyPlanChoices.IsNullOrEmpty()
             && BodyPlanChoices.Count > 1;

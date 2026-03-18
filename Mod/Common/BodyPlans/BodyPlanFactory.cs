@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 using UD_ChooseYourBodyPlan.Mod.Logging;
 
 using XRL;
+using XRL.CharacterBuilds;
 using XRL.Collections;
 using XRL.UI;
 using XRL.UI.Framework;
@@ -131,10 +133,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (_Factory == null)
                 {
                     _Factory = new();
-                    Loading.LoadTask($"Loading {TextElements.DataBucketFile}", _Factory.LoadTextElements);
-                    Loading.LoadTask($"Loading {TransformationData.DataBucketFile}", _Factory.LoadTransformationData);
-                    Loading.LoadTask($"Loading {BodyPlanEntry.DataBucketFile}", _Factory.LoadBodyPlans);
-                    Loading.LoadTask($"Loading {AnatomyCategoryEntry.DataBucketFile}", _Factory.LoadAnatomyCategoryEntries);
+                    Loading.LoadTask($"Loading {nameof(OptionDelegates)}", _Factory.LoadOptionDelegates);
+                    Loading.LoadTask($"Loading {TextElements.LoadingDataBucket}", _Factory.LoadTextElements);
+                    Loading.LoadTask($"Loading {TransformationData.LoadingDataBucket}", _Factory.LoadTransformationData);
+                    Loading.LoadTask($"Loading {BodyPlanEntry.LoadingDataBucket}", _Factory.LoadBodyPlans);
+                    Loading.LoadTask($"Loading {AnatomyCategoryEntry.LoadingDataBucket}", _Factory.LoadAnatomyCategoryEntries);
                 }
                 return _Factory;
             }
@@ -142,6 +145,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static int LowestCategory => 1;
         public static int HighestCategory => 23;
+
+        public StringMap<OptionDelegateEntry> OptionDelegates;
 
         public Dictionary<string, TextElements> TextElementsByName;
 
@@ -162,6 +167,60 @@ namespace UD_ChooseYourBodyPlan.Mod
             TransformationDataInitialized = false;
             BodyPlanEntriesInitialized = false;
             AnatomyCategoryEntriesInitialized = false;
+        }
+
+        public void LoadOptionDelegates()
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent);
+            OptionDelegates = new();
+            foreach (var delegateMethod in ModManager.GetMethodsWithAttribute(typeof(OptionDelegateAttribute), typeof(HasOptionDelegateAttribute)))
+            {
+                var attribute = delegateMethod.GetCustomAttribute<OptionDelegateAttribute>();
+
+                var modInfo = ModManager.GetMod(delegateMethod?.DeclaringType?.Assembly)
+                    ?? Utils.ThisMod;
+
+                if (delegateMethod.ReturnType != typeof(bool))
+                {
+                    modInfo.Warn($"Invalid return type for method decorated with {nameof(OptionDelegateAttribute)}: {delegateMethod?.Name}. " +
+                        $"Method returns {delegateMethod.ReturnType} instead of {typeof(bool)}.");
+                    continue;
+                }
+
+                if (!delegateMethod.IsStatic)
+                {
+                    modInfo.Warn($"Invalid method decorated with {nameof(OptionDelegateAttribute)}: {delegateMethod?.Name}. " +
+                        $"Method must be static.");
+                    continue;
+                }
+
+                if (delegateMethod.GetParameters() is ParameterInfo[] paramInfos)
+                {
+                    if (paramInfos.Length != 2)
+                    {
+                        modInfo.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {delegateMethod?.Name}, " +
+                            $"must contain 2 parameters: {typeof(string)} and {typeof(EmbarkBuilder)}, in that order.");
+                        continue;
+                    }
+
+                    if (!CheckParameterIsAcceptableForOptionDelegate(paramInfos[0], delegateMethod, modInfo, true)
+                        || !CheckParameterIsAcceptableForOptionDelegate(paramInfos[1], delegateMethod, modInfo, false))
+                        continue;
+
+                    string name = attribute?.Name ?? delegateMethod.Name;
+                    string alternateName = $"{delegateMethod.DeclaringType.Name}.{delegateMethod.Name}";
+                    string fullName = $"{delegateMethod.DeclaringType}.{delegateMethod.Name}";
+                    var entry = new OptionDelegateEntry
+                    {
+                        DelegateOption = (OptionDelegate)delegateMethod.CreateDelegate(typeof(OptionDelegate)),
+                    };
+                    if (!name.IsNullOrEmpty())
+                        OptionDelegates[name] = entry;
+                    OptionDelegates[alternateName] = entry;
+                    OptionDelegates[fullName] = entry;
+                }
+            }
         }
 
         public void LoadTextElements()
@@ -197,6 +256,45 @@ namespace UD_ChooseYourBodyPlan.Mod
             Load(ref AnatomyCategoryEntryByCategoryName);
             AssignCategoryEntries();
             AnatomyCategoryEntriesInitialized = true;
+        }
+
+        public static bool CheckParameterIsAcceptableForOptionDelegate(ParameterInfo Parameter, MethodInfo Method, ModInfo Mod, bool First)
+        {
+            if (Parameter.IsOut)
+            {
+                Mod.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {Method?.Name}, " +
+                    $"contains an out parameter: {Parameter.Name} of type {Parameter.ParameterType}.");
+                return false;
+            }
+            if (Parameter.IsIn)
+            {
+                Mod.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {Method?.Name}, " +
+                    $"contains an in parameter: {Parameter.Name} of type {Parameter.ParameterType}.");
+                return false;
+            }
+
+            string mustContain2InOrder = $"{nameof(OptionDelegateAttribute)} decorated method, {Method?.Name}, " +
+                    $"must contain 2 parameters: {typeof(string)} and {typeof(EmbarkBuilder)}, in that order.";
+
+            if (Parameter.ParameterType != typeof(string)
+                && Parameter.ParameterType != typeof(EmbarkBuilder))
+            {
+                Mod.Warn(mustContain2InOrder);
+                return false;
+            }
+            if (First
+                && Parameter.ParameterType != typeof(string))
+            {
+                Mod.Warn(mustContain2InOrder);
+                return false;
+            }
+            if (!First
+                && Parameter.ParameterType != typeof(EmbarkBuilder))
+            {
+                Mod.Warn(mustContain2InOrder);
+                return false;
+            }
+            return true;
         }
 
         public void Load<T>(ref Dictionary<string, T> CacheByName)

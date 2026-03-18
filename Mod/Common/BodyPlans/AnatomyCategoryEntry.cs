@@ -179,7 +179,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static CategoryComparer Comparer = new(DefaultFirst: false);
         public static CategoryComparer DefaultFirstComparer = new(DefaultFirst: true);
 
-        public static string DataBucketFile => "AnatomyCategories.xml";
+        public static string LoadingDataBucket => "AnatomyCategories";
 
         public static string XTagName => Const.MOD_PREFIX_SHORT + "Category";
 

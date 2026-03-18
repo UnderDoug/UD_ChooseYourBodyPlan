@@ -9,13 +9,13 @@ using XRL.World;
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [Serializable]
-    public class OptionDelegates : List<BaseOptionDelegate>
+    public class OptionDelegateContexts : List<OptionDelegateContext>
     {
-        public OptionDelegates()
+        public OptionDelegateContexts()
         {
         }
 
-        public OptionDelegates(IReadOnlyList<BaseOptionDelegate> Source)
+        public OptionDelegateContexts(IReadOnlyList<OptionDelegateContext> Source)
             : this()
         {
             if (!Source.IsNullOrEmpty())
@@ -23,7 +23,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Merge(optionDelegate);
         }
 
-        public OptionDelegates(OptionDelegates Source)
+        public OptionDelegateContexts(OptionDelegateContexts Source)
             : base(Source)
         {
         }
@@ -37,7 +37,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             return true;
         }
 
-        public OptionDelegates Merge(OptionDelegates Other)
+        public OptionDelegateContexts Merge(OptionDelegateContexts Other)
         {
             if (!Other.IsNullOrEmpty())
                 foreach (var otherOptionDelegate in Other)
@@ -46,7 +46,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
-        public void Merge(BaseOptionDelegate Other)
+        public void Merge(OptionDelegateContext Other)
         {
             bool any = false;
             foreach (var optionDelegate in this)

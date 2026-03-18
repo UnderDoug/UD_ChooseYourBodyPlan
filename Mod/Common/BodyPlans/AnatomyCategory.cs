@@ -78,6 +78,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                             _BodyPlans.Add(bodyPlan);
                         }
                     }
+                    _BodyPlans.Sort(BodyPlan.NameComparer);
                 }
                 return _BodyPlans;
             }
@@ -130,21 +131,26 @@ namespace UD_ChooseYourBodyPlan.Mod
             => GetBodyPlans(Default?.Anatomy)
             ;
 
-        public List<BodyPlanMenuOption> GetBodyPlanMenuOptions(BodyPlan Selected = null)
+        public List<BodyPlanMenuOption> GetBodyPlanMenuOptions(BodyPlan Default = null, BodyPlan Selected = null)
         {
             var output = new List<BodyPlanMenuOption>();
-            foreach (var bodyPlan in BodyPlans)
+            foreach (var bodyPlan in GetBodyPlans(Default))
+            {
                 if (IsDefaultMatching(bodyPlan))
+                {
                     output.Add(bodyPlan.GetMenuOption(Selected));
+                }
+            }
+
             return output;
         }
 
-        public AnatomyCategoryMenuData GetMenuData(BodyPlan Selected = null)
+        public AnatomyCategoryMenuData GetMenuData(BodyPlan Default = null, BodyPlan Selected = null)
             => new()
             {
                 ID = Entry.CategoryName,
                 DisplayName = DisplayName,
-                MenuOptions = GetBodyPlanMenuOptions(Selected),
+                MenuOptions = GetBodyPlanMenuOptions(Default, Selected),
             };
 
         public void Dispose()

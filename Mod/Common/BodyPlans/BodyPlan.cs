@@ -42,6 +42,45 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
         }
 
+        public class BodyPlanComparer : IComparer<BodyPlan>, IDisposable
+        {
+            public bool DefaultFirst;
+
+            protected BodyPlanComparer()
+            {
+                DefaultFirst = false;
+            }
+            public BodyPlanComparer(bool DefaultFirst)
+                : this()
+            {
+                this.DefaultFirst = DefaultFirst;
+            }
+            public int Compare(BodyPlan x, BodyPlan y)
+            {
+                if (y == null)
+                {
+                    if (x != null)
+                        return -1;
+                    else
+                        return 0;
+                }
+                else
+                if (x == null)
+                    return 1;
+
+                if (x.IsDefault)
+                    return -1;
+                if (y.IsDefault)
+                    return 1;
+
+                return string.Compare(x.DisplayNameStripped, y.DisplayNameStripped);
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
         public class LimbTreeBranch
         {
             public static bool IsTrueKin = Utils.IsTruekinEmbarking;
@@ -88,7 +127,11 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         protected ref GameObject SampleCreature => ref BodyPlanFactory.SampleCreature;
 
-        public static BodyPlanEqualityComparer BodyPlanValueEqualityComparer = new(ByRef: false);
+        public static BodyPlanEqualityComparer ValueEqualityComparer = new(ByRef: false);
+
+        public static BodyPlanComparer DefaultFirstNameComparer = new(DefaultFirst: true);
+
+        public static BodyPlanComparer NameComparer = new(DefaultFirst: false);
 
         public string Anatomy;
         public BodyPlanEntry Entry => BodyPlanFactory.Factory?.RequireBodyPlanEntry(Anatomy);
@@ -195,7 +238,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public bool SameAs(BodyPlan Other)
-            => BodyPlanValueEqualityComparer.Equals(this, Other);
+            => ValueEqualityComparer.Equals(this, Other);
 
         public GameObject ConfigureSampleCreature(ref GameObject SampleCreature)
         {
@@ -540,7 +583,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             {
                 ID = Entry.Anatomy.Name,
                 IsSelected = IsSelected,
-                Name = DisplayNameShowDefault.ColorIf("W", IsSelected),
+                Name = DisplayNameShowDefaultWithSymbols.ColorIf("W", IsSelected),
                 Details = Description,
                 Render = Render,
             };

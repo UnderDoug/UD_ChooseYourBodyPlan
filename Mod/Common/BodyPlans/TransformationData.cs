@@ -15,7 +15,7 @@ namespace UD_ChooseYourBodyPlan.Mod
     [Serializable]
     public class TransformationData : ILoadFromDataBucket<TransformationData>
     {
-        public static string DataBucketFile => "TransformationData.xml";
+        public static string LoadingDataBucket => "TransformationData";
         public string BaseDataBucketBlueprint => Const.XFORM_DATA_BLUEPRINT;
 
         public static string RemoveTag => Const.REMOVE_TAG;
@@ -37,7 +37,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public List<string> Mutations;
 
-        public OptionDelegates OptionDelegates;
+        public OptionDelegateContexts OptionDelegates;
 
         public TransformationData()
         {

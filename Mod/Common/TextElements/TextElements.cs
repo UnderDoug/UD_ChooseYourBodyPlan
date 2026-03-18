@@ -67,7 +67,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 : Value.ToString()
                 ;
         }
-        public static string DataBucketFile => "TextElements.xml";
+        public static string LoadingDataBucket => "TextElements";
 
         public string CacheKey => Name;
 

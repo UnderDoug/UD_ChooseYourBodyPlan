@@ -12,14 +12,14 @@ namespace UD_ChooseYourBodyPlan.Mod
 {
     public static class OptionDelegateExtensions
     {
-        public static IEnumerable<bool> GetChecks(this OptionDelegates OptionDelegates)
+        public static IEnumerable<bool> GetChecks(this OptionDelegateContexts OptionDelegates)
         {
             foreach (var option in OptionDelegates)
                 yield return option.Check();
         }
 
         public static bool Contains(
-            this OptionDelegates OptionDelegates,
+            this OptionDelegateContexts OptionDelegates,
             string OptionID
             )
         {
@@ -34,7 +34,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         private static bool CheckProceed(
-            OptionDelegates OptionDelegates,
+            OptionDelegateContexts OptionDelegates,
             string OptionID
             )
         {
@@ -47,9 +47,9 @@ namespace UD_ChooseYourBodyPlan.Mod
             return true;
         }
 
-        public static IEnumerable<BaseOptionDelegate> GetWhere(
-            this OptionDelegates OptionDelegates,
-            Predicate<BaseOptionDelegate> Where)
+        public static IEnumerable<OptionDelegateContext> GetWhere(
+            this OptionDelegateContexts OptionDelegates,
+            Predicate<OptionDelegateContext> Where)
         {
             if (OptionDelegates.IsNullOrEmpty())
                 yield break;
@@ -60,7 +60,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public static bool ParseOptionTag(
-            this OptionDelegates OptionDelegates,
+            this OptionDelegateContexts OptionDelegates,
             KeyValuePair<string, string> OptionTag
             )
         {
@@ -72,7 +72,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Debug.Arg(OptionTag.Key ?? "NO_KEY", OptionTag.Value ?? "NO_VALUE"),
                 });
 
-            if (OptionDelegates.IsNullOrEmpty())
+            if (OptionDelegates == null)
                 return false;
 
             string tagName = OptionTag.Key;
@@ -82,7 +82,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             string operatorString = null;
             string trueWhen = null;
 
-            var validTags = BaseOptionDelegate.ValidTags;
+            var validTags = OptionDelegateContext.ValidTags;
 
             if (validTags.Any(s => tagName == s))
             {
@@ -124,7 +124,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                         }
                         else
                         if (nameParams[1].EqualsNoCase("require")
-                            && BaseOptionDelegate.TryParseOptionPredicate(tagName, out optionID, out operatorString, out trueWhen)
+                            && OptionDelegateContext.TryParseOptionPredicate(tagName, out optionID, out operatorString, out trueWhen)
                             && OptionDelegates.Contains(optionID))
                         {
                             optionID = null;
@@ -136,9 +136,9 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
             else
             if (optionID.IsNullOrEmpty())
-                Utils.Error($"{new ArgumentException($"Failed to parse into valid {nameof(BaseOptionDelegate)}", nameof(OptionTag))}");
+                Utils.Error($"{new ArgumentException($"Failed to parse into valid {nameof(OptionDelegateContext)}", nameof(OptionTag))}");
 
-            Debug.YehNah(nameof(BaseOptionDelegate), $"{optionID} {operatorString} {trueWhen}", Indent: indent[1]);
+            Debug.YehNah(nameof(OptionDelegateContext), $"{optionID} {operatorString} {trueWhen}", Indent: indent[1]);
 
             return !optionID.IsNullOrEmpty()
                 && OptionDelegates.Merge(optionID, operatorString, trueWhen);
@@ -148,12 +148,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             => DataBucket.GetTagsStartingWith("Option");
 
         public static bool ParseDataBucket(
-            this OptionDelegates OptionDelegates,
+            this OptionDelegateContexts OptionDelegates,
             GameObjectBlueprint DataBucket
             )
         {
             using Indent indent = new(1);
-            Debug.Log($"{Utils.CallChain(nameof(Mod.OptionDelegates), nameof(ParseDataBucket))}({Debug.Arg(DataBucket?.Name ?? "NO_DATA_BUCKET")})", Indent: indent);
+            Debug.Log($"{Utils.CallChain(nameof(Mod.OptionDelegateContexts), nameof(ParseDataBucket))}({Debug.Arg(DataBucket?.Name ?? "NO_DATA_BUCKET")})", Indent: indent);
 
             if (DataBucket.GetOptionTags() is not Dictionary<string, string> tags
                 || tags.IsNullOrEmpty())
@@ -166,7 +166,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             return any;
         }
 
-        public static IEnumerable<BaseOptionDelegate> GetOptionDelegates(this OptionDelegates OptionDelegates)
+        public static IEnumerable<OptionDelegateContext> GetOptionDelegates(this OptionDelegateContexts OptionDelegates)
         {
             if (OptionDelegates.IsNullOrEmpty())
                 yield break;
@@ -175,9 +175,9 @@ namespace UD_ChooseYourBodyPlan.Mod
                 yield return optionDelegate;
         }
 
-        public static BaseOptionDelegate GetOptionDelegate(
-            this OptionDelegates OptionDelegates,
-            Predicate<BaseOptionDelegate> Where
+        public static OptionDelegateContext GetOptionDelegate(
+            this OptionDelegateContexts OptionDelegates,
+            Predicate<OptionDelegateContext> Where
             )
         {
             if (OptionDelegates.IsNullOrEmpty())
@@ -188,8 +188,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                 .FirstOrDefault(o => Where?.Invoke(o) is not false);
         }
 
-        public static BaseOptionDelegate GetOptionDelegate(
-            this OptionDelegates OptionDelegates,
+        public static OptionDelegateContext GetOptionDelegate(
+            this OptionDelegateContexts OptionDelegates,
             string OptionID
             )
             => CheckProceed(OptionDelegates, OptionID)
@@ -198,14 +198,14 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
 
         public static bool TryGetOption(
-            this OptionDelegates OptionDelegates,
+            this OptionDelegateContexts OptionDelegates,
             string OptionID,
-            out BaseOptionDelegate OptionDelegate
+            out OptionDelegateContext OptionDelegate
             )
             => (OptionDelegate = OptionDelegates.GetOptionDelegate(OptionID)) != null;
 
         public static bool Merge(
-            this OptionDelegates OptionDelegates,
+            this OptionDelegateContexts OptionDelegates,
             string OptionID,
             string Operator,
             string TrueState
@@ -241,8 +241,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public static bool Merge(
-            this OptionDelegates OptionDelegates,
-            BaseOptionDelegate Source
+            this OptionDelegateContexts OptionDelegates,
+            OptionDelegateContext Source
             )
             => OptionDelegates.Merge(
                 OptionID: Source.OptionID,
@@ -251,7 +251,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
 
         public static bool RemoveOptionID(
-            this OptionDelegates OptionDelegates,
+            this OptionDelegateContexts OptionDelegates,
             string OptionID
             )
         {
@@ -259,7 +259,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 return false;
 
             bool any = false;
-            using var iterator = ScopeDisposedList<BaseOptionDelegate>.GetFromPoolFilledWith(OptionDelegates);
+            using var iterator = ScopeDisposedList<OptionDelegateContext>.GetFromPoolFilledWith(OptionDelegates);
             foreach (var optionDelegate in iterator)
             {
                 if (optionDelegate.OptionID == OptionID)

@@ -20,7 +20,7 @@ namespace UD_ChooseYourBodyPlan.Mod
     public class BodyPlanEntry: ILoadFromDataBucket<BodyPlanEntry>
     {
         public const string NO_LIST_TAG = "NoList";
-        public static string DataBucketFile => "BodyPlans.xml";
+        public static string LoadingDataBucket => "BodyPlans";
 
         public static string MISSING_ANATOMY => nameof(MISSING_ANATOMY);
 
@@ -54,7 +54,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanRender Render;
 
-        public OptionDelegates OptionDelegates;
+        public OptionDelegateContexts OptionDelegates;
 
         private TransformationData _Transformation;
         public TransformationData Transformation
@@ -322,9 +322,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(AnatomyName), AnatomyName ?? "NO_ANATOMY_NAME"),
-                    Debug.Arg("<-"),
-                    Debug.Arg(Utils.CallChain(nameof(Other), nameof(Other.AnatomyName)), Other?.AnatomyName ?? "NO_OTHER_ANATOMY_NAME"),
+                    Debug.Arg($"{AnatomyName ?? "NO_ANATOMY_NAME"} <- {Other?.AnatomyName ?? "NO_OTHER_ANATOMY_NAME"}"),
                 });
 
             AnatomyName = Other.AnatomyName;
@@ -351,9 +349,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(AnatomyName), AnatomyName ?? "NO_ANATOMY_NAME"),
-                    Debug.Arg("<-"),
-                    Debug.Arg(Utils.CallChain(nameof(Other), nameof(Other.AnatomyName)), Other?.AnatomyName ?? "NO_OTHER_ANATOMY_NAME"),
+                    Debug.Arg($"{AnatomyName ?? "NO_ANATOMY_NAME"} <- {Other?.AnatomyName ?? "NO_OTHER_ANATOMY_NAME"}"),
                 });
 
             if (Anatomy == null)
@@ -382,9 +378,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(AnatomyName), AnatomyName ?? "NO_ANATOMY_NAME"),
-                    Debug.Arg("<-"),
-                    Debug.Arg(Utils.CallChain(nameof(Other), nameof(Other.AnatomyName)), Other?.AnatomyName ?? "NO_OTHER_ANATOMY_NAME"),
+                    Debug.Arg($"{AnatomyName ?? "NO_ANATOMY_NAME"} <- {Other?.AnatomyName ?? "NO_OTHER_ANATOMY_NAME"}"),
                 });
 
             if (Anatomy == null)
@@ -394,7 +388,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
             Render = new BodyPlanRender(Other.Render).Merge(Render);
 
-            OptionDelegates = new OptionDelegates(Other.OptionDelegates).Merge(OptionDelegates);
+            OptionDelegates = new OptionDelegateContexts(Other.OptionDelegates).Merge(OptionDelegates);
 
             Utils.MergeRequireField(TextElementsNames ??= new(), new HashSet<string>(Other.TextElementsNames));
             WantsTextElements = true;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using XRL;
+using XRL.CharacterBuilds;
 using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
@@ -14,16 +16,26 @@ using XRL.UI.Framework;
 
 using Event = XRL.World.Event;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using static UD_ChooseYourBodyPlan.Mod.Utils;
 using static UD_ChooseYourBodyPlan.Mod.Const;
-using XRL.CharacterBuilds;
-using System.Diagnostics.CodeAnalysis;
-using UD_ChooseYourBodyPlan.Mod.Logging;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
     public static class Extensions
     {
+        #region Debug Registration
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEach(
+                Type: typeof(UD_ChooseYourBodyPlan.Mod.Extensions),
+                MethodNameValues: new()
+                {
+                    { nameof(GetTags), false },
+                });
+        #endregion
+
         public static Func<string, T> ToFunc<T>(this Parse<T> Parse)
             => Parse.Invoke;
         public static Parse<T> ToParse<T>(this Func<string, T> Func)
@@ -854,6 +866,15 @@ namespace UD_ChooseYourBodyPlan.Mod
                         count++;
             }
             return count;
+        }
+
+        public static IEnumerable<string> SubstringsOfLength(this string String, int Length)
+        {
+            if (String.IsNullOrEmpty())
+                yield break;
+
+            for (int i = 0; i < String.Length - Length; i++)
+                yield return String[i..(i + Length)];
         }
 
         public static Dictionary<string, string> GetTags(

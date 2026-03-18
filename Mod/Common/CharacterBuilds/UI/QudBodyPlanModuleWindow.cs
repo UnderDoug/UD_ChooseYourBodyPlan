@@ -283,14 +283,18 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         private IEnumerable<BodyPlanMenuOption> GetMenuOptions(AnatomyCategory Category = null)
         {
             using Indent indent = new(1);
-            Debug.Log($"{nameof(GetMenuOptions)}({Category?.DisplayName ?? "One Category"})", Indent: indent[0]);
+            Debug.Log($"{nameof(GetMenuOptions)}({Category?.DisplayName ?? "Body Plans"})", Indent: indent[0]);
 
-            if (Category?.GetBodyPlans(module?.DefaultBodyPlanChoice) is not IEnumerable<BodyPlan> choices
-                || (Category != null
-                    && choices.IsNullOrEmpty()))
-                choices = BodyPlanChoices;
+            using var bodyPlanChoices = ScopeDisposedList<BodyPlan>.GetFromPool();
 
-            if (choices.IsNullOrEmpty())
+            if (Category == null)
+                bodyPlanChoices.AddRange(BodyPlanChoices);
+            else
+            if (Category.GetBodyPlans(module?.DefaultBodyPlanChoice) is IEnumerable<BodyPlan> categoryBodyPlans
+                && !categoryBodyPlans.IsNullOrEmpty())
+                bodyPlanChoices.AddRange(categoryBodyPlans);
+
+            if (bodyPlanChoices.IsNullOrEmpty())
             {
                 yield return new()
                 {
@@ -307,7 +311,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
             }
 
             string defaultChoice = module?.DefaultBodyPlanChoice?.Anatomy;
-            foreach (var choice in choices)
+            foreach (var choice in bodyPlanChoices)
             {
                 if (defaultChoice != null
                     && choice.SetDefault(defaultChoice))
