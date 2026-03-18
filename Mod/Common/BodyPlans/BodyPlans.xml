@@ -11,6 +11,7 @@
     <tag Name="Anatomy" Value="UD_CYBP_NoEntry" />
     <tag Name="Merge" Value="Hard" />
     <tag Name="NoEntry" />
+    <tag Name="NoList" Value="*noinherit" />
   </object>
   
   <object Name="UD_CYBP_BaseRestrictedBodyPlan" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -540,7 +541,7 @@
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Worm" Inherits="UD_CYBP_BaseDifficultBodyPlan">
-    <tag Name="Anatomy" Value="WormWorm" />
+    <tag Name="Anatomy" Value="Worm" />
     <tag Name="BasedOnBlueprint" Value="Saltwurm" />
     <part Name="Render" Tile="Creatures/sw_kraken.bmp" RenderString="W" ColorString="&amp;Y" DetailColor="y" />
   </object>

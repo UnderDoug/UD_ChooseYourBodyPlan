@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 using ConsoleLib.Console;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
 using XRL.World;
 using XRL.World.Anatomy;
@@ -11,37 +13,12 @@ using XRL.World.Parts;
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [HasModSensitiveStaticCache]
+    [Serializable]
     public class BodyPlanRender : Renderable, ILoadFromDataBucket<BodyPlanRender>
     {
-        [ModSensitiveStaticCache]
-        private static Dictionary<string, BodyPlanRender> _BodyPlanRenderables;
-        public static Dictionary<string, BodyPlanRender> BodyPlanRenderables
-        {
-            get
-            {
-                if (_BodyPlanRenderables.IsNullOrEmpty())
-                {
-                    _BodyPlanRenderables = new();
-                    Utils.Log($"Caching {nameof(BodyPlanRenderables)}:");
-                    foreach (var blueprint in GameObjectFactory.Factory?.GetBlueprintsInheritingFrom(Const.BODYPLAN_ENTRY_BLUEPRINT))
-                    {
-                        if (blueprint.TryGetTag(nameof(Anatomy), out string anatomy))
-                            _BodyPlanRenderables[anatomy] = new(blueprint);
-
-                        Utils.Log(
-                            $"{blueprint.Name}, " +
-                            $"{nameof(Anatomy)}: {blueprint.GetTag(nameof(Anatomy), "NO_ANATOMY_TAG")}, " +
-                            $"Tile: {_BodyPlanRenderables.GetValue(anatomy)?.Tile}", Indent: 1);
-                    }
-                }
-                return _BodyPlanRenderables;
-            }
-        }
-
-
         public string BaseDataBucketBlueprint => "Object";
 
-        public string CacheKey => throw new NotImplementedException();
+        public string CacheKey => ToString();
 
         public bool? HFlip;
 
@@ -55,7 +32,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             string RenderString = null,
             string ColorString = null,
             string TileColor = null,
-            char DetailColor = '\0',
+            char DetailColor = default,
             bool? HFlip = null)
             : base(
                   Tile: Tile,
@@ -104,6 +81,35 @@ namespace UD_ChooseYourBodyPlan.Mod
         public override bool getHFlip()
             => HFlip.GetValueOrDefault();
 
+        public override string ToString()
+        {
+            string output = $"{GetType().Name}";
+
+            string extras = null;
+            if (!RenderString.IsNullOrEmpty())
+                extras += $"[{nameof(RenderString)}:{RenderString}]";
+            
+            if (!ColorString.IsNullOrEmpty())
+                extras += $"[{nameof(ColorString)}:{ColorString}]";
+
+            if (!Tile.IsNullOrEmpty())
+                extras += $"[{nameof(Tile)}:{Tile}]";
+
+            if (!TileColor.IsNullOrEmpty())
+                extras += $"[{nameof(TileColor)}:{TileColor}]";
+
+            if (DetailColor != default)
+                extras += $"[{nameof(DetailColor)}:{DetailColor}]";
+
+            if (HFlip != null)
+                extras += $"[{nameof(HFlip)}:{HFlip}]";
+
+            if (extras.IsNullOrEmpty())
+                extras += "[Empty]";
+
+            return output + extras;
+        }
+
         private BodyPlanRender LoadFromDataBucketTags(GameObjectBlueprint DataBucket, bool? HFlip = null)
         {
             if (DataBucket == null)
@@ -115,7 +121,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             DataBucket.AssignStringFieldFromTag(nameof(TileColor), ref TileColor);
             if (DataBucket.TryGetTagValueForData(nameof(DetailColor), out string detailColor)
                 && !detailColor.EqualsNoCase(Const.REMOVE_TAG))
-                DetailColor = detailColor?[0] ?? '\0';
+                DetailColor = detailColor?[0] ?? default;
+
 
             if (HFlip == null)
             {

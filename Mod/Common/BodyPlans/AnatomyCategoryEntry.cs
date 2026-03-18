@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
 using XRL.Collections;
 using XRL.World;
@@ -51,6 +53,18 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             public TextShader Finalize(string OriginalShader = null)
             {
+                using Indent indent = new(1);
+                Debug.LogMethod(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(nameof(OriginalShader), OriginalShader ??  "NO_ORIGINAL"),
+                    });
+
+                Debug.Log(nameof(Shader), Shader ?? "NO_SHADER", Indent: indent[1]);
+                Debug.Log(nameof(Type), Type ?? "NO_TYPE", Indent: indent[1]);
+                Debug.Log(nameof(Colors), Colors ?? "NO_COLORS", Indent: indent[1]);
+                Debug.Log(nameof(Color), Color ?? "NO_COLOR", Indent: indent[1]);
+
                 Shader = Shader.ShaderColorOrNull();
                 if (Shader.IsNullOrEmpty())
                 {
@@ -69,6 +83,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (Shader.IsNullOrEmpty())
                     Shader = OriginalShader;
 
+                Debug.YehNah($"Final {nameof(Shader)}", Shader ?? "NO_SHADER", Indent: indent[1]);
                 return this;
             }
 
@@ -78,7 +93,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             public readonly string Apply(string Text)
                 => !Shader.IsNullOrEmpty()
                     && !Text.IsNullOrEmpty()
-                ? "{{" + $"{this}|{Text}" + "}}"
+                ? $"{"{{"}{this}|{Text}{"}}"}"
                 : Text;
 
             public TextShader Merge(
@@ -153,7 +168,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (y.ID == 0)
                     return 1;
 
-                return string.Compare(x.DisplayName, y.DisplayName);
+                return string.Compare(x?.DisplayName, y?.DisplayName);
             }
 
             public void Dispose()
@@ -229,7 +244,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public bool IsValid(Predicate<BodyPlanEntry> Filter = null)
             => !DisplayName.IsNullOrEmpty()
-            && GetEntries() is IEnumerable<BodyPlanEntry> entries
+            && GetEntries(Filter) is IEnumerable<BodyPlanEntry> entries
             && !entries.IsNullOrEmpty()
             && (Filter == null
                 || entries.Any(Filter.Invoke))
@@ -248,37 +263,41 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (Entries.IsNullOrEmpty())
                 yield break;
 
-            Entries.StableSortInPlace((x, y) => string.Compare(x?.Anatomy?.Name, y?.Anatomy?.Name));
+            Entries.StableSortInPlace(delegate (BodyPlanEntry x, BodyPlanEntry y)
+            {
+                using var xBodyPlan = x?.GetBodyPlan();
+                using var yBodyPlan = y?.GetBodyPlan();
+                return string.Compare(xBodyPlan?.DisplayNameStripped, yBodyPlan?.DisplayNameStripped);
+            });
 
             foreach (var entry in Entries)
-            {
-                if ((Filter == null
-                    || Filter(entry)))
-                {
+                if (Filter?.Invoke(entry) is not false)
                     yield return entry;
-                }
-            }
         }
 
-        public void DebugOutput(int Indent = 0, bool SkipCategoryName = false)
+        public void DebugOutput(Indent Indent, bool SkipCategoryName = false)
         {
-            Utils.Log($"{nameof(ID)}: {ID}", Indent: Indent);
+            Debug.Log(nameof(ID), ID, Indent: Indent);
             if (!SkipCategoryName)
-                Utils.Log($"{nameof(CategoryName)}: {CategoryName ?? "NO_CATEGORY_NAME"}", Indent: Indent);
-            Utils.Log($"{nameof(DisplayName)}: {DisplayName ?? "NO_DISPLAY_NAME"}", Indent: Indent);
-            Utils.Log($"{nameof(Shader)}: {Shader}", Indent: Indent);
-            Utils.Log($"{nameof(Entries)}:", Indent: Indent);
-            if (Entries.IsNullOrEmpty())
-                Utils.Log("::None", Indent: Indent + 1);
-            else
-                foreach (var entry in Entries)
-                    Utils.Log($"::{entry.DisplayName}", Indent: Indent + 1);
+                Debug.Log(nameof(CategoryName), CategoryName ?? "NO_CATEGORY_NAME", Indent: Indent);
+            Debug.Log(nameof(DisplayName), DisplayName ?? "NO_DISPLAY_NAME", Indent: Indent);
+            Debug.Log(nameof(Shader), Shader, Indent: Indent);
+            Debug.Log($"{nameof(Entries)}:", Indent: Indent);
+            Debug.Loggregrate(
+                Source: Entries,
+                Proc: e => e.DisplayName,
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: Indent[1]);
         }
 
         public AnatomyCategoryEntry LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
             if (!ILoadFromDataBucket<AnatomyCategoryEntry>.CheckIsValidDataBucket(this, DataBucket))
+            {
+                Dispose();
                 return null;
+            }
 
             DataBucket.TryGetTagValueForData(nameof(CategoryName), out CategoryName);
 
@@ -308,6 +327,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (xTags.TryGetValue(TextShader.XTagName, out Dictionary<string, string> textShaderXTag))
                     Shader = Shader.Merge(textShaderXTag);
             }
+            DisplayName ??= CategoryName;
             if (CategoryName.IsNullOrEmpty())
             {
                 Dispose();
@@ -323,7 +343,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (!Other.DisplayName.IsNullOrEmpty())
                     DisplayName = Other.DisplayName;
                 
-                Shader.Merge(Other.Shader);
+                Shader = Shader.Merge(Other.Shader);
             }
             return this;
         }

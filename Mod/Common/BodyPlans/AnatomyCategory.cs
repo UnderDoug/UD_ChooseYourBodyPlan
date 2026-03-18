@@ -70,10 +70,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                     _BodyPlans ??= new();
                     foreach (var bodyPlanEntry in Entry.GetEntries(BodyPlanEntry.IsAvailable))
                     {
-                        if (bodyPlanEntry.GetBodyPlan() is BodyPlan bodyPlan)
+                        if (bodyPlanEntry.TryGetBodyPlan(out BodyPlan bodyPlan))
                         {
                             if (!IsDefault)
                                 bodyPlan.Category = this;
+
                             _BodyPlans.Add(bodyPlan);
                         }
                     }
@@ -112,12 +113,22 @@ namespace UD_ChooseYourBodyPlan.Mod
             => BodyPlan != null
             && IsDefault == BodyPlan.IsDefault;
 
-        public IEnumerable<BodyPlan> GetBodyPlans()
+        public IEnumerable<BodyPlan> GetBodyPlans(string Default = null)
         {
             foreach (var bodyPlan in BodyPlans)
+            {
+                if (Default != null
+                    && bodyPlan.SetDefault(Default))
+                    Default = null;
+
                 if (IsDefaultMatching(bodyPlan))
                     yield return bodyPlan;
+            }
         }
+
+        public IEnumerable<BodyPlan> GetBodyPlans(BodyPlan Default = null)
+            => GetBodyPlans(Default?.Anatomy)
+            ;
 
         public List<BodyPlanMenuOption> GetBodyPlanMenuOptions(BodyPlan Selected = null)
         {

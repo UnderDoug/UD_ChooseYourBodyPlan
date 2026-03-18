@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -17,7 +20,10 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
+using Debug = UD_ChooseYourBodyPlan.Mod.Logging.Debug;
+
 using static UD_ChooseYourBodyPlan.Mod.CharacterBuilds.QudBodyPlanModule;
+using UD_ChooseYourBodyPlan.Mod.Logging;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -39,7 +45,14 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static void Warn(object Message)
             => ThisMod.Warn(Message);
 
-        public static bool DisableDebug = false;
+
+		public static string CallChain(params string[] Strings)
+			=> Strings
+				?.Aggregate(
+					seed: "",
+					func: (a, n) => a + (!a.IsNullOrEmpty() && !n.IsNullOrEmpty() ? "." : null) + n);
+
+		public static bool DisableDebug = false;
 
         public static void Log(string Message, int Indent = 0)
         {
@@ -66,6 +79,122 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
 
 		#endregion
+		
+        public static ModInfo GetFirstCallingModNot(ModInfo ThisMod)
+		{
+			try
+			{
+				Dictionary<Assembly, ModInfo> modAssemblies = ModManager.ActiveMods
+					?.Where(mi => mi != ThisMod && mi.Assembly != null)
+					?.ToDictionary(mi => mi.Assembly, mi => mi);
+
+				if (modAssemblies.IsNullOrEmpty())
+				{
+					return null;
+				}
+				StackTrace stackTrace = new();
+				for (int i = 0; i < 12 && stackTrace?.GetFrame(i) is StackFrame stackFrameI; i++)
+				{
+					if (stackFrameI?.GetMethod() is MethodBase methodBase
+						&& methodBase.DeclaringType is Type declaringType
+						&& modAssemblies.ContainsKey(declaringType.Assembly))
+					{
+						return modAssemblies[declaringType.Assembly];
+					}
+				}
+			}
+			catch (Exception x)
+			{
+				MetricsManager.LogException(nameof(GetFirstCallingModNot), x, Const.GAME_MOD_EXCEPTION);
+			}
+			return null;
+		}
+
+		public static bool TryGetFirstCallingModNot([NotNullWhen(true)] ModInfo ThisMod, out ModInfo FirstCallingMod)
+			=> (FirstCallingMod = GetFirstCallingModNot(ThisMod)) != null
+            ;
+
+		public static string AppendTick(string String, bool AppendSpace = true)
+			=> String + "[" + Const.TICK + "]" + (AppendSpace ? " " : "")
+            ;
+
+		public static string AppendCross(string String, bool AppendSpace = true)
+			=> String + "[" + Const.CROSS + "]" + (AppendSpace ? " " : "")
+            ;
+
+		public static string AppendYehNah(string String, bool Yeh, bool AppendSpace = true)
+			=> Yeh
+			? AppendTick(String, AppendSpace)
+			: AppendCross(String, AppendSpace)
+            ;
+
+		public static string YehNah(bool? Yeh = null)
+			=> "[" + (Yeh == null ? "-" : (Yeh.GetValueOrDefault() ? Const.TICK : Const.CROSS)) + "]"
+            ;
+
+		public static string DelimitedAggregator<T>(string Accumulator, T Next, string Delimiter)
+			=> Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next
+            ;
+
+		public static string CommaDelimitedAggregator<T>(string Accumulator, T Next)
+			=> DelimitedAggregator(Accumulator, Next, ",")
+            ;
+
+		public static string CommaSpaceDelimitedAggregator<T>(string Accumulator, T Next)
+			=> DelimitedAggregator(Accumulator, Next, ", ")
+            ;
+
+		public static string NewLineDelimitedAggregator<T>(string Accumulator, T Next)
+			=> DelimitedAggregator(Accumulator, Next, "\n")
+            ;
+
+		public static bool EitherNull<Tx, Ty>(
+			[NotNullWhen(false)] Tx X,
+			[NotNullWhen(false)] Ty Y,
+			out bool AreEqual)
+		{
+			AreEqual = (X is null) == (Y is null);
+			return X is null
+				|| Y is null;
+		}
+
+		public static bool EitherNull<Tx, Ty>(
+			[NotNullWhen(false)] Tx X,
+			[NotNullWhen(false)] Ty Y,
+			out int Comparison)
+		{
+			Comparison = 0;
+
+			bool xNull = X is null;
+			bool yNull = Y is null;
+
+			if (!xNull
+				&& !yNull)
+				return false;
+
+			if (!xNull
+				&& yNull)
+				Comparison = 1;
+
+			if (xNull
+				&& !yNull)
+				Comparison = -1;
+
+			return true;
+		}
+
+		public static bool EitherNullOrEmpty<Tx, Ty>(
+			[NotNullWhen(false)] Tx[] X,
+			[NotNullWhen(false)] Ty[] Y,
+			out bool AreEqual)
+		{
+			if (EitherNull(X, Y, out AreEqual))
+				return AreEqual;
+
+			AreEqual = (X.Length > 0) == (Y.Length > 0);
+			return X.Length > 0
+				|| Y.Length > 0;
+		}
 
 		public static string GetTile(GameObjectBlueprint Blueprint)
 	        => Blueprint.GetPartParameter<string>(nameof(Render), nameof(Render.Tile))
@@ -100,18 +229,34 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
 
         public static T MergeReplaceField<T>(ref T Field, T Becomes)
-        {
-            Utils.Log($"{nameof(MergeReplaceField)}({Field}, {Becomes})", Indent: 3);
-            if (!Equals(Becomes, default))
+		{
+			using Indent indent = new(1);
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Field), !Equals(Field, null) ? Field.ToString() : "null"),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Becomes), Becomes?.ToString() ?? "null"),
+				});
+
+			if (!Equals(Becomes, default))
                 Field = Becomes;
 
             return Field;
         }
 
         public static T MergeRequireField<T>(ref T Field, T Becomes)
-        {
-            Utils.Log($"{nameof(MergeRequireField)}({Field}, {Becomes})", Indent: 3);
-            if (Equals(Field, default))
+		{
+			using Indent indent = new(1);
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Field), !Equals(Field, null) ? Field.ToString() : "null"),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Becomes), Becomes?.ToString() ?? "null"),
+				});
+
+            if (Equals(Field, null))
 				Field = Becomes;
 
             return Field;
@@ -121,23 +266,49 @@ namespace UD_ChooseYourBodyPlan.Mod
             ICollection<T> Field,
             ICollection<T> Becomes
             )
-        {
-            Utils.Log($"{nameof(MergeRequireField)}({Field}({Field?.Count ?? -1}), {Becomes}({Becomes?.Count ?? -1}))", Indent: 3);
-            if (Field.IsNullOrEmpty())
-                Field = Becomes;
-
-            return Field;
+		{
+			using Indent indent = new(1);
+            /*
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Field), Field?.Count ?? -1),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Becomes), Becomes?.Count ?? -1),
+				});
+            */
+			bool required = false;
+			if (Field.IsNullOrEmpty())
+			{
+				Field = Becomes;
+				required = true;
+			}
+			Debug.YehNah(nameof(required), required, required, Indent: indent[1]);
+			return Field;
         }
 
         public static ICollection<T> MergeReplaceField<T>(
             ICollection<T> Field,
             ICollection<T> Becomes
             )
-        {
-            Utils.Log($"{nameof(MergeReplaceField)}({Field}({Field?.Count ?? -1}), {Becomes}({Becomes?.Count ?? -1}))", Indent: 3);
-            if (!Becomes.IsNullOrEmpty())
-                Field = Becomes;
-
+		{
+			using Indent indent = new(1);
+            /*
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Field), Field?.Count ?? -1),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Becomes), Becomes?.Count ?? -1),
+				});
+            */
+            bool replaced = false;
+			if (!Becomes.IsNullOrEmpty())
+			{
+				Field = Becomes;
+                replaced = true;
+			}
+            Debug.YehNah(nameof(replaced), replaced, replaced, Indent: indent[1]);
             return Field;
         }
 
@@ -148,14 +319,40 @@ namespace UD_ChooseYourBodyPlan.Mod
 		/// <param name="Source"></param>
 		/// <param name="Other"></param>
 		/// <returns></returns>
-		public static ICollection<T> MergeDistinctInCollection<T>(ICollection<T> Source, ICollection<T> Other)
-        {
-            Utils.Log($"{nameof(MergeDistinctInCollection)}({Source}({Source?.Count ?? -1}), {Other}({Other?.Count ?? -1}))", Indent: 3);
-            if (!Other.IsNullOrEmpty())
-                foreach (var element in Other)
-                    if (!Source.Contains(element))
-                        Source.Add(element);
+		public static ICollection<T> MergeRequireDistinctInCollection<T>(
+            ICollection<T> Source,
+            ICollection<T> Other,
+			Predicate<T> Filter = null
+            )
+		{
+			using Indent indent = new(1);
+            /*
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Source), Source?.Count ?? -1),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Other), Other?.Count ?? -1),
+				});
+            */
+			if (!Other.IsNullOrEmpty())
+            {
+				foreach (var element in Other)
+				{
+					if (!Source.Contains(element))
+					{
+						if (Filter?.Invoke(element) is false)
+							continue;
 
+						Source.Add(element);
+						Debug.CheckYeh(element?.ToString() ?? "NO_ELEMENT", "Added", Indent: indent[1]);
+					}
+				}
+			}
+            else
+			{
+				Debug.CheckNah("Nothing to add", Indent: indent[1]);
+			}
             return Source;
         }
 
@@ -169,14 +366,31 @@ namespace UD_ChooseYourBodyPlan.Mod
 		/// <returns>The modified <paramref name="Source"/> dictionary.</returns>
 		public static IDictionary<TKey, TValue> MergeReplaceDictionary<TKey, TValue>(
             IDictionary<TKey, TValue> Source,
-            IDictionary<TKey, TValue> Other
-            )
-        {
-            Utils.Log($"{nameof(MergeReplaceDictionary)}({Source}({Source?.Count ?? -1}), {Other}({Other?.Count ?? -1}))", Indent: 3);
+            IDictionary<TKey, TValue> Other)
+		{
+			using Indent indent = new(1);
+            /*
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Source), Source?.Count ?? -1),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Other), Other?.Count ?? -1),
+				});
+            */
             if (!Other.IsNullOrEmpty())
-                foreach ((TKey key, TValue value) in Other)
-                    Source[key] = value;
-
+			{
+				foreach ((TKey key, TValue value) in Other)
+				{
+					if (Source.ContainsKey(key))
+                        Debug.Log($"Value at key {key}", "replaced", Indent: indent[1]);
+					Source[key] = value;
+				}
+			}
+			else
+			{
+				Debug.CheckNah("Nothing to add", Indent: indent[1]);
+			}
 			return Source;
         }
 
@@ -192,13 +406,32 @@ namespace UD_ChooseYourBodyPlan.Mod
             IDictionary<TKey, TValue> Source,
             IDictionary<TKey, TValue> Other
             )
-        {
-            Utils.Log($"{nameof(MergeRequireDictionary)}({Source}({Source?.Count ?? -1}), {Other}({Other?.Count ?? -1}))", Indent: 3);
-            if (!Other.IsNullOrEmpty())
-                foreach ((TKey key, TValue value) in Other)
-                    if (!Source.ContainsKey(key))
-                        Source[key] = value;
-
+		{
+			using Indent indent = new(1);
+            /*
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(Source), Source?.Count ?? -1),
+					Debug.Arg("<-"),
+					Debug.Arg(nameof(Other), Other?.Count ?? -1),
+				});
+            */
+			if (!Other.IsNullOrEmpty())
+			{
+				foreach ((TKey key, TValue value) in Other)
+				{
+					if (!Source.ContainsKey(key))
+					{
+						Debug.Log($"{key} value", "required", Indent: indent[1]);
+						Source[key] = value;
+					}
+				}
+			}
+			else
+			{
+				Debug.CheckNah("Nothing to add", Indent: indent[1]);
+			}
 			return Source;
         }
 
@@ -220,11 +453,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                 using var options = ScopeDisposedList<string>.GetFromPool();
                 options.Add("All");
                 using var hotkeys = ScopeDisposedList<char>.GetFromPool();
-                hotkeys.Add('\0');
+                hotkeys.Add(default);
                 foreach (var anatomy in Anatomies.AnatomyList)
                 {
                     options.Add(anatomy.Name);
-                    hotkeys.Add('\0');
+                    hotkeys.Add(default);
                 }
 
                 Popup.PickOption(

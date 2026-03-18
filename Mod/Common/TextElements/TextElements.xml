@@ -10,26 +10,30 @@
     <tag Name="DescriptionBefore" Value="This body plan will be {{r|difficult}} to play with." />
     <tag Name="SummaryAfter" Value="{{r|Difficult to play}}" />
     <xtagUD_CYBP_Symbols Difficult="r::&#x13;" />
+    <!--tag Name="Symbols.Difficult" Value="r::&#x13;" /-->
   </object>
   
   <object Name="UD_CYBP_TextElements Transformation" Inherits="UD_CYBP_BaseTextElements">
     <tag Name="TextElements" Value="Transformation" />
-    <tag Name="DescriptionBefore" Value="This body plan will be {{r|difficult}} to play with." />
-    <tag Name="SummaryAfter" Value="{{r|Difficult to play}}" />
-    <xtagUD_CYBP_Symbols Transformation="r::&#x13;" />
+    <tag Name="DescriptionBefore" Value="{{m|There is a cooking recipe to get this body plan.}}" />
+    <tag Name="SummaryAfter" Value="{{m|Avaialable via cooking}}" />
+    <xtagUD_CYBP_Symbols Transformation="m::&#xf1;" />
+    <!--tag Name="Symbols.Transformation" Value="m::&#xf1;" /-->
   </object>
   
   <object Name="UD_CYBP_TextElements Mechanical" Inherits="UD_CYBP_BaseTextElements">
     <tag Name="TextElements" Value="Mechanical" />
-    <tag Name="DescriptionBefore" Value="This body plan will be {{r|difficult}} to play with." />
-    <tag Name="SummaryAfter" Value="{{r|Difficult to play}}" />
-    <xtagUD_CYBP_Symbols Mechanical="r::&#x13;" />
+    <tag Name="DescriptionBefore" Value="{{c|You will be made mechanical with this body plan.}}" />
+    <tag Name="SummaryAfter" Value="{{c|You are mechanical}}" />
+    <!--xtagUD_CYBP_Symbols Mechanical="c::&#xf;" /-->
+    <tag Name="Symbols.Mechanical" Value="c::&#xf;" />
   </object>
   
   <object Name="UD_CYBP_TextElements NoCyber" Inherits="UD_CYBP_BaseTextElements">
     <tag Name="TextElements" Value="NoCyber" />
     <xtagUD_CYBP_Legend NoCyber="Incompatible with Cybernetics" />
-    <xtagUD_CYBP_Symbols NoCyber="r::&#x13;" />
+    <!--xtagUD_CYBP_Symbols NoCyber="r::&#x9b;" /-->
+    <tag Name="Symbols.NoCyber" Value="r::&#x9b;" />
   </object>
   
 </objects>

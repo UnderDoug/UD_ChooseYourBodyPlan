@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
 using XRL.World;
 using XRL.World.Anatomy;
+
+using static UD_ChooseYourBodyPlan.Mod.ILoadFromDataBucket<UD_ChooseYourBodyPlan.Mod.TransformationData>;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -25,8 +29,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         public string RenderString => Render?.RenderString;
         public string Tile => Render?.Tile;
         public string TileColor => Render?.TileColor;
-        public char DetailColor => Render?.DetailColor ?? '\0';
-        public string DetailColorS => (Render?.DetailColor ?? '\0').ToString();
+        public char DetailColor => Render?.DetailColor ?? default;
+        public string DetailColorS => (Render?.DetailColor ?? default).ToString();
 
         public string Species;
         public string Property;
@@ -58,30 +62,28 @@ namespace UD_ChooseYourBodyPlan.Mod
             Mutations = !Source.Mutations.IsNullOrEmpty() ? new(Source.Mutations) : new();
         }
 
-        public void DebugOutput(int Indent = 0)
-        {
-            Utils.Log($"{nameof(RenderString)}: {RenderString ?? "NO_RENDER_STRING"}", Indent: Indent);
-            Utils.Log($"{nameof(Tile)}: {Tile ?? "NO_TILE"}", Indent: Indent);
-            Utils.Log($"{nameof(TileColor)}: {TileColor ?? "NO_TILE_COLOR"}", Indent: Indent);
-            Utils.Log($"{nameof(DetailColor)}: {DetailColorS ?? "NO_DETAIL_COLOR"}", Indent: Indent);
-            Utils.Log($"{nameof(Species)}: {Species ?? "NO_SPECIES"}", Indent: Indent);
-            Utils.Log($"{nameof(Property)}: {Property ?? "NO_PROPERTY"}", Indent: Indent);
-            Utils.Log($"{nameof(Mutations)}:", Indent: Indent);
-            if (Mutations.IsNullOrEmpty())
-                Utils.Log("::None", Indent: Indent + 1);
-            else
-                foreach (string mutation in Mutations)
-                    Utils.Log($"::{mutation}", Indent: Indent + 1);
-        }
-
         public TransformationData LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(DataBucket?.Name ?? "NO_DATA_BUCKET"),
+                });
+
+            if (!CheckIsValidDataBucket(this, DataBucket))
+            {
+                Dispose();
+                return null;
+            }
+
             if (DataBucket.InheritsFrom(Const.XFORM_DATA_BLUEPRINT))
             {
                 DataBucket.TryGetTagValueForData(nameof(Anatomy), out Anatomy);
 
                 DataBucket.TryGetTagValueForData(nameof(Species), out Species);
-                DataBucket.TryGetTagValueForData(nameof(Property), out Property);
+                if (!DataBucket.TryGetTagValueForData(nameof(Property), out Property))
+                    DataBucket.TryGetTagValueForData($"Eaten{nameof(Property)}", out Property);
 
                 Render = new BodyPlanRender().LoadFromDataBucket(DataBucket);
 
@@ -112,6 +114,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     $"instead of \"{Const.XFORM_DATA_BLUEPRINT}\"");
             }
 
+            DebugOutput(1);
             return this;
         }
 
@@ -147,6 +150,40 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             Mutations?.Clear();
             Mutations = null;
+        }
+
+        public void DebugOutput(int Indent)
+        {
+            using Indent indent = new(Indent);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Anatomy), Anatomy ?? "MISSING_ANATOMY"),
+                });
+
+            Debug.Log(nameof(RenderString), RenderString ?? "NO_RENDER_STRING", Indent: indent[1]);
+            Debug.Log(nameof(Tile), Tile ?? "NO_TILE", Indent: indent[1]);
+            Debug.Log(nameof(TileColor), TileColor ?? "NO_TILE_COLOR", Indent: indent[1]);
+            Debug.Log(nameof(DetailColor), DetailColorS ?? "NO_DETAIL_COLOR", Indent: indent[1]);
+
+            Debug.Log(nameof(Species), Species ?? "NO_SPECIES", Indent: indent[1]);
+            Debug.Log(nameof(Property), Property ?? "NO_PROPERTY", Indent: indent[1]);
+
+            Debug.Log($"{nameof(Mutations)}:", Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: Mutations,
+                Proc: m => m,
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
+
+            Debug.Log(nameof(OptionDelegates), OptionDelegates?.Count ?? 0, Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: OptionDelegates,
+                Proc: o => $"{o.OptionID} {o.Operator} {o.TrueState}",
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
         }
     }
 }

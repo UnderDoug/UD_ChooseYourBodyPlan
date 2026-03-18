@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
 using XRL.Collections;
 using XRL.World;
@@ -14,9 +16,9 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
             public string Name;
             public char Color;
-            public char Value;
+            public string Value;
 
-            public Symbol(string Name, char Color, char Value)
+            public Symbol(string Name, char Color, string Value)
             {
                 this.Name = Name;
                 this.Color = Color;
@@ -26,11 +28,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                 : this()
             {
                 Name = XTagEntry.Key;
-                if (!XTagEntry.Value.Contains(":"))
-                    Value = XTagEntry.Value[0];
+                if (!XTagEntry.Value.Contains("::"))
+                    Value = XTagEntry.Value;
                 else
                 {
-                    if (XTagEntry.Value.Split(":") is string[] pair)
+                    if (XTagEntry.Value.Split("::") is string[] pair)
                     {
                         if (pair.Length > 1)
                         {
@@ -40,22 +42,27 @@ namespace UD_ChooseYourBodyPlan.Mod
 
                             if (pair[1] is string dualValueString
                                 && !dualValueString.IsNullOrEmpty())
-                                Value = dualValueString[0];
+                                Value = dualValueString;
                         }
                         else
                         if (pair.Length == 1)
                         {
                             if (pair[0] is string singleValueString
                                 && !singleValueString.IsNullOrEmpty())
-                                Value = singleValueString[0];
+                                Value = singleValueString;
                         }
                     }
                 }
-                Utils.Log($"new {nameof(Symbol)} {Name}: {Color}|{Value}", Indent: 1);
+                using Indent indent = new(1);
+                Debug.LogCaller(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(Name ?? "NO_NAME", $"{Color}|{Value}"),
+                    });
             }
 
             public override readonly string ToString()
-                => Color != '\0'
+                => Color != default
                 ? "{{" + $"{Color}|{Value}" + "}}"
                 : Value.ToString()
                 ;
@@ -109,12 +116,24 @@ namespace UD_ChooseYourBodyPlan.Mod
             DataBucket.AssignStringFieldFromTag(nameof(SummaryBefore), ref SummaryBefore);
             DataBucket.AssignStringFieldFromTag(nameof(SummaryAfter), ref SummaryAfter);
 
-            Utils.Log($"{DataBucket.Name} {nameof(SymbolsByName)}:", Indent: 0);
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                        Debug.Arg(DataBucket?.Name ?? "NO_DATA_BUCKET"),
+                });
+
             if (DataBucket.TryGetXtag($"{Const.MOD_PREFIX_SHORT}{nameof(Symbols)}", out Dictionary<string, string> symbolsXTag))
             {
                 SymbolsByName = new();
                 foreach (var xTagEntry in symbolsXTag)
                     SymbolsByName[xTagEntry.Key] = new(xTagEntry);
+            }
+            if (DataBucket.GetSubTagsStartingWith(nameof(Symbols)) is Dictionary<string, string> symbolsTags)
+            {
+                SymbolsByName = new();
+                foreach (var tagEntry in symbolsTags)
+                    SymbolsByName[tagEntry.Key] = new(tagEntry);
             }
 
             if (DataBucket.TryGetXtag($"{Const.MOD_PREFIX_SHORT}Legend", out Dictionary<string, string> legendXTag))

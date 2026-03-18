@@ -7,7 +7,7 @@ namespace UD_ChooseYourBodyPlan.Mod
     public static class Options
     {
         // Debug Settings
-        // public static bool DebugEnableOption;
+        [OptionFlag] public static bool? DebugEnableLogging;
 
         // General Settings
         [OptionFlag] public static bool EnableSortByCategory;

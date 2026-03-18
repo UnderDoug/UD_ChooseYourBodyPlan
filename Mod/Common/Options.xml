@@ -17,6 +17,18 @@
       The default is {{w|Disabled}}.
     </helptext>
   </option-->
+  <option
+        ID="UD_ChooseYourBodyPlan_DebugEnableLogging"
+        DisplayText="{{C|Choose Your Body Plan}}: Turn on debug logging for this mod."
+        Category="Debug"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, the mod will output verbose logs to Player.log tracing program flow specifically within the mod.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
 
   <!--
   

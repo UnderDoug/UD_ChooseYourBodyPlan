@@ -18,7 +18,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 {
     public class BodyPlan : IDisposable
     {
-        public readonly struct BodyPlanEqualityComparer : IEqualityComparer<BodyPlan>, IDisposable
+        public class BodyPlanEqualityComparer : IEqualityComparer<BodyPlan>, IDisposable
         {
             public readonly bool ByRef;
             public BodyPlanEqualityComparer(bool ByRef)
@@ -26,7 +26,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 this.ByRef = ByRef;
             }
 
-            public readonly bool Equals(BodyPlan x, BodyPlan y)
+            public bool Equals(BodyPlan x, BodyPlan y)
                 => ByRef
                 ? x == y
                 : x?.Anatomy == y?.Anatomy
@@ -88,7 +88,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         protected ref GameObject SampleCreature => ref BodyPlanFactory.SampleCreature;
 
-        public static BodyPlanEqualityComparer AnatomyEqualityComparer = new(ByRef: false);
+        public static BodyPlanEqualityComparer BodyPlanValueEqualityComparer = new(ByRef: false);
 
         public string Anatomy;
         public BodyPlanEntry Entry => BodyPlanFactory.Factory?.RequireBodyPlanEntry(Anatomy);
@@ -195,7 +195,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public bool SameAs(BodyPlan Other)
-            => AnatomyEqualityComparer.Equals(this, Other);
+            => BodyPlanValueEqualityComparer.Equals(this, Other);
 
         public GameObject ConfigureSampleCreature(ref GameObject SampleCreature)
         {
@@ -540,8 +540,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             {
                 ID = Entry.Anatomy.Name,
                 IsSelected = IsSelected,
-                Name = GetDisplayName(),
-                Details = GetDescription(),
+                Name = DisplayNameShowDefault.ColorIf("W", IsSelected),
+                Details = Description,
                 Render = Render,
             };
 
@@ -563,6 +563,26 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public bool IsInvalid()
             => !IsValid()
+            ;
+
+        public bool SetDefault(string Default)
+            => IsDefault = Anatomy == Default
+            ;
+
+        public bool SetDefault(Anatomy Default)
+            => SetDefault(Default?.Name)
+            ;
+
+        public bool SetDefault(BodyPlanEntry Default)
+            => SetDefault(Default?.Anatomy)
+            ;
+
+        public bool SetDefault(BodyPlan Default)
+            => SetDefault(Default?.Anatomy)
+            ;
+
+        public bool SetDefault(PrefixMenuOption Default)
+            => SetDefault(Default?.Id)
             ;
 
         public void Dispose()

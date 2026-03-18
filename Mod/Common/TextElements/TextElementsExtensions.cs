@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
 using XRL.Collections;
 using XRL.World;
@@ -12,15 +14,18 @@ namespace UD_ChooseYourBodyPlan.Mod
     {
         public static IEnumerable<string> GetTextElementsTags(this GameObjectBlueprint DataBucket)
         {
-            string startsWith = $"{nameof(TextElements)}.";
-            int startsWithIndex = startsWith.Length;
-            if (DataBucket.GetTagsStartingWith(startsWith) is Dictionary<string, string> tags)
+            if (DataBucket.GetSubTagsStartingWith(nameof(TextElements)) is Dictionary<string, string> tags)
             {
-                Utils.Log($"{nameof(DataBucket)} {DataBucket.Name} {nameof(GetTextElementsTags)}", Indent: 0);
+                using Indent indent = new(1);
+                Debug.LogMethod(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(DataBucket?.Name ?? "NO_DATA_BUCKET"),
+                    });
                 foreach ((var tagName, var _) in tags)
                 {
-                    Utils.Log($"{nameof(tagName)}: {tagName[startsWithIndex..]}", Indent: 1);
-                    yield return tagName[startsWithIndex..];
+                    Debug.Log(nameof(tagName), tagName, Indent: indent[1]);
+                    yield return tagName;
                 }
             }
         }

@@ -17,6 +17,8 @@ using Event = XRL.World.Event;
 using static UD_ChooseYourBodyPlan.Mod.Utils;
 using static UD_ChooseYourBodyPlan.Mod.Const;
 using XRL.CharacterBuilds;
+using System.Diagnostics.CodeAnalysis;
+using UD_ChooseYourBodyPlan.Mod.Logging;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -37,9 +39,140 @@ namespace UD_ChooseYourBodyPlan.Mod
                 pattern: @"(\p{Ll})(\P{Ll})",
                 replacement: "$1 $2")
             : String
+			;
+
+		public static string Join(this string Accumulator, string Next, string Delimiter = ", ")
+			=> Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next;
+
+		public static string Join(this IEnumerable<string> Strings, string Delimiter = ", ")
+			=> Strings?.Aggregate("", (a, n) => a?.Join(n, Delimiter));
+
+		public static string GenericsString(this IEnumerable<Type> Types, bool Short = false)
+			=> !Types.IsNullOrEmpty()
+			? "<" +
+				Types
+					.ToList()
+					.ConvertAll(t => t.ToStringWithGenerics(Short))
+					.Join("," + (!Short ? " " : null)) +
+				">"
+			: null;
+
+		public static string ToStringWithGenerics(this Type Type, bool Short = false)
+		{
+			if (Type == null)
+				return null;
+
+			if (Type.GetGenericArguments() is not IEnumerable<Type> typeGenerics)
+				return !Short
+					? Type.Name
+					: Type.Name.Acronymize();
+
+			string name = Type.Name.Split('`')[0];
+
+			if (Short)
+				name = name.Acronymize();
+
+			return name + typeGenerics.GenericsString(Short);
+		}
+
+		public static string TypeStringWithGenerics<T>(this T Object, bool Short = false)
+			=> (Object?.GetType() ?? typeof(T))?.ToStringWithGenerics(Short);
+
+		public static string Acronymize(this string String)
+		{
+			if (String.IsNullOrEmpty()
+				|| String.ToLower() == String
+				|| String.ToUpper() == String)
+				return String;
+
+			return String.Aggregate("", (a, n) => a + (char.IsLetter(n) && char.IsUpper(n) ? n : null));
+		}
+
+		public static bool None<T>([NotNullWhen(true)] this IEnumerable<T> Enumberable, Predicate<T> Where)
+			=> !Enumberable.Any(Where?.ToFunc());
+
+		public static Func<T, bool> ToFunc<T>(this Predicate<T> Filter, bool ThrowIfNull = false)
+		{
+			if (Filter == null && ThrowIfNull)
+				throw new ArgumentNullException(
+					paramName: nameof(Filter),
+					message: "cannot be null if " + nameof(ThrowIfNull) + " is set to " + ThrowIfNull.ToString());
+
+			return Input => Filter == null || Filter(Input);
+		}
+
+		public static bool InheritsFrom(
+			[NotNullWhen(true)] this Type Type,
+			[NotNullWhen(true)] Type OtherType,
+			bool IncludeSelf = true)
+			=> Type != null
+			&& OtherType != null
+			&& ((IncludeSelf
+					&& Type == OtherType)
+				|| OtherType.IsSubclassOf(Type)
+				|| Type.IsAssignableFrom(OtherType)
+				|| (Type.YieldInheritedTypes().ToList() is List<Type> inheritedTypes
+					&& inheritedTypes.Contains(OtherType)));
+
+		public static string SafeJoin<T>(this IEnumerable<T> Enumerable, string Delimiter = ", ")
+			=> (Enumerable != null
+				&& Enumerable.Count() > 0)
+			? Enumerable.Aggregate(
+				seed: "",
+				func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString())
+			: null;
+
+		public static string ValueUnits(this TimeSpan Duration)
+		{
+			string durationUnit = "minute";
+			double durationValue = Duration.TotalMinutes;
+			if (Duration.TotalMinutes < 1)
+			{
+				durationUnit = "second";
+				durationValue = Duration.TotalSeconds;
+			}
+			if (Duration.TotalSeconds < 1)
+			{
+				durationUnit = "millisecond";
+				durationValue = Duration.TotalMilliseconds;
+			}
+			if (Duration.TotalMilliseconds < 1)
+			{
+				durationUnit = "microsecond";
+				durationValue = Duration.TotalMilliseconds / 1000;
+			}
+			return durationValue.Things(durationUnit);
+		}
+
+		public static string Signed(this float Float)
+			=> (Float < 0
+				? null
+				: "+") +
+			Float
             ;
 
-        public static bool LogReturning(this bool Return, string Message)
+		public static bool ElementsMatch<Tx, Ty>(this Tx[] X, Ty[] Y)
+		{
+			if (EitherNullOrEmpty(X, Y, out bool areEqual))
+				return areEqual;
+
+			if (X.Length != Y.Length)
+				return false;
+
+			for (int i = 0; i < X.Length; i++)
+			{
+				Tx x = X[i];
+				Ty y = Y[i];
+				if ((!EitherNull(x, y, out bool iAreEqual)
+						&& !x.Equals(y))
+					|| iAreEqual)
+					return false;
+			}
+
+			return true;
+		}
+
+		public static bool LogReturning(this bool Return, string Message)
             => LogReturnBool(Return, Message);
 
         public static bool HasSTag(this GameObjectBlueprint Blueprint, string STag)
@@ -168,6 +301,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 ? SB.AppendColored(SymbolColor, Const.PV.ToString())
                 : SB.Append(Const.PV))
             .AppendColored(Color, PV.ToString())
+            .AppendColored("K", "/")
             .AppendPVCap(PVCap)
             ;
 
@@ -617,21 +751,28 @@ namespace UD_ChooseYourBodyPlan.Mod
             string TagName,
             out string Value
             )
-        {
-            Value = null;
-            if (DataBucket != null)
-            {
-                if (DataBucket.TryGetTag(TagName, out Value))
-                {
-                    if (Value.EqualsNoCase(REMOVE_TAG))
-                        Value = null;
-
-                    Utils.Log($"{DataBucket.Name}.{nameof(TryGetTagValueForData)}({TagName}): {Value}", Indent: 2);
-                    return Value != null;
-                }
+		{
+			using Indent indent = new(1);
+            /*
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(TagName), TagName ?? "NO_TAG"),
+				});
+            */
+			Value = null;
+            if (DataBucket == null
+                || !DataBucket.TryGetTag(TagName, out Value)
+                || Value.EqualsNoCase(REMOVE_TAG))
+			{
+				if (!Value.IsNullOrEmpty())
+					Debug.YehNah(TagName, Value ?? "NO_VALUE", Value?.EqualsNoCase(REMOVE_TAG) is not false, Indent: indent[1]);
+				Value = null;
+				return false;
             }
-            Utils.Log($"{DataBucket.Name}.{nameof(TryGetTagValueForData)}({TagName}): {Value}", Indent: 2);
-            return false;
+            if (!Value.IsNullOrEmpty())
+			    Debug.YehNah(TagName, Value ?? "NO_VALUE", !Value.IsNullOrEmpty(), Indent: indent[1]);
+            return !Value.IsNullOrEmpty();
         }
 
         public static GameObjectBlueprint AssignStringFieldFromTag(
@@ -639,9 +780,16 @@ namespace UD_ChooseYourBodyPlan.Mod
             string TagName,
             ref string Field
             )
-        {
-            DataBucket.TryGetTagValueForData(TagName, out Field);
-            Utils.Log($"{DataBucket.Name}.{nameof(AssignStringFieldFromTag)}({TagName}): {Field}", Indent: 3);
+		{
+            /*
+			using Indent indent = new(1);
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(TagName), TagName ?? "NO_TAG"),
+					Debug.Arg(nameof(Field), Field ?? "NO_FIELD"),
+				});*/
+			DataBucket.TryGetTagValueForData(TagName, out Field);
             return DataBucket;
         }
 
@@ -651,12 +799,21 @@ namespace UD_ChooseYourBodyPlan.Mod
             string XTagKey,
             ref string Field
             )
-        {
+		{
+            /*
+			using Indent indent = new(1);
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(XTagName), XTagName ?? "NO_TAG"),
+					Debug.Arg(nameof(XTagKey), XTagKey ?? "NO_KEY"),
+					Debug.Arg(nameof(Field), Field ?? "NO_FIELD"),
+				});
+            */
             if (DataBucket != null
                 && (Field = DataBucket.GetxTag(XTagName, XTagKey, Field)).EqualsNoCase(REMOVE_TAG))
                 Field = null;
 
-            Utils.Log($"{XTagName}.{nameof(AssignStringFieldFromXTag)}({XTagKey}): {Field}", Indent: 3);
             return DataBucket;
         }
 
@@ -670,8 +827,15 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && (Field = XTag.GetValue(Key, Field)).EqualsNoCase(REMOVE_TAG))
                 Field = null;
 
-            Utils.Log($"{Key}.{nameof(AssignStringFieldFromXTag)}: {Field}", Indent: 3);
-        }
+			using Indent indent = new(1);
+			Debug.LogMethod(indent,
+				ArgPairs: new Debug.ArgPair[]
+				{
+					Debug.Arg(nameof(XTag), XTag?.Count ?? -1),
+					Debug.Arg(nameof(Key), Key ?? "NO_KEY"),
+					Debug.Arg(nameof(Field), Field ?? "NO_FIELD"),
+				});
+		}
 
         public static bool TryGetXtag(
             this GameObjectBlueprint DataBucket,
@@ -692,26 +856,63 @@ namespace UD_ChooseYourBodyPlan.Mod
             return count;
         }
 
-        public static IEnumerable<KeyValuePair<string, string>> GetTags(
+        public static Dictionary<string, string> GetTags(
             this GameObjectBlueprint DataBucket,
             Predicate<string> WithName,
             Predicate<string> WithValue
             )
         {
-            if (DataBucket?.Tags == null)
-                yield break;
+			Dictionary<string, string> tags = null;
 
-            foreach (var tag in DataBucket.Tags)
-                if (WithName?.Invoke(tag.Key) is not false
-                    && WithValue?.Invoke(tag.Value) is not false)
-                    yield return tag;
+            if (DataBucket?.Tags == null)
+                return null;
+
+			using Indent indent = new(1);
+			Debug.LogMethod(indent);
+			foreach ((var tagName, var tagValue) in DataBucket.Tags)
+			{
+
+                if (WithName != null && !WithName(tagName))
+				{
+                    Debug.CheckNah(tagName, $"{tagValue} | Not {nameof(WithName)}", Indent: indent[1]);
+					continue;
+				}
+
+                if (WithValue != null && !WithValue(tagValue))
+				{
+					Debug.CheckNah(tagName, $"{tagValue} | Not {nameof(WithValue)}", Indent: indent[1]);
+					continue;
+				}
+
+				Debug.CheckYeh(tagName, tagValue, Indent: indent[1]);
+				tags ??= new();
+				tags.Add(tagName, tagValue);
+			}
+            return tags;
         }
 
-        public static IEnumerable<KeyValuePair<string, string>> GetTagsStartingWith(
+        public static Dictionary<string, string> GetTagsStartingWith(
             this GameObjectBlueprint DataBucket,
             string String
             )
             => DataBucket.GetTags(s => s.StartsWith(String), null);
+
+        public static Dictionary<string, string> GetSubTagsStartingWith(
+            this GameObjectBlueprint DataBucket,
+            string String
+            )
+        {
+            string superTag = $"{String}.";
+            int superTagLength = superTag.Length;
+			if (DataBucket.GetTagsStartingWith(superTag) is Dictionary<string, string> tags)
+            {
+                var subTags = new Dictionary<string, string>();
+                foreach ((var tagName, var tagValue) in tags)
+                    subTags.Add(tagName[superTagLength..], tagValue);
+                return subTags;
+			}
+            return null;
+        }
 
         public static bool IsOption(this string String)
             => !String.IsNullOrEmpty()
@@ -725,5 +926,33 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static bool IsMechanical(this Anatomy Anatomy)
             => Anatomy?.Category == BodyPartCategory.MECHANICAL;
+
+        public static string PairString<TKey, TValue>(this KeyValuePair<TKey, TValue> KVP)
+            => $"{KVP.Key}: {KVP.Value}";
+
+        public static Dictionary<string, string> ClearNoInherits(this Dictionary<string, string> Tags)
+        {
+            if (!Tags.IsNullOrEmpty())
+                Tags.RemoveAll(kvp => kvp.Value?.EqualsNoCase(NO_INHERIT_TAG) is true);
+
+            return Tags;
+        }
+
+        public static Dictionary<string, string> ClearRemoves(this Dictionary<string, string> Tags)
+        {
+            if (!Tags.IsNullOrEmpty())
+                Tags.RemoveAll(kvp => kvp.Value?.EqualsNoCase(REMOVE_TAG) is true);
+
+            return Tags;
+        }
+
+        public static string ColorIf(this string String, string Color, bool Condition)
+        {
+            if (!Condition
+                || Color.IsNullOrEmpty())
+                return String;
+            return $"{"{{"}{Color}|{String}{"}}"}";
+        }
+
 	}
 }

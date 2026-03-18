@@ -6,16 +6,22 @@
         public const string MOD_PREFIX = MOD_ID + "_";
         public const string MOD_PREFIX_SHORT = "UD_CYBP_";
 
-        public const string TEXT_ELEMENTS_BLUEPRINT = MOD_PREFIX_SHORT + "BaseTextElements";
+        public const string GAME_MOD_EXCEPTION = "game_mod_exception";
+
+		public const string TEXT_ELEMENTS_BLUEPRINT = MOD_PREFIX_SHORT + "BaseTextElements";
         public const string CATEGORY_BLUEPRINT = MOD_PREFIX_SHORT + "BaseAnatomyCategoryEntry";
         public const string CONFIG_BLUEPRINT = MOD_PREFIX_SHORT + "BaseConfiguration";
         public const string BODYPLAN_ENTRY_BLUEPRINT = MOD_PREFIX_SHORT + "BaseBodyPlanEntry";
         public const string XFORM_DATA_BLUEPRINT = MOD_PREFIX_SHORT + "BaseTransformationData";
 
         public const string REMOVE_TAG = "*remove";
+        public const string NO_INHERIT_TAG = "*noinherit";
 
 		public const string UNCHECKED = "[ ]";
 		public const string CHECKED = "[■]";
+
+		public const string TICK = "\u221A";  // √
+		public const string CROSS = "\u0058"; // X
 
 		public const char SQRE = '\u00fe'; // ■
         public const char NBSP = '\u00ff'; // non-breaking space

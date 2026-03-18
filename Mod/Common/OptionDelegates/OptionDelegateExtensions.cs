@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL.Collections;
 using XRL.World;
 
@@ -62,10 +64,17 @@ namespace UD_ChooseYourBodyPlan.Mod
             KeyValuePair<string, string> OptionTag
             )
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(OptionDelegates.Count), OptionDelegates?.Count ?? -1),
+                    Debug.Arg(OptionTag.Key ?? "NO_KEY", OptionTag.Value ?? "NO_VALUE"),
+                });
+
             if (OptionDelegates.IsNullOrEmpty())
                 return false;
 
-            Utils.Log($"{OptionTag.Key}: {OptionTag.Value}", Indent: 3);
             string tagName = OptionTag.Key;
             string tagValue = OptionTag.Value;
 
@@ -127,15 +136,15 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
             else
             if (optionID.IsNullOrEmpty())
-                Utils.ThisMod.Error($"{new ArgumentException($"Failed to parse into valid {nameof(BaseOptionDelegate)}", nameof(OptionTag))}");
+                Utils.Error($"{new ArgumentException($"Failed to parse into valid {nameof(BaseOptionDelegate)}", nameof(OptionTag))}");
 
-            Utils.Log($"{nameof(BaseOptionDelegate)}: {optionID} {operatorString} {trueWhen}", Indent: 4);
+            Debug.YehNah(nameof(BaseOptionDelegate), $"{optionID} {operatorString} {trueWhen}", Indent: indent[1]);
 
             return !optionID.IsNullOrEmpty()
                 && OptionDelegates.Merge(optionID, operatorString, trueWhen);
         }
 
-        public static IEnumerable<KeyValuePair<string, string>> GetOptionTags(this GameObjectBlueprint DataBucket)
+        public static Dictionary<string, string> GetOptionTags(this GameObjectBlueprint DataBucket)
             => DataBucket.GetTagsStartingWith("Option");
 
         public static bool ParseDataBucket(
@@ -143,11 +152,13 @@ namespace UD_ChooseYourBodyPlan.Mod
             GameObjectBlueprint DataBucket
             )
         {
-            if (DataBucket.GetOptionTags() is not IEnumerable<KeyValuePair<string, string>> tags
+            using Indent indent = new(1);
+            Debug.Log($"{Utils.CallChain(nameof(Mod.OptionDelegates), nameof(ParseDataBucket))}({Debug.Arg(DataBucket?.Name ?? "NO_DATA_BUCKET")})", Indent: indent);
+
+            if (DataBucket.GetOptionTags() is not Dictionary<string, string> tags
                 || tags.IsNullOrEmpty())
                 return true;
 
-            Utils.Log($"{DataBucket.Name}: {nameof(BaseOptionDelegate)}:", Indent: 2);
             bool any = false;
             foreach (var optionTag in tags)
                 any = OptionDelegates.ParseOptionTag(optionTag) || any;

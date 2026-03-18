@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
+using XRL.Collections;
 using XRL.UI;
 using XRL.UI.Framework;
 using XRL.World;
@@ -37,7 +40,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         [ModSensitiveCacheInit]
         public static void ClearCacheOfGenerallyEligbleForDisplayBlueprints()
         {
-            Utils.Log(typeof(BodyPlanFactory).CallChain(nameof(ClearCacheOfGenerallyEligbleForDisplayBlueprints)));
+            using Indent indent = new();
+            Debug.LogCaller(indent);
             _GenerallyEligbleForDisplayBlueprints = null;
         }
 
@@ -162,18 +166,24 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public void LoadTextElements()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent);
             Load(ref TextElementsByName);
             TextElementsInitialized = true;
         }
 
         public void LoadTransformationData()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent);
             Load(ref TransformationDataByAnatomyName);
             TransformationDataInitialized = true;
         }
 
         public void LoadBodyPlans()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent);
             LoadBaseBodyPlanEntries();
             Load(ref BodyPlanEntryByAnatomyName);
             BodyPlanEntriesInitialized = true;
@@ -181,6 +191,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public void LoadAnatomyCategoryEntries()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent);
             LoadFromCategoryIDs();
             Load(ref AnatomyCategoryEntryByCategoryName);
             AssignCategoryEntries();
@@ -190,12 +202,19 @@ namespace UD_ChooseYourBodyPlan.Mod
         public void Load<T>(ref Dictionary<string, T> CacheByName)
             where T : ILoadFromDataBucket<T>, new()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(typeof(T).ToStringWithGenerics()),
+                });
+
             CacheByName ??= new();
             try
             {
                 foreach (var dataBucket in GetDataBuckets<T>())
                 {
-                    Utils.Log($"{nameof(BodyPlanFactory)} {dataBucket.Name}:", Indent: 0);
+                    Debug.Log(nameof(dataBucket), dataBucket.Name, Indent: indent[1]);
                     if (TryLoadFromDataBucket(dataBucket, out T loaded))
                     {
                         if (loaded.CacheKey is not string cacheKey
@@ -296,20 +315,55 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public void AssignCategoryEntries()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent);
+
+            using var bodyPlanEntries = ScopeDisposedList<BodyPlanEntry>.GetFromPoolFilledWith(BodyPlanEntryByAnatomyName.Values);
+            Debug.Log($"Clearing {BodyPlanEntry.NO_LIST_TAG} from Assignment pool...", Indent: indent[1]);
+            bool anyRemoved = false;
+            foreach (var entry in BodyPlanEntryByAnatomyName.Values)
+            {
+                if (entry.HasTag("NoList"))
+                {
+                    Debug.CheckYeh(entry.AnatomyName, "removed", Indent: indent[2]);
+                    anyRemoved = bodyPlanEntries.Remove(entry)
+                        || anyRemoved;
+                }
+            }
+            if (!anyRemoved)
+                Debug.CheckNah("None", Indent: indent[2]);
+
+            Debug.Log($"Assigning Categories...", Indent: indent[1]);
             foreach (var category in AnatomyCategoryEntryByCategoryName.Values)
             {
+                Debug.Log($"ID: {category.ID} | {category.CategoryName}", Indent: indent[2]);
                 category.Entries ??= new();
                 if (category.CategoryName == "Default"
                     || category.ID == 0)
-                    category.Entries.AddRange(BodyPlanEntryByAnatomyName.Values);
+                {
+                    category.Entries.AddRange(bodyPlanEntries);
+                    Debug.Loggregrate(
+                        Source: category.Entries,
+                        Proc: n => n.DisplayName,
+                        Empty: "None",
+                        PostProc: s => $"::{s}",
+                        Indent: indent[3]);
+                }
                 else
                 {
-                    foreach (var bodyPlanEntry in BodyPlanEntryByAnatomyName.Values)
+                    bool anyAdded = false;
+                    foreach (var bodyPlanEntry in bodyPlanEntries)
                     {
                         if (bodyPlanEntry.CategoryOverride == category.CategoryName
                             || bodyPlanEntry.BestGuessForCategoryID() == category.ID)
+                        {
                             category.Entries.Add(bodyPlanEntry);
+                            anyAdded = true;
+                            Debug.Log($"::{bodyPlanEntry.DisplayName}", Indent: indent[3]);
+                        }
                     }
+                    if (!anyAdded)
+                        Debug.CheckNah("::None", Indent: indent[3]);
                 }
             }
         }
