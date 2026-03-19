@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using XRL;
 using XRL.CharacterBuilds;
 using XRL.Collections;
@@ -13,19 +15,52 @@ namespace UD_ChooseYourBodyPlan.Mod
 
     [HasOptionDelegate]
     [HasModSensitiveStaticCache]
-    public class OptionDelegateContext : IDisposable
+    public class OptionDelegateContext
+        : IEquatable<OptionDelegateContext>
+        , IDisposable
     {
         public struct SimpleDelegate
         {
             public string OptionID;
-            public BinaryOperator<string> Operator;
+            public string Operator;
             public string TrueState;
 
             public readonly bool Check()
-                => OptionID.IsNullOrEmpty()
-                || TrueState.IsNullOrEmpty()
-                || Operator == null
-                || Operator.Invoke(OptionID, TrueState) is true;
+                => !IsValid()
+                || !OptionID.IsOption()
+                || GetOperatorDelegate()
+                    ?.Invoke(OptionID.GetOption(), TrueState) is not false;
+
+            public readonly BinaryOperator<string> GetOperatorDelegate()
+                => !Operator.IsNullOrEmpty()
+                ? OperatorDelegates
+                    ?.GetValueOrDefault(Operator)
+                : null
+                ;
+
+            public override readonly string ToString()
+                => $"{OptionID}{Operator}{TrueState}";
+
+            public readonly bool IsValid()
+            {
+                using var indent = new Indent(1);
+                if (OptionID.IsNullOrEmpty())
+                {
+                    Debug.CheckNah(nameof(IsValid), $"{nameof(OptionID)} is null or empty.", Indent: indent);
+                    return false;
+                }
+                if (GetOperatorDelegate() == null)
+                {
+                    Debug.CheckNah(nameof(IsValid), $"{nameof(GetOperatorDelegate)} returned null.", Indent: indent);
+                    return false;
+                }
+                if (TrueState.IsNullOrEmpty())
+                {
+                    Debug.CheckNah(nameof(IsValid), $"{nameof(TrueState)} is null or empty.", Indent: indent);
+                    return false;
+                }
+                return true;
+            }
         }
 
         [ModSensitiveStaticCache]
@@ -34,14 +69,23 @@ namespace UD_ChooseYourBodyPlan.Mod
         [OptionDelegate]
         public static bool SimpleOptionDelegate(string TagValue, EmbarkBuilder Builder)
         {
-            if (SimpleDelegates.IsNullOrEmpty())
-                return true;
+            SimpleDelegates ??= new();
 
-            if (!SimpleDelegates.TryGetValue(TagValue, out var simpleDelegate))
+            if (!TryGetSimpleDelegate(TagValue, out var simpleDelegate))
+            {
+                if (!TryParseSimpleOptionPredicate(TagValue, out simpleDelegate))
+                    return true;
+                else
+                    CacheSimpleOptionDelegate(simpleDelegate);
+            }
+
+            if (SimpleDelegates.IsNullOrEmpty())
                 return true;
 
             return simpleDelegate.Check();
         }
+
+        public static string SimpleDelegateName => $"{typeof(OptionDelegateContext)}.{nameof(SimpleOptionDelegate)}";
 
         public static string[] ValidTags => new string[]
         {
@@ -74,10 +118,15 @@ namespace UD_ChooseYourBodyPlan.Mod
             this.TagValue = TagValue;
         }
 
+        public override string ToString()
+            => $"{DelegateName ?? "MISSING_NAME"};{TagValue ?? "MISSING_TAG_VALUE"}";
+
         public static SimpleDelegate ParseOptionPredicate(string OptionPredicate)
         {
+            using var indent = new Indent(1);
+
             string optionID = null;
-            BinaryOperator<string> operatorDelegate = GetOperatorDelegate("==");
+            string operatorString = "==";
             string trueState = "Yes";
 
             int operatorCount = OperatorDelegates
@@ -86,6 +135,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     seed: 0,
                     func: (a, n) => a + OptionPredicate.SubstringsOfLength(n.Length).Count(s => s.Contains(n)))
                 ?? 0;
+
             if (operatorCount > 1)
             {
                 Utils.Error(new ArgumentException($"Must not contain more than one comparison operator.", nameof(OptionPredicate)));
@@ -93,44 +143,50 @@ namespace UD_ChooseYourBodyPlan.Mod
             else
             if (operatorCount == 1)
             {
-                foreach ((var operatorString, var func) in OperatorDelegates)
+                foreach (var operatorDelegateString in OperatorDelegates.Keys)
                 {
-                    if (OptionPredicate.Contains(operatorString)
-                        && OptionPredicate.Split(operatorString) is string[] operands)
+                    if (OptionPredicate.Contains(operatorDelegateString)
+                        && OptionPredicate.Split(operatorDelegateString) is string[] operands)
                     {
                         optionID = operands[0];
-                        operatorDelegate = func;
+                        operatorString = operatorDelegateString;
                         trueState = operands[1];
                         break;
                     }
                 }
             }
+            else
+            if (OptionPredicate != null)
+            {
+                optionID = OptionPredicate;
+            }
             return new SimpleDelegate
             {
                 OptionID = optionID,
-                Operator = operatorDelegate,
-                TrueState =trueState,
+                Operator = operatorString,
+                TrueState = trueState,
             };
         }
 
         public static bool TryParseSimpleOptionPredicate(string OptionPredicate, out SimpleDelegate SimpleDelegate)
+            => (SimpleDelegate = ParseOptionPredicate(OptionPredicate)).IsValid();
+
+        public static OptionDelegateContext CacheSimpleOptionDelegate(SimpleDelegate SimpleDelegate)
         {
-            SimpleDelegate = ParseOptionPredicate(OptionPredicate);
-            return SimpleDelegate.OptionID.IsOption();
+            SimpleDelegates ??= new();
+            SimpleDelegates[SimpleDelegate.ToString()] = SimpleDelegate;
+            return new OptionDelegateContext
+            {
+                DelegateName = SimpleDelegateName,
+                TagValue = SimpleDelegate.ToString(),
+            };
         }
 
         public static OptionDelegateContext CacheSimpleOptionDelegate(string OptionPredicate)
-        {
-            if (!TryParseSimpleOptionPredicate(OptionPredicate, out SimpleDelegate simpleDelegate))
-                return null;
-
-            SimpleDelegates[OptionPredicate] = simpleDelegate;
-            return new OptionDelegateContext
-            {
-                DelegateName = $"{typeof(OptionDelegateContext)}.{nameof(SimpleOptionDelegate)}",
-                TagValue = OptionPredicate,
-            };
-        }
+            => TryParseSimpleOptionPredicate(OptionPredicate, out SimpleDelegate simpleDelegate)
+            ? CacheSimpleOptionDelegate(simpleDelegate)
+            : null
+            ;
 
         public bool Check()
         {
@@ -142,7 +198,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             var builder = GameManager.Instance?.gameObject?.GetComponent<EmbarkBuilder>();
             return builder == null
-                || (delegateEntry.DelegateOption?.Invoke(TagValue, builder) is not false);
+                || (delegateEntry.OptionDelegate?.Invoke(TagValue, builder) is not false);
         }
 
         public virtual bool IsValid()
@@ -159,6 +215,21 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
             return true;
         }
+
+        public static SimpleDelegate? GetSimpleDelegate(string TagValue)
+            => !TagValue.IsNullOrEmpty()
+            ? SimpleDelegates?.GetValueOrDefault(TagValue)
+            : null
+            ;
+
+        public SimpleDelegate? GetSimpleDelegate()
+            => DelegateName == SimpleDelegateName
+            ? GetSimpleDelegate(TagValue)
+            : null
+            ;
+
+        public static bool TryGetSimpleDelegate(string TagValue, out SimpleDelegate SimpleDelegate)
+            => (SimpleDelegate = GetSimpleDelegate(TagValue).GetValueOrDefault()).IsValid();
 
         public static BinaryOperator<string> GetOperatorDelegate(string Operator)
             => OperatorDelegates?.GetValueOrDefault(Operator ?? "==")
@@ -180,28 +251,6 @@ namespace UD_ChooseYourBodyPlan.Mod
             => SameName(Other)
             && SameTagValue(Other)
             ;
-
-        public virtual void Merge(OptionDelegateContext Other)
-        {
-            Utils.MergeRequireField(ref OptionID, Other.OptionID);
-            Utils.MergeReplaceField(ref Operator, Other.Operator);
-            Utils.MergeReplaceField(ref TrueState, Other.TrueState);
-        }
-
-        public virtual OptionDelegateContext ModifyTruth(string Operator, string TrueState)
-        {
-            string originalOperator = this.Operator;
-            string originalTrueState = this.TrueState;
-            this.Operator = Operator;
-            this.TrueState = TrueState;
-
-            if (!IsValid())
-            {
-                this.Operator = originalOperator;
-                this.TrueState = originalTrueState;
-            }
-            return this;
-        }
 
         private static bool EqualsNoCase(string X, string Y)
             => X.EqualsNoCase(Y)
@@ -247,6 +296,9 @@ namespace UD_ChooseYourBodyPlan.Mod
             => !ParseOrError(X, Y, out int resultX, out int resultY)
             || resultX <= resultY
             ;
+
+        public bool Equals(OptionDelegateContext Other)
+            => SameAs(Other);
 
         public void Dispose()
         {

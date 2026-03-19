@@ -54,7 +54,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPlanRender Render;
 
-        public OptionDelegateContexts OptionDelegates;
+        public OptionDelegateContexts OptionDelegateContexts;
 
         private TransformationData _Transformation;
         public TransformationData Transformation
@@ -68,7 +68,18 @@ namespace UD_ChooseYourBodyPlan.Mod
                     WantsTransformation = false;
                     _Transformation = Factory.GetTransformationData(this);
                     if (_Transformation != null)
-                        Utils.MergeRequireDistinctInCollection(OptionDelegates ??= new(), Transformation.OptionDelegates);
+                    {
+                        OptionDelegateContexts ??= new();
+                        OptionDelegateContexts.AddRange(_Transformation.OptionDelegateContexts);
+
+                        TextElementsNames ??= new();
+                        TextElementsNames.AddRange(_Transformation.GetTextElementsNames());
+                        WantsTextElements = TextElementsNames.Count > 0;
+
+                        NaturalEquipment ??= new();
+                        if (!_Transformation.NaturalEquipment.IsNullOrEmpty())
+                            NaturalEquipment.AddRange(_Transformation.NaturalEquipment);
+                    }
                 }
                 return _Transformation;
             }
@@ -99,9 +110,11 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
         protected bool WantsTextElements;
 
-        public Dictionary<string, string> Tags;
+        public List<InventoryObject> NaturalEquipment;
 
         public int RandomWeight;
+
+        public Dictionary<string, string> Tags;
 
         public BodyPlanEntry()
         {
@@ -115,6 +128,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             TextElementsNames = null;
             _TextElements = null;
             WantsTextElements = true;
+
+            NaturalEquipment = null;
 
             Tags = null;
         }
@@ -140,10 +155,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             DisplayName = Source?.DisplayName;
             Render = Source?.Render?.Clone();
 
-            OptionDelegates = new();
-            if (Source?.OptionDelegates != null
-                && !Source.OptionDelegates.IsNullOrEmpty())
-                OptionDelegates.AddRange(Source.OptionDelegates);
+            OptionDelegateContexts = new();
+            if (Source?.OptionDelegateContexts != null
+                && !Source.OptionDelegateContexts.IsNullOrEmpty())
+                OptionDelegateContexts.AddRange(Source.OptionDelegateContexts);
 
             WantsTransformation = Source?._Transformation != null;
 
@@ -154,13 +169,13 @@ namespace UD_ChooseYourBodyPlan.Mod
                     TextElementsNames.Add(textElementsName);
             WantsTextElements = !TextElementsNames.IsNullOrEmpty();
 
+            RandomWeight = Source?.RandomWeight ?? 0;
+
             Tags = new();
             if (Source?.Tags != null
                 && !Source.Tags.IsNullOrEmpty())
                 foreach ((var tagName, var tagValue) in Source.Tags)
                     Tags.Add(tagName, tagValue);
-
-            RandomWeight = Source?.RandomWeight ?? 0;
         }
 
         public static bool IsAvailable(BodyPlanEntry BodyPlanEntry)
@@ -236,8 +251,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             Render = new BodyPlanRender().LoadFromDataBucket(DataBucket);
 
-            OptionDelegates ??= new();
-            OptionDelegates.ParseDataBucket(DataBucket);
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.ParseDataBucket(DataBucket);
 
             if (DataBucket.GetTextElementsTags() is IEnumerable<string> textElementsTags)
             {
@@ -245,6 +260,10 @@ namespace UD_ChooseYourBodyPlan.Mod
                 foreach (var textElementsName in textElementsTags)
                     TextElementsNames.Add(textElementsName);
             }
+
+            NaturalEquipment ??= new();
+            if (!DataBucket.Inventory.IsNullOrEmpty())
+                NaturalEquipment.AddRange(DataBucket.Inventory);
 
             if (DataBucket.TryGetTagValueForData(nameof(RandomWeight), out string randomWeight)
                 && !int.TryParse(randomWeight, out RandomWeight))
@@ -330,14 +349,26 @@ namespace UD_ChooseYourBodyPlan.Mod
             CategoryOverride = Other.CategoryOverride ?? Other.Category?.CategoryName;
             DisplayName = Other.DisplayName;
             Render = new(Other.Render);
-            OptionDelegates = new(Other.OptionDelegates);
 
-            TextElementsNames = new(Other.TextElementsNames);
-            WantsTextElements = true;
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.Clear(); 
+            OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
+
+            TextElementsNames ??= new();
+            TextElementsNames.Clear();
+            TextElementsNames.AddRange(Other.TextElementsNames);
+            WantsTextElements = TextElementsNames.Count > 0;
+
+            NaturalEquipment ??= new();
+            NaturalEquipment.Clear();
+            if (!Other.NaturalEquipment.IsNullOrEmpty())
+                NaturalEquipment.AddRange(Other.NaturalEquipment);
+
+            RandomWeight = Other.RandomWeight;
 
             MergeTags(Other.Tags);
 
-            RandomWeight = Other.RandomWeight;
+            MergeType = Other.MergeType;
 
             LogDebug(1);
             return this;
@@ -359,14 +390,22 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
             Render.Merge(Other.Render);
 
-            OptionDelegates.Merge(OptionDelegates);
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
 
-            Utils.MergeReplaceField(TextElementsNames ??= new(), new HashSet<string>(Other.TextElementsNames));
-            WantsTextElements = true;
+            TextElementsNames ??= new();
+            TextElementsNames.AddRange(Other.TextElementsNames);
+            WantsTextElements = TextElementsNames.Count > 0;
+
+            NaturalEquipment ??= new();
+            if (!Other.NaturalEquipment.IsNullOrEmpty())
+                NaturalEquipment.AddRange(Other.NaturalEquipment);
+
+            Utils.MergeReplaceField(ref RandomWeight, Other.RandomWeight);
 
             MergeTags(Other.Tags);
 
-            Utils.MergeReplaceField(ref RandomWeight, Other.RandomWeight);
+            MergeType = Other.MergeType;
 
             LogDebug(1);
             return this;
@@ -388,14 +427,22 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref DisplayName, Other.DisplayName);
             Render = new BodyPlanRender(Other.Render).Merge(Render);
 
-            OptionDelegates = new OptionDelegateContexts(Other.OptionDelegates).Merge(OptionDelegates);
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
 
-            Utils.MergeRequireField(TextElementsNames ??= new(), new HashSet<string>(Other.TextElementsNames));
-            WantsTextElements = true;
+            TextElementsNames ??= new();
+            TextElementsNames.AddRange(Other.TextElementsNames);
+            WantsTextElements = TextElementsNames.Count > 0;
+
+            NaturalEquipment ??= new();
+            if (!Other.NaturalEquipment.IsNullOrEmpty())
+                NaturalEquipment.AddRange(Other.NaturalEquipment);
+
+            Utils.MergeRequireField(ref RandomWeight, Other.RandomWeight);
 
             MergeTags(Other.Tags);
 
-            Utils.MergeRequireField(ref RandomWeight, Other.RandomWeight);
+            MergeType = Other.MergeType;
 
             LogDebug(1);
             return this;
@@ -404,8 +451,6 @@ namespace UD_ChooseYourBodyPlan.Mod
         public BodyPlanEntry Merge(BodyPlanEntry Other)
         {
             ClearCaches();
-            if (Anatomy == null)
-                AnatomyName = Other.AnatomyName;
 
             return Other.MergeType switch
             {
@@ -512,7 +557,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public bool IsAvailable()
             => Anatomy != null
             && !HasTag("Restricted")
-            && (OptionDelegates?.Check() is not false)
+            && (OptionDelegateContexts?.Check() is not false)
             ;
 
         public BodyPlan GetBodyPlan()
@@ -532,8 +577,11 @@ namespace UD_ChooseYourBodyPlan.Mod
             Render?.Dispose();
             Render = null;
 
-            OptionDelegates?.Clear();
-            OptionDelegates = null;
+            OptionDelegateContexts?.Clear();
+            OptionDelegateContexts = null;
+
+            NaturalEquipment?.Clear();
+            NaturalEquipment = null;
 
             Tags?.Clear();
             Tags = null;
@@ -554,10 +602,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             Debug.Log(nameof(DisplayName), DisplayName ?? "NO_DISPLAY_NAME", Indent: indent[1]);
             Debug.Log(nameof(Render), Render?.ToString() ?? "NO_RENDER", Indent: indent[1]);
 
-            Debug.Log(nameof(OptionDelegates), OptionDelegates?.Count ?? 0, Indent: indent[1]);
+            Debug.Log(nameof(OptionDelegateContexts), OptionDelegateContexts?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(
-                Source: OptionDelegates,
-                Proc: o => $"{o.OptionID} {o.Operator} {o.TrueState}",
+                Source: OptionDelegateContexts,
+                Proc: o => o.ToString(),
                 Empty: "None",
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);
@@ -573,6 +621,16 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Indent: indent[2]);
             Debug.Log(nameof(WantsTextElements), WantsTextElements, Indent: indent[1]);
 
+            Debug.Log(nameof(NaturalEquipment), NaturalEquipment?.Count ?? 0, Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: NaturalEquipment,
+                Proc: n => n.ToString(),
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
+
+            Debug.Log(nameof(RandomWeight), RandomWeight, Indent: indent[1]);
+
             Debug.Log(nameof(Tags), Tags?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(
                 Source: Tags,
@@ -580,8 +638,6 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Empty: "None",
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);
-
-            Debug.Log(nameof(RandomWeight), RandomWeight, Indent: indent[1]);
         }
     }
 }

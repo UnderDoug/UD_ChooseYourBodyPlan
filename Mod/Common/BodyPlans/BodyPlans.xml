@@ -6,10 +6,11 @@
     <tag Name="Merge" Value="Soft" />
     <tag Name="RandomWeight" Value="5" />
     <tag Name="BaseObject" Value="*noinherit" />
+    <tag Name="Option.DisallowTrueKinUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansForTK==Yes" />
   </object>
   <object Name="UD_CYBP_BodyPlanEntry UD_CYBP_NoEntry" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="UD_CYBP_NoEntry" />
-    <tag Name="Merge" Value="Hard" />
+    <tag Name="Merge" Value="Fill" />
     <tag Name="NoEntry" />
     <tag Name="NoList" Value="*noinherit" />
   </object>

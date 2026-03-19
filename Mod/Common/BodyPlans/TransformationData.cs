@@ -7,6 +7,7 @@ using UD_ChooseYourBodyPlan.Mod.Logging;
 using XRL;
 using XRL.World;
 using XRL.World.Anatomy;
+using XRL.World.Parts;
 
 using static UD_ChooseYourBodyPlan.Mod.ILoadFromDataBucket<UD_ChooseYourBodyPlan.Mod.TransformationData>;
 
@@ -15,6 +16,35 @@ namespace UD_ChooseYourBodyPlan.Mod
     [Serializable]
     public class TransformationData : ILoadFromDataBucket<TransformationData>
     {
+        public struct Mutation
+        {
+            public string Name;
+            public string Class;
+            public string Color;
+
+            public Mutation(MutationEntry Entry, string Color = null)
+            {
+                Name = Entry.Name;
+                Class = Entry.Class;
+                this.Color = Color;
+            }
+
+            public readonly MutationEntry Entry => Utils.GetMutationByClassOrName(Class ?? Name);
+
+            public readonly void AddMutation(GameObject Object)
+            {
+                if (Entry != null)
+                    Object.RequirePart<Mutations>().AddMutation(Entry);
+            }
+
+            public override readonly string ToString()
+            {
+                if ((Entry?.Name ?? Name) is not string name)
+                    return null;
+                return "{{" + $"{Color ?? "C"}|{name}" + "}}";
+            }
+        }
+
         public static string LoadingDataBucket => "TransformationData";
         public string BaseDataBucketBlueprint => Const.XFORM_DATA_BLUEPRINT;
 
@@ -35,9 +65,13 @@ namespace UD_ChooseYourBodyPlan.Mod
         public string Species;
         public string Property;
 
-        public List<string> Mutations;
+        public OptionDelegateContexts OptionDelegateContexts;
 
-        public OptionDelegateContexts OptionDelegates;
+        private HashSet<string> TextElementsNames;
+
+        public List<InventoryObject> NaturalEquipment;
+
+        public Dictionary<string, Mutation> Mutations;
 
         public TransformationData()
         {
@@ -77,50 +111,95 @@ namespace UD_ChooseYourBodyPlan.Mod
                 return null;
             }
 
-            if (DataBucket.InheritsFrom(Const.XFORM_DATA_BLUEPRINT))
+            DataBucket.TryGetTagValueForData(nameof(Anatomy), out Anatomy);
+
+            DataBucket.TryGetTagValueForData(nameof(Species), out Species);
+            if (!DataBucket.TryGetTagValueForData(nameof(Property), out Property))
+                DataBucket.TryGetTagValueForData($"Eaten{nameof(Property)}", out Property);
+
+            Render = new BodyPlanRender().LoadFromDataBucket(DataBucket);
+
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.ParseDataBucket(DataBucket);
+
+            if (DataBucket.GetTextElementsTags() is IEnumerable<string> textElementsTags)
             {
-                DataBucket.TryGetTagValueForData(nameof(Anatomy), out Anatomy);
+                TextElementsNames = new();
+                foreach (var textElementsName in textElementsTags)
+                    TextElementsNames.Add(textElementsName);
+            }
 
-                DataBucket.TryGetTagValueForData(nameof(Species), out Species);
-                if (!DataBucket.TryGetTagValueForData(nameof(Property), out Property))
-                    DataBucket.TryGetTagValueForData($"Eaten{nameof(Property)}", out Property);
+            NaturalEquipment ??= new();
+            if (!DataBucket.Inventory.IsNullOrEmpty())
+                NaturalEquipment.AddRange(DataBucket.Inventory);
 
-                Render = new BodyPlanRender().LoadFromDataBucket(DataBucket);
+            Mutations ??= new();
+            if (!DataBucket.Mutations.IsNullOrEmpty())
+            {
+                foreach (var mutation in DataBucket.Mutations.Keys)
+                    Mutations[mutation] = new Mutation
+                    {
+                        Class = mutation,
+                    };
+            }
 
-                if (!DataBucket.Mutations.IsNullOrEmpty())
-                    Mutations = new(DataBucket.Mutations.Keys);
-
-                OptionDelegates ??= new();
-                OptionDelegates.ParseDataBucket(DataBucket);
-
-                if (DataBucket.TryGetTag(nameof(Mutations), out string mutations)
+            if (DataBucket.TryGetTag(nameof(Mutations), out string mutations))
+            {
+                if (mutations.Contains(',')
                     && mutations.CachedCommaExpansion().ToList() is List<string> mutationsList
                     && !mutationsList.IsNullOrEmpty())
                 {
                     foreach (var mutation in mutationsList)
                     {
-                        if (MutationFactory.GetMutationEntryByName(mutation) is not MutationEntry mutationEntry)
-                            continue;
-
-                        if (!Mutations.Select(m => MutationFactory.GetMutationEntryByName(m)).Contains(mutationEntry))
-                            Mutations.Add(mutation);
+                        AddMutation(mutation);
                     }
                 }
-            }
-            else
-            {
-                Utils.ThisMod.Error($"Aborted attempt to construct {GetType().Name} " +
-                    $"from DataBucket inheriting from \"{DataBucket.GetBase()}\" " +
-                    $"instead of \"{Const.XFORM_DATA_BLUEPRINT}\"");
+                else
+                if (mutations.Contains("::")
+                    && mutations.CachedDictionaryExpansion() is Dictionary<string, string> mutationsDictionary
+                    && !mutationsDictionary.IsNullOrEmpty())
+                {
+                    foreach ((var mutation, var color) in mutationsDictionary)
+                    {
+                        AddMutation(mutation, color);
+                    }
+                }
+                else
+                {
+                    AddMutation(mutations);
+                }
             }
 
             DebugOutput(1);
             return this;
         }
 
+        public void AddMutation(MutationEntry MutationEntry, string Color = null)
+            => Mutations[MutationEntry.Class] = new Mutation(MutationEntry, Color)
+            ;
+
+        public void AddMutation(string Mutation, string Color = null)
+        {
+            if (Utils.GetMutationByClassOrName(Mutation) is MutationEntry mutationEntry)
+                AddMutation(mutationEntry, Color);
+        }
+
         public bool SameAs(TransformationData Other)
             => Anatomy == Other?.Anatomy
             ;
+
+        public bool HasTextElements()
+            => !TextElementsNames.IsNullOrEmpty()
+            ;
+
+        public IEnumerable<string> GetTextElementsNames()
+        {
+            if (TextElementsNames.IsNullOrEmpty())
+                yield break;
+
+            foreach (var textElementsName in TextElementsNames)
+                yield return textElementsName;
+        }
 
         public TransformationData Merge(TransformationData Other)
         {
@@ -132,7 +211,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             Utils.MergeReplaceField(ref Property, Other.Property);
             Utils.MergeReplaceField(ref Mutations, new(Other.Mutations));
 
-            OptionDelegates.Merge(OptionDelegates);
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
+
+            NaturalEquipment ??= new();
+            if (!Other.NaturalEquipment.IsNullOrEmpty())
+                NaturalEquipment.AddRange(Other.NaturalEquipment);
 
             return this;
         }
@@ -145,8 +229,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
             Render = null;
 
-            OptionDelegates?.Clear();
-            OptionDelegates = null;
+            OptionDelegateContexts?.Clear();
+            OptionDelegateContexts = null;
 
             Mutations?.Clear();
             Mutations = null;
@@ -169,18 +253,34 @@ namespace UD_ChooseYourBodyPlan.Mod
             Debug.Log(nameof(Species), Species ?? "NO_SPECIES", Indent: indent[1]);
             Debug.Log(nameof(Property), Property ?? "NO_PROPERTY", Indent: indent[1]);
 
-            Debug.Log($"{nameof(Mutations)}:", Indent: indent[1]);
+            Debug.Log(nameof(OptionDelegateContexts), OptionDelegateContexts?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(
-                Source: Mutations,
-                Proc: m => m,
+                Source: OptionDelegateContexts,
+                Proc: o => o.ToString(),
                 Empty: "None",
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);
 
-            Debug.Log(nameof(OptionDelegates), OptionDelegates?.Count ?? 0, Indent: indent[1]);
+            Debug.Log(nameof(TextElementsNames), TextElementsNames?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(
-                Source: OptionDelegates,
-                Proc: o => $"{o.OptionID} {o.Operator} {o.TrueState}",
+                Source: TextElementsNames,
+                Proc: n => n,
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
+
+            Debug.Log(nameof(NaturalEquipment), NaturalEquipment?.Count ?? 0, Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: NaturalEquipment,
+                Proc: n => n.ToString(),
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
+
+            Debug.Log($"{nameof(Mutations)}:", Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: Mutations,
+                Proc: m => m.PairString(),
                 Empty: "None",
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);

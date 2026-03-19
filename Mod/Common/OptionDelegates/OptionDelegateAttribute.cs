@@ -34,7 +34,6 @@ namespace UD_ChooseYourBodyPlan.Mod
 
     public struct OptionDelegateEntry
     {
-        public OptionDelegate DelegateOption;
-        public Type[] ParameterTypes;
+        public OptionDelegate OptionDelegate;
     }
 }

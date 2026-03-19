@@ -213,7 +213,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     string fullName = $"{delegateMethod.DeclaringType}.{delegateMethod.Name}";
                     var entry = new OptionDelegateEntry
                     {
-                        DelegateOption = (OptionDelegate)delegateMethod.CreateDelegate(typeof(OptionDelegate)),
+                        OptionDelegate = (OptionDelegate)delegateMethod.CreateDelegate(typeof(OptionDelegate)),
                     };
                     if (!name.IsNullOrEmpty())
                         OptionDelegates[name] = entry;

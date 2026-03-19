@@ -975,5 +975,15 @@ namespace UD_ChooseYourBodyPlan.Mod
             return $"{"{{"}{Color}|{String}{"}}"}";
         }
 
+		public static int AddRange<T>(this HashSet<T> Set, IEnumerable<T> Range)
+		{
+			int count = 0;
+			foreach (var item in Range)
+			{
+				if (Set.Add(item))
+					count++;
+			}
+			return count;
+		}
 	}
 }

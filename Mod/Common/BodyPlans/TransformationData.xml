@@ -5,6 +5,7 @@
     <tag Name="Anatomy" Value="UNDEFINED" />
     <tag Name="Recipe" Value="UNDEFINED" />
     <tag Name="OptionID" Value="UD_ChooseYourBodyPlan_EnableBodyPlansAvailableViaRecipe" />
+    <tag Name="TextElements.Transformation" />
     <tag Name="BaseObject" Value="*noinherit" />
   </object>
 
@@ -14,8 +15,7 @@
     <part Name="Render" Tile="Creatures/sw_slog.bmp" RenderString="Q" TileColor="&amp;M" DetailColor="G" />
     <tag Name="Species" Value="slug" />
     <tag Name="EatenProperty" Value="AteCloacaSurprise" />
-    <mutation Name="SlogGlands" />
-    <!-- tag Name="Mutations" Value="Bilge Sphincter" /-->
+    <tag Name="Mutations" Value="Bilge Sphincter::w" />
   </object>
 
   <object Name="UD_CYBP xForm CrystalDelight" Inherits="UD_CYBP_BaseTransformationData">
@@ -24,8 +24,7 @@
     <part Name="Render" Tile="Creatures/sw_crystal_body.png" RenderString="µ" TileColor="&amp;Y" DetailColor="m" />
     <tag Name="Species" Value="crystal" />
     <tag Name="EatenProperty" Value="AteCrystalDelight" />
-    <mutation Name="Crystallinity" />
-    <!-- tag Name="Mutations" Value="Crystallinity" /-->
+    <tag Name="Mutations" Value="Crystallinity::C" />
   </object>
   
 </objects>

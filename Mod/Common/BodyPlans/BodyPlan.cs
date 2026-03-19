@@ -13,6 +13,7 @@ using XRL.World.Parts;
 using UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI;
 
 using Event = XRL.World.Event;
+using XRL.Rules;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -151,6 +152,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         public string DisplayNameStripped => DisplayName?.Strip();
 
         public BodyPlanRender Render => IsDefault ? Utils.EmbarkingGenoSubtypeRender : Entry?.GetRender();
+
+        public TransformationData Transformation => Entry?.Transformation;
 
         private string _Description;
         public string Description
@@ -440,6 +443,38 @@ namespace UD_ChooseYourBodyPlan.Mod
                     descriptionLines.Add(empty);
                 }
 
+                if (Transformation?.Mutations?.IsNullOrEmpty() is false)
+                {
+                    descriptionLines.Add(empty);
+                    if (Transformation.Mutations.Count == 1)
+                    {
+                        if (Transformation.Mutations.Values.First().ToString() is string mutationName)
+                        {
+                            descriptionLines.Add($"Gives the {mutationName} mutation.");
+                            newline = true;
+                        }
+                    }
+                    else
+                    {
+                        descriptionLines.Add($"Gives the following mutations:");
+                        foreach (var mutation in Transformation.Mutations.Values)
+                        {
+                            newline = true;
+                            if (mutation.ToString() is string mutationName)
+                            {
+                                descriptionLines.Add($" \xFA {mutationName}");
+                            }
+                        }
+                        newline = true;
+                    }
+                }
+
+                if (newline)
+                {
+                    newline = false;
+                    descriptionLines.Add(empty);
+                }
+
                 bool didLimbs = false;
                 if (GetBodyLimbTreeLines() is IEnumerable<string> bodyLimbTree)
                 {
@@ -548,29 +583,75 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (DefaultBehvaiour?.createSample() is not GameObject sampleDefaultBehaviour)
                 return null;
 
-            var mw = sampleDefaultBehaviour.GetPart<MeleeWeapon>();
-            bool mwNotImprovisedAndNull = !(mw?.IsImprovisedWeapon() ?? true);
-            string damage = mwNotImprovisedAndNull ? mw?.BaseDamage : null;
-
-            int pVCap = mwNotImprovisedAndNull ? mw?.MaxStrengthBonus ?? 0 : 0;
-            int pV = mwNotImprovisedAndNull ? 4 : 0;
-            string pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleDefaultBehaviour);
-
-            var armor = sampleDefaultBehaviour.GetPart<Armor>();
-            int aV = armor != null ? armor.AV : 0;
-            int dV = armor != null ? armor.DV : 0;
-
             var sB = Event.NewStringBuilder();
 
-            if (armor != null)
+            if (sampleDefaultBehaviour.TryGetPart(out Armor armor))
+            {
+                int aV = armor.AV;
+                int dV = armor.DV;
+
                 sB.Append(' ').AppendArmor("y", aV, dV);
+            }
 
-            if (pV > 0
-                && pVCap > 0)
-                sB.Append(' ').AppendPV(pVSymbolColor, "y", pV, pVCap);
+            if (sampleDefaultBehaviour.TryGetPart(out MeleeWeapon mw))
+            {
+                if (!mw.IsImprovisedWeapon())
+                {
+                    string damage = mw.BaseDamage;
 
-            if (!damage.IsNullOrEmpty())
-                sB.Append(' ').AppendDamage("y", damage);
+                    int pVCap = mw.MaxStrengthBonus;
+                    int pV = RuleSettings.VISUAL_PENETRATION_BONUS;
+                    string pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleDefaultBehaviour);
+
+                    sB.Append(' ').AppendPV(pVSymbolColor, "y", pV, pVCap);
+                    sB.Append(' ').AppendDamage("y", damage);
+                }
+            }
+
+            if (sampleDefaultBehaviour.HasPart<MissileWeapon>())
+            {
+                GameObject projectile = null;
+                string projectileBlueprint = null;
+                if (GetMissileWeaponProjectileEvent.GetFor(sampleDefaultBehaviour, ref projectile, ref projectileBlueprint)
+                    && GetMissileWeaponPerformanceEvent.GetFor(null, sampleDefaultBehaviour, projectile) is GetMissileWeaponPerformanceEvent mWPE)
+                {
+                    if (mWPE.Attributes == null
+                        || !mWPE.Attributes.Contains("NonPenetrating"))
+                    {
+                        string pVSymbolColor = "c";
+                        if (mWPE.PenetrateCreatures)
+                            pVSymbolColor = "W";
+                        if (mWPE.PenetrateWalls)
+                            pVSymbolColor = "m";
+
+                        pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleDefaultBehaviour, pVSymbolColor);
+
+                        int pV = Math.Max(mWPE.Penetration + RuleSettings.VISUAL_PENETRATION_BONUS, 1);
+
+                        sB.Append(' ');
+                        if (!pVSymbolColor.IsNullOrEmpty())
+                            sB.AppendColored(pVSymbolColor, Const.PV.ToString());
+                        else
+                            sB.Append(Const.PV);
+
+                        if (mWPE.Attributes != null
+                            && mWPE.Attributes.Contains("Vorpal"))
+                            sB.AppendColored("y", "÷");
+                        else
+                            sB.AppendColored("y", pV.ToString());
+
+                    }
+                    if (mWPE.DamageRoll != null
+                        || (!mWPE.BaseDamage.IsNullOrEmpty()
+                            && mWPE.BaseDamage != "0"))
+                    {
+                        string damage = mWPE.DamageRoll?.ToString()
+                            ?? mWPE.BaseDamage;
+
+                        sB.Append(' ').AppendDamage("y", damage);
+                    }
+                }
+            }
 
             sampleDefaultBehaviour?.Obliterate();
             return Event.FinalizeString(sB);

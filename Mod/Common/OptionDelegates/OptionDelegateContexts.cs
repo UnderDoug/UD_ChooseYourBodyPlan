@@ -9,56 +9,56 @@ using XRL.World;
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [Serializable]
-    public class OptionDelegateContexts : List<OptionDelegateContext>
+    public class OptionDelegateContexts : HashSet<OptionDelegateContext>
     {
-        public OptionDelegateContexts()
+        public class OptionDelegateContextEqualityComparer : IEqualityComparer<OptionDelegateContext>
         {
+            public bool Equals(OptionDelegateContext x, OptionDelegateContext y)
+                => x != null
+                ? x.SameAs(y)
+                : y == null
+                ;
+
+            public int GetHashCode(OptionDelegateContext obj)
+                => obj?.DelegateName?.GetHashCode() ?? 0
+                 ^ obj?.TagValue?.GetHashCode() ?? 0;
         }
+
+        public static OptionDelegateContextEqualityComparer EqualityComparer = new();
+
+        public OptionDelegateContexts()
+            : base(EqualityComparer)
+        { }
 
         public OptionDelegateContexts(IReadOnlyList<OptionDelegateContext> Source)
-            : this()
-        {
-            if (!Source.IsNullOrEmpty())
-                foreach (var optionDelegate in Source)
-                    Merge(optionDelegate);
-        }
+            : base(Source, EqualityComparer)
+        { }
 
         public OptionDelegateContexts(OptionDelegateContexts Source)
-            : base(Source)
-        {
-        }
+            : base(Source, EqualityComparer)
+        { }
 
         public bool Check()
         {
             foreach (var optionDelegate in this)
-                if (!Check())
+                if (!optionDelegate.Check())
                     return false;
 
             return true;
         }
 
-        public OptionDelegateContexts Merge(OptionDelegateContexts Other)
+        public int AddRange(IEnumerable<OptionDelegateContext> Range)
         {
-            if (!Other.IsNullOrEmpty())
-                foreach (var otherOptionDelegate in Other)
-                    Merge(otherOptionDelegate);
-
-            return this;
-        }
-
-        public void Merge(OptionDelegateContext Other)
-        {
-            bool any = false;
-            foreach (var optionDelegate in this)
+            int count = 0;
+            if (!Range.IsNullOrEmpty())
             {
-                if (optionDelegate.SameAs(Other))
+                foreach (var item in Range)
                 {
-                    optionDelegate.Merge(Other);
-                    any = true;
+                    if (Add(item))
+                        count++;
                 }
             }
-            if (!any)
-                Add(Other);
+            return count;
         }
     }
 }

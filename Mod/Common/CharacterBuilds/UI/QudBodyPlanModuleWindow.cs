@@ -136,7 +136,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
             for (int i = 0; i < BodyPlanMenuOptions.Count; i++)
             {
                 if (BodyPlanMenuOptions[i] is not AnatomyCategoryMenuData categoryMenuOption
-                    || !categoryMenuOption.menuOptions.IsNullOrEmpty())
+                    || categoryMenuOption.menuOptions.IsNullOrEmpty())
                     continue;
 
                 for (int j = 0; j < categoryMenuOption.menuOptions.Count; j++)
@@ -332,7 +332,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
                     DisplayName = "Body Plans",
                     MenuOptions = new(GetMenuOptions()),
                 }
-            : Category.GetMenuData(module?.SelectedChoice())
+            : Category.GetMenuData(module?.DefaultBodyPlanChoice, module?.SelectedChoice())
             ;
 
         public virtual IEnumerable<AnatomyCategoryMenuData> GetCategoryMenuOptions(bool ForceNoCategory = false)

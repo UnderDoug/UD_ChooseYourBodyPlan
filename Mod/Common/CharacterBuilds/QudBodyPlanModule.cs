@@ -103,10 +103,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             => builder.IsEditableGameMode();
 
         public override bool shouldBeEnabled()
-            => GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry
-            && (!genotypeEntry.IsTrueKin            // Will eventually make a special kind of option delgate that you marry with an
-                || Options.EnableBodyPlansForTK)    // attribute to call the decorated method to determine whether a body plan is available.
-            && SubtypeModuleData?.Subtype != null
+            => GenotypeModuleData?.Entry != null
+            && SubtypeModuleData?.Entry != null
             && !BodyPlanChoices.IsNullOrEmpty()
             && BodyPlanChoices.Count > 1;
 
@@ -162,9 +160,31 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                     playerBody.Rebuild(data.Selection.Anatomy);
                     if (data.Selection.GetTransformation() is TransformationData xForm
                         && !xForm.Mutations.IsNullOrEmpty())
-                        foreach (string mutation in xForm.Mutations)
-                            if (MutationFactory.TryGetMutationEntry(mutation, out var mutationEntry))
-                                player.RequirePart<Mutations>().AddMutation(mutationEntry);
+                        foreach (var mutation in xForm.Mutations.Values)
+                            mutation.AddMutation(player);
+
+                    if (data.Selection.GetBodyPlanEntry().NaturalEquipment is List<InventoryObject> naturalEquipmentList)
+                    {
+                        foreach (var naturalEquipment in naturalEquipmentList)
+                        {
+                            if (!naturalEquipment.Chance.in100())
+                                continue;
+
+                            GameObjectFactory.ProcessSpecification(
+                                Blueprint: naturalEquipment.Blueprint,
+                                InventoryObject: naturalEquipment,
+                                Count: naturalEquipment.Number.RollCached(),
+                                BonusModChance: naturalEquipment.BoostModChance ? 30 : 0,
+                                SetModNumber: naturalEquipment.SetMods,
+                                AutoMod: naturalEquipment.AutoMod,
+                                Context: $"{GetType().Name}.{QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECT}",
+                                BeforeObjectCreated: naturalEquipment.NeedsToPreconfigureObject() 
+                                    ? go => naturalEquipment.PreconfigureObject(go) 
+                                    : null,
+                                OwningObject: player,
+                                TargetInventory: player.Inventory);
+                        }
+                    }
                 }
 
                 if (id == QudGameBootModule.BOOTEVENT_AFTERBOOTPLAYEROBJECT)
@@ -269,6 +289,9 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 
             if (SubtypeModuleData?.Entry is SubtypeEntry subtypeEntry)
                 Utils.EmbarkingGenoSubtypeRender.SetFromSubtype(subtypeEntry);
+
+            if (Utils.IsTruekinEmbarking)
+                WantClearChoices = true;
 
             OrganizeAnatomyChoices();
         }

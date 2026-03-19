@@ -435,9 +435,15 @@ namespace UD_ChooseYourBodyPlan.Mod
 			return Source;
         }
 
-        #region Wishes
+        public static MutationEntry GetMutationByClassOrName(string Mutation)
+            => MutationFactory.TryGetMutationEntry(Mutation, out var mutationEntry)
+            ? mutationEntry
+            : null
+            ;
 
-        public static string UD_CYBP_Output => DataManager.SavePath("UD_CYBP_BodyPlans.xml");
+		#region Wishes
+
+		public static string UD_CYBP_Output => DataManager.SavePath("UD_CYBP_BodyPlans.xml");
 
         public static List<BodyPlanEntry> BodyPlanChoices => BodyPlanFactory.Factory?.BodyPlanEntryByAnatomyName?.Values?.ToList();
 
