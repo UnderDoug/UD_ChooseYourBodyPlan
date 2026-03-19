@@ -533,6 +533,13 @@ namespace UD_ChooseYourBodyPlan.Mod
                     newline = true;
                     descriptionLines.Add(legend);
                 }
+
+                if (newline)
+                {
+                    newline = false;
+                    descriptionLines.Add(empty);
+                }
+                descriptionLines.Add(empty);
                 if (CacheDescriptionLines)
                 {
                     DescriptionLines?.Clear();
