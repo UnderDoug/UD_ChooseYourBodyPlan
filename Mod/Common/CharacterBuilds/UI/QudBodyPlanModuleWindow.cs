@@ -71,7 +71,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
 
         private List<BodyPlan> BodyPlanChoices => module?.BodyPlanChoices;
 
-        private BodyPlanMenuOption Selected;
+        private FrameworkDataElement Selected;
 
         private bool SortByCategory
         {
@@ -265,8 +265,10 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
             UpdateControls();
         }
         public void SelectAnatomy(FrameworkDataElement dataElement)
-            => SelectAnatomy(dataElement?.Id)
-            ;
+        {
+            Selected = dataElement;
+            SelectAnatomy(dataElement?.Id);
+        }
         public void SelectDefaultChoice(bool Override = false, bool UpdateControls = true)
         {
             module.SelectDefaultChoice(Override);

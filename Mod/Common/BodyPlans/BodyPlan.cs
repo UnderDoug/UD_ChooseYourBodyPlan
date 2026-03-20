@@ -14,6 +14,8 @@ using UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI;
 
 using Event = XRL.World.Event;
 using XRL.Rules;
+using UD_ChooseYourBodyPlan.Mod.TextHelpers;
+using static UD_ChooseYourBodyPlan.Mod.BodyPlanEntry;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -84,41 +86,69 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public class LimbTreeBranch
         {
-            public static bool IsTrueKin = Utils.IsTruekinEmbarking;
+            public static string DescriptionPlaceholder => "@@DESCRIPTION@@";
+            public static bool IsTrueKin => Utils.IsTruekinEmbarking;
 
             public string Indent;
             public string CardinalDescription;
             public string Description;
+            public string Type;
             public string FinalType;
-            public string NaturalEquipment;
+            public string NaturalEquipmentStats;
             public string Extra;
-            public bool HasNaturalEquipment => !NaturalEquipment.IsNullOrEmpty();
+            public bool HasNaturalEquipment => !NaturalEquipmentStats.IsNullOrEmpty();
+            public bool HasNaturalEquipmentColorOverride => LimbElements?.Any(l => l.OverridesNaturalEquipmentColor) is true;
+            public bool HasNaturalEquipmentStatsOverride => LimbElements?.Any(l => l.OverridesNaturalEquipmentStats) is true;
             public bool NoCyber;
+
+            public List<LimbTextElements> LimbElements;
 
             public override string ToString()
             {
-                string output = CardinalDescription;
-                if (HasNaturalEquipment)
-                    output = output.Replace(Description, "{{w|" + Description + "}}");
+                string cardinalDescription = CardinalDescription.Replace(Description, DescriptionPlaceholder);
+                string description = Description;
+
+                if (HasNaturalEquipment
+                    && !HasNaturalEquipmentColorOverride)
+                    description = LimbTextElements.NaturalEquipment.ProcessColor(Description);
+
+                if (!LimbElements.IsNullOrEmpty())
+                    description = LimbElements[^1].ProcessColor(description);
 
                 if (!FinalType.IsNullOrEmpty())
-                    output = $"{output} ({FinalType})";
+                    description = $"{description} ({FinalType})";
 
-                if (HasNaturalEquipment)
-                    output = $"{output}{NaturalEquipment}";
+                if (HasNaturalEquipment
+                    && !HasNaturalEquipmentStatsOverride)
+                    description = $"{description}{NaturalEquipmentStats}";
+
+                if (!LimbElements.IsNullOrEmpty())
+                {
+                    foreach (var limbElements in LimbElements ?? Enumerable.Empty<LimbTextElements>())
+                        description = limbElements.ProcessPost(description);
+
+                    bool any = false;
+                    foreach (var limbElements in LimbElements ?? Enumerable.Empty<LimbTextElements>())
+                    {
+                        if (!any)
+                            description += " ";
+                        description = limbElements.ProcessSymbol(description);
+                        any = true;
+                    }
+                }
 
                 if (!Extra.IsNullOrEmpty())
-                    output = $"{output} {Extra}";
-
-                output = $"{Indent}{output}";
+                    description = $"{description} {Extra}";
 
                 if (IsTrueKin
-                    && NoCyber
-                    && BodyPlanFactory.Factory
-                        ?.GetTextElements("NoCyber")
-                        ?.SymbolsByName
-                        ?.GetValueOrDefault("NoCyber") is TextElements.Symbol noCyber)
-                    output += $" {noCyber}";
+                    && NoCyber)
+                    LimbTextElements.NoCyber.ProcessSymbol(description);
+
+                cardinalDescription = cardinalDescription.Replace(DescriptionPlaceholder, description);
+
+                string output = cardinalDescription;
+
+                output = $"{Indent}{output}";
 
                 return output;
             }
@@ -192,6 +222,9 @@ namespace UD_ChooseYourBodyPlan.Mod
         public List<TextElements> TextElements => Entry?.TextElements;
 
         public bool IsDefault;
+
+
+        private bool TKLatch;
 
         #region CachedCollections
 
@@ -273,7 +306,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public IEnumerable<string> GetSymbols(
             Predicate<TextElements> Where = null,
-            Predicate<TextElements.Symbol> Filter = null
+            Predicate<Symbol> Filter = null
             )
             => TextElements?.GetSymbols(Where, Filter)
             ?? Enumerable.Empty<string>()
@@ -314,22 +347,40 @@ namespace UD_ChooseYourBodyPlan.Mod
         private static string ColorBlack(string String)
             => "{{K|" + String + "}}"
             ;
-        private static LimbTreeBranch InitializeLimbTreeBranch(BodyPart BodyPart)
-            => BodyPart.InitializeLimbTreeBranch()
+
+        private static LimbTreeBranch InitializeLimbTreeBranch(BodyPart BodyPart, BodyPlan BodyPlan)
+            => BodyPart.InitializeLimbTreeBranch(BodyPlan)
             ;
 
-        public IEnumerable<string> GetBodyLimbTreeLines()
-        {
-            if (BodyLimbTreeLines.IsNullOrEmpty()
-                && ConfigureSampleCreature(ref SampleCreature).Body is Body sampleBody)
-            {
-                using var limbTreeBranches = ScopeDisposedList<LimbTreeBranch>.GetFromPoolFilledWith(
-                    items: sampleBody.GetLimbTree(
-                        IndentProc: ColorBlack,
-                        BodyPartProc: InitializeLimbTreeBranch,
-                        Treat0DepthPartsAsRoot: true)
-                    );
+        private LimbTreeBranch InitializeLimbTreeBranch(BodyPart BodyPart)
+            => InitializeLimbTreeBranch(BodyPart, this)
+            ;
 
+        public IEnumerable<LimbTreeBranch> GetBodyLimbTreeBranches(out bool HasDefaultEquipment)
+        {
+            if (LimbTreeBranches.IsNullOrEmpty()
+                && ConfigureSampleCreature(ref SampleCreature).Body is Body sampleBody)
+                LimbTreeBranches = new(sampleBody.GetLimbTree(
+                    IndentProc: ColorBlack,
+                    BodyPartProc: InitializeLimbTreeBranch,
+                    Treat0DepthPartsAsRoot: true));
+
+            HasDefaultEquipment = SampleCreature?.Body?.GetFirstPart(BodyPlan.HasDefaultEquipment) != null;
+            return LimbTreeBranches;
+        }
+
+        public IEnumerable<string> GetBodyLimbTreeLines(out bool HasDefaultEquipment)
+        {
+            HasDefaultEquipment = false;
+
+            if (Utils.IsTruekinEmbarking != TKLatch)
+            {
+                TKLatch = Utils.IsTruekinEmbarking;
+                BodyLimbTreeLines?.Clear();
+            }
+            if (BodyLimbTreeLines.IsNullOrEmpty()
+                && GetBodyLimbTreeBranches(out HasDefaultEquipment) is IEnumerable<LimbTreeBranch> limbTreeBranches)
+            {
                 BodyLimbTreeLines ??= new();
                 foreach (var limbTreeBranch in limbTreeBranches)
                     BodyLimbTreeLines.Add(limbTreeBranch.ToString());
@@ -430,28 +481,26 @@ namespace UD_ChooseYourBodyPlan.Mod
                 descriptionLines.Clear();
 
                 string empty = "";
-                bool newline = false;
-                foreach (string descriptionBefore in GetDescriptionBefores())
-                {
-                    newline = true;
-                    descriptionLines.Add(descriptionBefore);
-                }
 
-                if (newline)
+                if (GetDescriptionBefores() is IEnumerable<string> descriptionBefores
+                    && !descriptionBefores.IsNullOrEmpty())
                 {
-                    newline = false;
-                    descriptionLines.Add(empty);
+                    foreach (string descriptionBefore in descriptionBefores)
+                    {
+                        descriptionLines.Add(descriptionBefore);
+                    }
+                    descriptionLines.Add(empty
+                        //+ ColorBlack(nameof(GetDescriptionBefores))
+                        );
                 }
 
                 if (Transformation?.Mutations?.IsNullOrEmpty() is false)
                 {
-                    descriptionLines.Add(empty);
                     if (Transformation.Mutations.Count == 1)
                     {
                         if (Transformation.Mutations.Values.First().ToString() is string mutationName)
                         {
                             descriptionLines.Add($"Gives the {mutationName} mutation.");
-                            newline = true;
                         }
                     }
                     else
@@ -459,33 +508,27 @@ namespace UD_ChooseYourBodyPlan.Mod
                         descriptionLines.Add($"Gives the following mutations:");
                         foreach (var mutation in Transformation.Mutations.Values)
                         {
-                            newline = true;
                             if (mutation.ToString() is string mutationName)
                             {
                                 descriptionLines.Add($" \xFA {mutationName}");
                             }
                         }
-                        newline = true;
                     }
+                    descriptionLines.Add(empty
+                        //+ ColorBlack(nameof(Transformation))
+                        );
                 }
 
-                if (newline)
+                if (GetBodyLimbTreeLines(out bool hasDefaultEquipment) is IEnumerable<string> bodyLimbTree)
                 {
-                    newline = false;
-                    descriptionLines.Add(empty);
-                }
+                    bool didLimbs = false;
 
-                bool didLimbs = false;
-                if (GetBodyLimbTreeLines() is IEnumerable<string> bodyLimbTree)
-                {
                     descriptionLines.Add("Includes the following body part slots:");
-
                     if (!bodyLimbTree.IsNullOrEmpty())
                     {
                         foreach (var limbTreeBranch in bodyLimbTree)
                         {
                             didLimbs = true;
-                            newline = true;
                             descriptionLines.Add(limbTreeBranch.ToString());
                         }
                         CacheDescriptionLines = didLimbs;
@@ -495,51 +538,77 @@ namespace UD_ChooseYourBodyPlan.Mod
                         CacheDescriptionLines = false;
                         descriptionLines.Add("{{R|" + Const.RTRNG + "}} {{W|Something's gone wrong!}}");
                     }
+                    descriptionLines.Add(empty
+                        //+ ColorBlack(nameof(GetBodyLimbTreeLines))
+                        );
 
-                    if (newline)
+                    if (hasDefaultEquipment)
                     {
-                        newline = false;
-                        descriptionLines.Add(empty);
-                    }
-
-                    if (didLimbs
-                        && SampleCreature.Body.GetFirstPart(HasDefaultEquipment) != null)
-                    {
-                        newline = true;
                         descriptionLines.Add("{{w|Has natural equipment}}");
+                        descriptionLines.Add(empty
+                            //+ ColorBlack(nameof(hasDefaultEquipment))
+                            );
                     }
                 }
 
-                if (newline)
+                if (GetDescriptionAfters() is IEnumerable<string> descriptionAfters
+                    && !descriptionAfters.IsNullOrEmpty())
                 {
-                    newline = false;
-                    descriptionLines.Add(string.Empty);
+                    foreach (string descriptionAfter in descriptionAfters)
+                    {
+                        descriptionLines.Add(descriptionAfter);
+                    }
+                    descriptionLines.Add(empty
+                        //+ ColorBlack(nameof(GetDescriptionAfters))
+                        );
                 }
 
-                foreach (string descriptionAfter in GetDescriptionAfters())
+                if (GetLegends() is IEnumerable<string> legends
+                    && !legends.IsNullOrEmpty())
                 {
-                    newline = true;
-                    descriptionLines.Add(descriptionAfter);
+                    foreach (var legend in legends)
+                    {
+                        descriptionLines.Add(legend);
+                    }
+                    descriptionLines.Add(empty
+                        //+ ColorBlack(nameof(GetLegends))
+                        );
                 }
 
-                if (newline)
+                if (BodyPlanFactory.Factory?.ModInfoByAnatomy is StringMap<ModInfo> modInfoByAnatomy)
                 {
-                    newline = false;
-                    descriptionLines.Add(empty);
+                    string byLine = null;
+                    string comesFrom = "is from";
+                    string anatomySource = "an unknown source";
+                    if (modInfoByAnatomy.ContainsKey(Anatomy))
+                    {
+                        if (modInfoByAnatomy.GetValue(Anatomy) is not ModInfo modInfo)
+                        {
+                            anatomySource = Const.BASE_GAME;
+                            // comesFrom = "comes from";
+                        }
+                        else
+                            anatomySource = modInfo.DisplayTitleStripped;
+                    }
+
+                    if (!anatomySource.IsNullOrEmpty())
+                    {
+                        byLine = ColorBlack($"Body plan {comesFrom} {anatomySource}.");
+                    }
+
+                    if (!byLine.IsNullOrEmpty())
+                    {
+                        descriptionLines.Add(byLine);
+                        descriptionLines.Add(empty
+                        //+ ColorBlack(nameof(byLine))
+                        );
+                    }
                 }
 
-                foreach (var legend in GetLegends())
-                {
-                    newline = true;
-                    descriptionLines.Add(legend);
-                }
+                descriptionLines.Add(empty
+                        //+ ColorBlack("end")
+                        );
 
-                if (newline)
-                {
-                    newline = false;
-                    descriptionLines.Add(empty);
-                }
-                descriptionLines.Add(empty);
                 if (CacheDescriptionLines)
                 {
                     DescriptionLines?.Clear();

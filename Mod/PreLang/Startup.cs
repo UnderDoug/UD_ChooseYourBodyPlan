@@ -22,7 +22,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Exception innerException = null;
                     try
                     {
-                        return s.CachedDictionaryExpansion();
+                        return new(s.CachedDictionaryExpansion());
                     }
                     catch (Exception ex)
                     {
@@ -38,7 +38,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Exception innerException = null;
                     try
                     {
-                        return s.CachedNumericDictionaryExpansion();
+                        return new(s.CachedNumericDictionaryExpansion());
                     }
                     catch (Exception ex)
                     {

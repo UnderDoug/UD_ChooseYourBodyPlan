@@ -12,13 +12,119 @@ using XRL.World.Parts;
 
 using Event = XRL.World.Event;
 
-using static UD_ChooseYourBodyPlan.Mod.ILoadFromDataBucket<UD_ChooseYourBodyPlan.Mod.BodyPlanEntry>;
 using UD_ChooseYourBodyPlan.Mod.Logging;
+using UD_ChooseYourBodyPlan.Mod.TextHelpers;
+
+using static UD_ChooseYourBodyPlan.Mod.ILoadFromDataBucket<UD_ChooseYourBodyPlan.Mod.BodyPlanEntry>;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
     public class BodyPlanEntry: ILoadFromDataBucket<BodyPlanEntry>
     {
+        public class LimbTextElements
+        {
+            public static LimbTextElements NaturalEquipment => new() { Shader = new Shader { Color = "W" }.Finalize() };
+            public static LimbTextElements NoCyber => new() { Symbol = BodyPlanFactory.Factory?.GetTextElements(nameof(NoCyber))?.GetSymbol() ?? default };
+
+            public string Type;
+            public Shader Shader;
+            public string PostText;
+            public Symbol Symbol;
+            public bool OverridesNaturalEquipmentColor;
+            public bool OverridesNaturalEquipmentStats;
+
+            public LimbTextElements()
+            {
+                Type = null;
+                Shader = default;
+                PostText = null;
+                Symbol = default;
+                OverridesNaturalEquipmentColor = false;
+                OverridesNaturalEquipmentStats = false;
+            }
+            public LimbTextElements(
+                string Type,
+                Shader Shader,
+                string PostText,
+                Symbol Symbol
+                )
+                : this()
+            {
+                this.Type = Type;
+                this.Shader = Shader;
+                this.PostText = PostText;
+                this.Symbol = Symbol;
+            }
+
+            public LimbTextElements(
+                BodyPart Limb,
+                Shader Shader,
+                string PostText,
+                Symbol Symbol
+                )
+                : this(
+                      Type: Limb?.VariantTypeModel()?.Type,
+                      Shader: Shader,
+                      PostText: PostText,
+                      Symbol: Symbol)
+            { }
+
+            public override string ToString()
+            {
+                string output = Type ?? "NO_TYPE";
+
+                if (!Equals(Shader, default))
+                    output = $"{output}[{nameof(Shader)}:{Shader}]";
+
+                if (!PostText.IsNullOrEmpty())
+                    output = $"{output}[{nameof(PostText)}:{PostText}]";
+
+                if (!Equals(Symbol, default))
+                    output = $"{output}[{nameof(Symbol)}:{Symbol.DebugString()}]";
+
+                return output;
+            }
+
+            public bool CheckType(string Type)
+                => this.Type.IsNullOrEmpty()
+                || this.Type.Equals(Type)
+                ;
+
+            public bool CheckLimb(BodyPart Limb)
+                => !Type.IsNullOrEmpty()
+                && CheckType(Limb?.VariantTypeModel()?.Type)
+                ;
+
+            public string ProcessColor(string LimbDescription, string Type = null)
+                => CheckType(Type)
+                ? Shader.Apply(LimbDescription)
+                : LimbDescription
+                ;
+
+            public string ProcessPost(string LimbDescription, string Type = null)
+            {
+                if (!CheckType(Type))
+                    return LimbDescription;
+
+                if (!PostText.IsNullOrEmpty())
+                    LimbDescription = $"{LimbDescription} {PostText}";
+
+                return LimbDescription;
+            }
+
+            public string ProcessSymbol(string LimbDescription, string Type = null)
+            {
+                if (!CheckType(Type))
+                    return LimbDescription;
+
+                if (Symbol.ToString() is string symbol
+                    && !symbol.IsNullOrEmpty())
+                    LimbDescription = $"{LimbDescription}{symbol}";
+
+                return LimbDescription;
+            }
+        }
+
         public const string NO_LIST_TAG = "NoList";
         public static string LoadingDataBucket => "BodyPlans";
 
@@ -110,6 +216,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
         protected bool WantsTextElements;
 
+        public Dictionary<string, List<LimbTextElements>> LimbElementsByType;
+
         public List<InventoryObject> NaturalEquipment;
 
         public int RandomWeight;
@@ -128,6 +236,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             TextElementsNames = null;
             _TextElements = null;
             WantsTextElements = true;
+
+            LimbElementsByType = null;
 
             NaturalEquipment = null;
 
@@ -168,6 +278,12 @@ namespace UD_ChooseYourBodyPlan.Mod
                 foreach (var textElementsName in Source.TextElementsNames)
                     TextElementsNames.Add(textElementsName);
             WantsTextElements = !TextElementsNames.IsNullOrEmpty();
+
+            LimbElementsByType = new();
+            if (Source?.LimbElementsByType != null
+                && !Source.LimbElementsByType.IsNullOrEmpty())
+                foreach ((var limbType, var limbElements) in Source.LimbElementsByType)
+                    LimbElementsByType.Add(limbType, new(limbElements));
 
             RandomWeight = Source?.RandomWeight ?? 0;
 
@@ -254,11 +370,63 @@ namespace UD_ChooseYourBodyPlan.Mod
             OptionDelegateContexts ??= new();
             OptionDelegateContexts.ParseDataBucket(DataBucket);
 
+            TextElementsNames ??= new();
             if (DataBucket.GetTextElementsTags() is IEnumerable<string> textElementsTags)
-            {
-                TextElementsNames = new();
                 foreach (var textElementsName in textElementsTags)
                     TextElementsNames.Add(textElementsName);
+
+            LimbElementsByType ??= new();
+            if (DataBucket.GetLimbElementsTags() is Dictionary<string, Dictionary<string, string>> limbElementsTags)
+            {
+                foreach ((var limbType, var rawLimbElements) in limbElementsTags)
+                {
+                    if (!LimbElementsByType.ContainsKey(limbType))
+                        LimbElementsByType[limbType] = new();
+
+                    Shader shader = default;
+
+                    if (rawLimbElements.GetValue(nameof(Shader.Color)) is string rawShaderColor)
+                        shader = new Shader { Color = rawShaderColor }.Finalize();
+                    else
+                    if (rawLimbElements.GetValue(nameof(Shader)).CachedCommaExpansion()?.ToList() is List<string> rawShader)
+                    {
+                        if (rawShader.Count > 2)
+                            shader = new Shader { Colors = rawShader[0], Type = rawShader[1], Color = rawShader[2] }.Finalize();
+                        else
+                        if (rawShader.Count > 1)
+                            shader = new Shader { Value = rawShader[0], Color = rawShader[1] }.Finalize();
+                        else
+                            shader = new Shader { Value = rawShader[0] }.Finalize();
+                    }
+                    Symbol symbol = default;
+                    if (rawLimbElements.GetValue(nameof(Symbol)).CachedCommaExpansion()?.ToList() is List<string> rawSymbol)
+                    {
+                        if (rawSymbol.Count > 2)
+                            symbol = new(rawSymbol[0], rawSymbol[1][0], rawSymbol[2]);
+                        else
+                        if (rawSymbol.Count > 1)
+                            symbol = new(null, rawSymbol[0][0], rawSymbol[1]);
+                        else
+                            symbol = new(null, default, rawSymbol[0]);
+                    }
+
+                    bool overridesNaturalEquipmentColor = rawLimbElements.GetValue(nameof(LimbTextElements.OverridesNaturalEquipmentColor)) is string overridesColor
+                        && overridesColor.EqualsNoCase("Yes");
+
+                    bool overridesNaturalEquipmentStats = rawLimbElements.GetValue(nameof(LimbTextElements.OverridesNaturalEquipmentStats)) is string overridesStats
+                        && overridesStats.EqualsNoCase("Yes");
+
+                    LimbElementsByType[limbType].Add(
+                        item: new LimbTextElements
+                        {
+                            Type = limbType,
+                            Shader = shader,
+                            PostText = rawLimbElements.GetValueOrDefault(nameof(LimbTextElements.PostText)),
+                            Symbol = symbol,
+                            OverridesNaturalEquipmentColor = overridesNaturalEquipmentColor,
+                            OverridesNaturalEquipmentStats = overridesNaturalEquipmentStats,
+                        });
+                }
             }
 
             NaturalEquipment ??= new();
@@ -269,7 +437,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && !int.TryParse(randomWeight, out RandomWeight))
                 RandomWeight = 5;
 
-            Tags = new();
+            Tags ??= new();
             foreach ((string tagName, string tagValue) in DataBucket.Tags)
                 Tags[tagName] = tagValue;
 
@@ -359,6 +527,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             TextElementsNames.AddRange(Other.TextElementsNames);
             WantsTextElements = TextElementsNames.Count > 0;
 
+            LimbElementsByType ??= new();
+            LimbElementsByType.Clear();
+            foreach ((var limbType, var limbElements) in Other.LimbElementsByType)
+                if (!limbElements.IsNullOrEmpty())
+                    LimbElementsByType[limbType] = new(limbElements);
+
             NaturalEquipment ??= new();
             NaturalEquipment.Clear();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
@@ -397,6 +571,17 @@ namespace UD_ChooseYourBodyPlan.Mod
             TextElementsNames.AddRange(Other.TextElementsNames);
             WantsTextElements = TextElementsNames.Count > 0;
 
+            LimbElementsByType ??= new();
+            foreach ((var limbType, var limbElements) in Other.LimbElementsByType)
+            {
+                if (!limbElements.IsNullOrEmpty())
+                {
+                    if (!LimbElementsByType.ContainsKey(limbType))
+                        LimbElementsByType[limbType] = new();
+                    LimbElementsByType[limbType].AddRange(limbElements);
+                }
+            }
+
             NaturalEquipment ??= new();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
                 NaturalEquipment.AddRange(Other.NaturalEquipment);
@@ -433,6 +618,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             TextElementsNames ??= new();
             TextElementsNames.AddRange(Other.TextElementsNames);
             WantsTextElements = TextElementsNames.Count > 0;
+
+            LimbElementsByType ??= new();
+            foreach ((var limbType, var limbElements) in Other.LimbElementsByType)
+                if (!limbElements.IsNullOrEmpty()
+                    && !LimbElementsByType.ContainsKey(limbType))
+                    LimbElementsByType[limbType] = new(limbElements);
 
             NaturalEquipment ??= new();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
@@ -580,6 +771,16 @@ namespace UD_ChooseYourBodyPlan.Mod
             OptionDelegateContexts?.Clear();
             OptionDelegateContexts = null;
 
+            TextElementsNames?.Clear();
+            TextElementsNames = null;
+            _TextElements?.Clear();
+            _TextElements = null;
+
+            foreach (var limbElements in LimbElementsByType?.Values ?? Enumerable.Empty<List<LimbTextElements>>())
+                limbElements.Clear();
+            LimbElementsByType?.Clear();
+            LimbElementsByType = null;
+
             NaturalEquipment?.Clear();
             NaturalEquipment = null;
 
@@ -620,6 +821,18 @@ namespace UD_ChooseYourBodyPlan.Mod
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);
             Debug.Log(nameof(WantsTextElements), WantsTextElements, Indent: indent[1]);
+
+            Debug.Log(nameof(LimbElementsByType), LimbElementsByType?.Count ?? 0, Indent: indent[1]);
+            foreach ((var limbType, var limbElements) in LimbElementsByType)
+            {
+                Debug.Log($"::{limbType}", Indent: indent[2]);
+                Debug.Loggregrate(
+                    Source: limbElements,
+                    Proc: n => n.ToString(),
+                    Empty: "None",
+                    PostProc: s => $"::{s}",
+                    Indent: indent[3]);
+            }
 
             Debug.Log(nameof(NaturalEquipment), NaturalEquipment?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(

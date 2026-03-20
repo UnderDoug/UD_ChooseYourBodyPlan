@@ -2,140 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using UD_ChooseYourBodyPlan.Mod.Logging;
-
 using XRL;
 using XRL.Collections;
 using XRL.World;
 using XRL.World.Anatomy;
+
+using UD_ChooseYourBodyPlan.Mod.Logging;
+using UD_ChooseYourBodyPlan.Mod.TextHelpers;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
     [HasModSensitiveStaticCache]
     public class AnatomyCategoryEntry : ILoadFromDataBucket<AnatomyCategoryEntry>, IDisposable
     {
-        public struct TextShader
-        {
-            public static string XTagName => Const.MOD_PREFIX_SHORT + "Shader";
-
-            public string Shader;
-            public string Type;
-            public string Colors;
-            public string Color;
-
-            public TextShader(
-                string Shader,
-                string Type = null,
-                string Colors = null,
-                string Color = null
-                )
-            {
-                this.Shader = Shader.ShaderColorOrNull();
-                this.Type = Type;
-                this.Colors = Colors;
-                this.Color = Color.ShaderColorOrNull();
-                Finalize();
-            }
-            public TextShader(Dictionary<string, string> xTag)
-                : this(
-                      Shader: null,
-                      Type: xTag?.GetValue(nameof(Type)),
-                      Colors: xTag?.GetValue(nameof(Colors)),
-                      Color: xTag?.GetValue(nameof(Color)))
-            { }
-            public TextShader(int AnatomyCategoryCode)
-                : this(GetBodyPartCategoryColor(AnatomyCategoryCode))
-            { }
-
-            public TextShader(TextShader Source)
-                : this(Source.Shader, Source.Type, Source.Colors, Source.Color)
-            { }
-
-            public TextShader Finalize(string OriginalShader = null)
-            {
-                using Indent indent = new(1);
-                Debug.LogMethod(indent,
-                    ArgPairs: new Debug.ArgPair[]
-                    {
-                        Debug.Arg(nameof(OriginalShader), OriginalShader ??  "NO_ORIGINAL"),
-                    });
-
-                Debug.Log(nameof(Shader), Shader ?? "NO_SHADER", Indent: indent[1]);
-                Debug.Log(nameof(Type), Type ?? "NO_TYPE", Indent: indent[1]);
-                Debug.Log(nameof(Colors), Colors ?? "NO_COLORS", Indent: indent[1]);
-                Debug.Log(nameof(Color), Color ?? "NO_COLOR", Indent: indent[1]);
-
-                Shader = Shader.ShaderColorOrNull();
-                if (Shader.IsNullOrEmpty())
-                {
-                    if (!Colors.IsNullOrEmpty())
-                    {
-                        if (!Type.IsNullOrEmpty())
-                            Shader = $"{Colors} {Type}";
-
-                        if (Color.IsNullOrEmpty())
-                            Color = Colors[0].ToString().ShaderColorOrNull();
-                    }
-                }
-                if (Shader.IsNullOrEmpty())
-                    Shader = Color;
-
-                if (Shader.IsNullOrEmpty())
-                    Shader = OriginalShader;
-
-                Debug.YehNah($"Final {nameof(Shader)}", Shader ?? "NO_SHADER", Indent: indent[1]);
-                return this;
-            }
-
-            public override readonly string ToString()
-                => Shader;
-
-            public readonly string Apply(string Text)
-                => !Shader.IsNullOrEmpty()
-                    && !Text.IsNullOrEmpty()
-                ? $"{"{{"}{this}|{Text}{"}}"}"
-                : Text;
-
-            public TextShader Merge(
-                string Shader,
-                string Type = null,
-                string Colors = null,
-                string Color = null
-                )
-            {
-                string originalShader = this.Shader;
-
-                this.Shader = Shader;
-
-                if (!Type.IsNullOrEmpty())
-                    this.Type = Type;
-
-                if (!Colors.IsNullOrEmpty())
-                    this.Colors = Colors;
-
-                if (!Color.IsNullOrEmpty())
-                    this.Color = Color;
-
-                return Finalize(originalShader);
-            }
-
-            public TextShader Merge(TextShader Other)
-                => Merge(
-                    Shader: Other.Shader,
-                    Type: Other.Type,
-                    Colors: Other.Colors,
-                    Color: Other.Color)
-                ;
-
-            public TextShader Merge(Dictionary<string, string> xTag)
-                => Merge(
-                      Shader: null,
-                      Type: xTag?.GetValue(nameof(Type)),
-                      Colors: xTag?.GetValue(nameof(Colors)),
-                      Color: xTag?.GetValue(nameof(Color)))
-                ;
-        }
-
         public class CategoryComparer : IComparer<AnatomyCategoryEntry>, IDisposable
         {
             public bool DefaultFirst;
@@ -197,7 +76,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public int ID;
         public string CategoryName;
         public string DisplayName;
-        public TextShader Shader;
+        public Shader Shader;
 
         public List<BodyPlanEntry> Entries;
 
@@ -275,22 +154,6 @@ namespace UD_ChooseYourBodyPlan.Mod
                     yield return entry;
         }
 
-        public void DebugOutput(Indent Indent, bool SkipCategoryName = false)
-        {
-            Debug.Log(nameof(ID), ID, Indent: Indent);
-            if (!SkipCategoryName)
-                Debug.Log(nameof(CategoryName), CategoryName ?? "NO_CATEGORY_NAME", Indent: Indent);
-            Debug.Log(nameof(DisplayName), DisplayName ?? "NO_DISPLAY_NAME", Indent: Indent);
-            Debug.Log(nameof(Shader), Shader, Indent: Indent);
-            Debug.Log($"{nameof(Entries)}:", Indent: Indent);
-            Debug.Loggregrate(
-                Source: Entries,
-                Proc: e => e.DisplayName,
-                Empty: "None",
-                PostProc: s => $"::{s}",
-                Indent: Indent[1]);
-        }
-
         public AnatomyCategoryEntry LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
             if (!ILoadFromDataBucket<AnatomyCategoryEntry>.CheckIsValidDataBucket(this, DataBucket))
@@ -305,10 +168,10 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             DataBucket.AssignStringFieldFromTag(nameof(DisplayName), ref DisplayName);
 
-            if (DataBucket.TryGetTagValueForData(nameof(TextShader.Color), out string color))
+            if (DataBucket.TryGetTagValueForData(nameof(Shader.Color), out string color))
                 Shader = Shader.Merge(color);
 
-            if (DataBucket.TryGetTagValueForData(nameof(TextShader.Shader), out string shader)
+            if (DataBucket.TryGetTagValueForData(nameof(Shader), out string shader)
                 && shader.ShaderColorOrNull() is string validShader)
                 Shader = Shader.Merge(validShader);
 
@@ -319,12 +182,12 @@ namespace UD_ChooseYourBodyPlan.Mod
                     categoryXTag.AssignStringFieldFromXTag(nameof(CategoryName), ref CategoryName);
                     categoryXTag.AssignStringFieldFromXTag(nameof(DisplayName), ref DisplayName);
 
-                    categoryXTag.TryGetValue(nameof(TextShader.Shader), out string xtagShader);
-                    categoryXTag.TryGetValue(nameof(TextShader.Color), out string xtagShaderColor);
+                    categoryXTag.TryGetValue(nameof(Shader), out string xtagShader);
+                    categoryXTag.TryGetValue(nameof(Shader.Color), out string xtagShaderColor);
                     Shader = Shader.Merge(xtagShader, Color: xtagShaderColor);
                 }
 
-                if (xTags.TryGetValue(TextShader.XTagName, out Dictionary<string, string> textShaderXTag))
+                if (xTags.TryGetValue(Shader.XTagName, out Dictionary<string, string> textShaderXTag))
                     Shader = Shader.Merge(textShaderXTag);
             }
             DisplayName ??= CategoryName;
@@ -369,6 +232,22 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
             Entries?.Clear();
             Entries = null;
+        }
+
+        public void DebugOutput(Indent Indent, bool SkipCategoryName = false)
+        {
+            Debug.Log(nameof(ID), ID, Indent: Indent);
+            if (!SkipCategoryName)
+                Debug.Log(nameof(CategoryName), CategoryName ?? "NO_CATEGORY_NAME", Indent: Indent);
+            Debug.Log(nameof(DisplayName), DisplayName ?? "NO_DISPLAY_NAME", Indent: Indent);
+            Debug.Log(nameof(Shader), Shader, Indent: Indent);
+            Debug.Log($"{nameof(Entries)}:", Indent: Indent);
+            Debug.Loggregrate(
+                Source: Entries,
+                Proc: e => e.DisplayName,
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: Indent[1]);
         }
     }
 }

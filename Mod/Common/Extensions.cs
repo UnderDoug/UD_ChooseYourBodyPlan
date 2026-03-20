@@ -24,19 +24,19 @@ using static UD_ChooseYourBodyPlan.Mod.Const;
 namespace UD_ChooseYourBodyPlan.Mod
 {
     public static class Extensions
-    {
-        #region Debug Registration
-        [UD_DebugRegistry]
-        public static void doDebugRegistry(DebugMethodRegistry Registry)
-            => Registry.RegisterEach(
-                Type: typeof(UD_ChooseYourBodyPlan.Mod.Extensions),
-                MethodNameValues: new()
-                {
-                    { nameof(GetTags), false },
-                });
-        #endregion
+	{
+		#region Debug Registration
+		[UD_DebugRegistry]
+		public static void doDebugRegistry(DebugMethodRegistry Registry)
+			=> Registry.RegisterEach(
+				Type: typeof(UD_ChooseYourBodyPlan.Mod.Extensions),
+				MethodNameValues: new()
+				{
+					{ nameof(GetTags), false },
+				});
+		#endregion
 
-        public static Func<string, T> ToFunc<T>(this Parse<T> Parse)
+		public static Func<string, T> ToFunc<T>(this Parse<T> Parse)
             => Parse.Invoke;
         public static Parse<T> ToParse<T>(this Func<string, T> Func)
             => s => Func(s);
@@ -578,6 +578,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static BodyPlan.LimbTreeBranch InitializeLimbTreeBranch(
             this BodyPart BodyPart,
+            BodyPlan BodyPlan,
             out bool HasNaturalEquipment
             )
         {
@@ -591,24 +592,33 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && !cardinalDescription.ContainsNoCase(BodyPart.Type))
                 finalType = BodyPart.TypeModel().FinalType;
 
+            string type = BodyPart.VariantTypeModel().Type;
+
             string extra = null;
             if (BodyPart.VariantTypeModel().FinalType.EqualsNoCase("body")
                 && BodyPart.ParentBody.CalculateMobilitySpeedPenalty() is int moveSpeedPenalty
                 && moveSpeedPenalty > 0)
                 extra = $" {"{{r|"}{-moveSpeedPenalty} Move Speed Penalty{"}}"}";
 
+
             return new()
             {
                 CardinalDescription = cardinalDescription,
                 Description = BodyPart.VariantTypeModel().Description,
+                Type = type,
                 FinalType = finalType,
-                NaturalEquipment = BodyPlan.GetDefaultBehaviorString(defaultBehaviour),
+                NaturalEquipmentStats = BodyPlan.GetDefaultBehaviorString(defaultBehaviour),
                 Extra = extra,
+                LimbElements = BodyPlan?.Entry?.LimbElementsByType?.GetValue(type) ?? new(),
             };
         }
 
+        public static BodyPlan.LimbTreeBranch InitializeLimbTreeBranch(this BodyPart BodyPart, BodyPlan BodyPlan)
+            => InitializeLimbTreeBranch(BodyPart, null, out _)
+            ;
+
         public static BodyPlan.LimbTreeBranch InitializeLimbTreeBranch(this BodyPart BodyPart)
-            => InitializeLimbTreeBranch(BodyPart, out _)
+            => InitializeLimbTreeBranch(BodyPart, null)
             ;
 
         public static IEnumerable<BodyPlan.LimbTreeBranch> GetLimbTreeBranches(
@@ -984,6 +994,44 @@ namespace UD_ChooseYourBodyPlan.Mod
 					count++;
 			}
 			return count;
+		}
+
+		public static List<GameObjectBlueprint> SafelyGetBlueprintsInheritingFrom(this GameObjectFactory Factory, string Name, bool ExcludeBase = true)
+		{
+			List<GameObjectBlueprint> outputList = new();
+			foreach (GameObjectBlueprint blueprint in Factory.BlueprintList)
+				if (blueprint.InheritsFromSafe(Name)
+                    && (!ExcludeBase
+                        || !blueprint.IsBaseBlueprint()))
+					outputList.Add(blueprint);
+
+			return outputList;
+		}
+		public static List<string> InheritanceRoots => new()
+		{
+			nameof(Object),
+			"SultanMuralController",
+		};
+		public static bool InheritsFromSafe(this GameObjectBlueprint GameObjectBlueprint, string what)
+		{
+			string parentBlueprint = GameObjectBlueprint.Inherits;
+			while (!parentBlueprint.IsNullOrEmpty())
+			{
+				if (parentBlueprint == what)
+					return true;
+
+				string inherits = parentBlueprint;
+				parentBlueprint = GameObjectFactory.Factory?.GetBlueprintIfExists(parentBlueprint)?.Inherits;
+				if (parentBlueprint.IsNullOrEmpty()
+					&& !InheritanceRoots.Contains(inherits))
+				{
+					MetricsManager.LogModWarning(ThisMod,
+						$"{nameof(Extensions)}.{nameof(InheritsFromSafe)}(\"{what}\"):" +
+						$" bluprint ancestor \"{inherits}\" does not exist in blueprint list." +
+						$" The first mention of this blueprint in this log should reveal the mod with this inheritance issue.");
+				}
+			}
+			return false;
 		}
 	}
 }

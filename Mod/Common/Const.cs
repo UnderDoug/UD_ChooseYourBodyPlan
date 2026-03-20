@@ -6,7 +6,9 @@
         public const string MOD_PREFIX = MOD_ID + "_";
         public const string MOD_PREFIX_SHORT = "UD_CYBP_";
 
-        public const string GAME_MOD_EXCEPTION = "game_mod_exception";
+        public const string BASE_GAME = "the base game";
+
+		public const string GAME_MOD_EXCEPTION = "game_mod_exception";
 
 		public const string TEXT_ELEMENTS_BLUEPRINT = MOD_PREFIX_SHORT + "BaseTextElements";
         public const string CATEGORY_BLUEPRINT = MOD_PREFIX_SHORT + "BaseAnatomyCategoryEntry";

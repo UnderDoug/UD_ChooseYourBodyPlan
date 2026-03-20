@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Xml;
 
 using UD_ChooseYourBodyPlan.Mod.Logging;
 
@@ -134,6 +135,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 {
                     _Factory = new();
                     Loading.LoadTask($"Loading {nameof(OptionDelegates)}", _Factory.LoadOptionDelegates);
+                    Loading.LoadTask($"Loading {nameof(ModInfoByAnatomy)}", _Factory.LoadModInfoByAnatomy);
                     Loading.LoadTask($"Loading {TextElements.LoadingDataBucket}", _Factory.LoadTextElements);
                     Loading.LoadTask($"Loading {TransformationData.LoadingDataBucket}", _Factory.LoadTransformationData);
                     Loading.LoadTask($"Loading {BodyPlanEntry.LoadingDataBucket}", _Factory.LoadBodyPlans);
@@ -147,6 +149,8 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static int HighestCategory => 23;
 
         public StringMap<OptionDelegateEntry> OptionDelegates;
+
+        public StringMap<ModInfo> ModInfoByAnatomy;
 
         public Dictionary<string, TextElements> TextElementsByName;
 
@@ -167,6 +171,69 @@ namespace UD_ChooseYourBodyPlan.Mod
             TransformationDataInitialized = false;
             BodyPlanEntriesInitialized = false;
             AnatomyCategoryEntriesInitialized = false;
+        }
+
+        private void LoadModInfoByAnatomy()
+        {
+            using Indent indent = new();
+            Debug.LogCaller(indent);
+
+            ModInfoByAnatomy = new();
+            foreach (var reader in DataManager.YieldXMLStreamsWithRoot("Bodies"))
+            {
+                Debug.Log(DataManager.SanitizePathForDisplay(reader.BaseURI), Indent: indent[1]);
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.EndElement
+                        && reader.Name == "bodies")
+                        break;
+
+                    if (reader.NodeType == XmlNodeType.Element
+                        && reader.Name == "anatomies")
+                        ReadAnatomies(reader);
+                }
+            }
+        }
+
+        private void ReadAnatomies(XmlDataHelper Reader)
+        {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent);
+            while (Reader.Read())
+            {
+                if (Reader.NodeType == XmlNodeType.EndElement
+                    && Reader.Name == "anatomies")
+                    break;
+
+                if (Reader.NodeType == XmlNodeType.Element
+                    && Reader.Name == "anatomy")
+                    ReadAnatomy(Reader);
+            }
+        }
+
+        private void ReadAnatomy(XmlDataHelper Reader)
+        {
+            using Indent indent = new(1);
+            do
+            {
+                if (Reader.NodeType == XmlNodeType.EndElement
+                    && Reader.Name == "anatomy")
+                    break;
+
+                if (Reader.NodeType == XmlNodeType.Element
+                    && Reader.Name == "anatomy"
+                    && Reader.GetAttribute("Name") is string anatomyName)
+                {
+                    string source = Reader.modInfo?.DisplayTitleStripped ?? Const.BASE_GAME;
+                    Debug.LogMethod(indent,
+                        ArgPairs: new Debug.ArgPair[]
+                        {
+                            Debug.Arg(anatomyName, source),
+                        });
+                    ModInfoByAnatomy[anatomyName] = Reader.modInfo;
+                }
+            }
+            while (Reader.Read());
         }
 
         public void LoadOptionDelegates()
@@ -339,7 +406,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public IEnumerable<GameObjectBlueprint> GetDataBuckets<T>()
             where T : ILoadFromDataBucket<T>, new()
             => GameObjectFactory.Factory
-                ?.GetBlueprintsInheritingFrom(ILoadFromDataBucket<T>.GetBaseDataBucketBlueprint())
+                ?.SafelyGetBlueprintsInheritingFrom(ILoadFromDataBucket<T>.GetBaseDataBucketBlueprint())
             ;
 
         public T LoadFromDataBucket<T>(GameObjectBlueprint DataBucket)
