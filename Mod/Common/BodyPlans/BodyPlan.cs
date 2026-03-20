@@ -15,6 +15,7 @@ using UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI;
 using Event = XRL.World.Event;
 using XRL.Rules;
 using UD_ChooseYourBodyPlan.Mod.TextHelpers;
+using UD_ChooseYourBodyPlan.Mod.Logging;
 using static UD_ChooseYourBodyPlan.Mod.BodyPlanEntry;
 
 namespace UD_ChooseYourBodyPlan.Mod
@@ -125,24 +126,31 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (!LimbElements.IsNullOrEmpty())
                 {
                     foreach (var limbElements in LimbElements ?? Enumerable.Empty<LimbTextElements>())
-                        description = limbElements.ProcessPost(description);
-
-                    bool any = false;
-                    foreach (var limbElements in LimbElements ?? Enumerable.Empty<LimbTextElements>())
-                    {
-                        if (!any)
-                            description += " ";
-                        description = limbElements.ProcessSymbol(description);
-                        any = true;
-                    }
+                        description = limbElements.ProcessPostText(description);
                 }
 
                 if (!Extra.IsNullOrEmpty())
                     description = $"{description} {Extra}";
 
+                bool anySymbols = false;
+                if (!LimbElements.IsNullOrEmpty())
+                {
+                    foreach (var limbElements in LimbElements ?? Enumerable.Empty<LimbTextElements>())
+                    {
+                        if (!anySymbols)
+                            description += " ";
+                        description = limbElements.ProcessSymbol(description);
+                        anySymbols = true;
+                    }
+                }
+
                 if (IsTrueKin
                     && NoCyber)
-                    LimbTextElements.NoCyber.ProcessSymbol(description);
+                {
+                    if (!anySymbols)
+                        description += " ";
+                    description = LimbTextElements.NoCyber.ProcessSymbol(description);
+                }
 
                 cardinalDescription = cardinalDescription.Replace(DescriptionPlaceholder, description);
 
@@ -223,6 +231,30 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public bool IsDefault;
 
+        private bool? _AnyNoCyber;
+        public bool AnyNoCyber
+        {
+            get
+            {
+                if (!_AnyNoCyber.HasValue)
+                {
+                    if (GetBodyLimbTreeBranches() is IEnumerable<LimbTreeBranch> limbTreeBranches)
+                    {
+                        foreach (var limbTreeBranch in limbTreeBranches)
+                        {
+                            if (limbTreeBranch.NoCyber)
+                            {
+                                _AnyNoCyber = true;
+                                break;
+                            }
+                        }
+                        if (_AnyNoCyber != true)
+                            _AnyNoCyber = false;
+                    }
+                }
+                return _AnyNoCyber is true;
+            }
+        }
 
         private bool TKLatch;
 
@@ -285,22 +317,22 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public IEnumerable<string> GetDescriptionBefores(Predicate<TextElements> Where = null)
-            => TextElements?.GetDescriptionBefores(Where)
+            => TextElements.GetDescriptionBefores(Where)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetDescriptionAfters(Predicate<TextElements> Where = null)
-            => TextElements?.GetDescriptionAfters(Where)
+            => TextElements.GetDescriptionAfters(Where)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSummaryBefores(Predicate<TextElements> Where = null)
-            => TextElements?.GetSummaryBefores(Where)
+            => TextElements.GetSummaryBefores(Where)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSummaryAfters(Predicate<TextElements> Where = null)
-            => TextElements?.GetSummaryAfters(Where)
+            => TextElements.GetSummaryAfters(Where)
             ?? Enumerable.Empty<string>()
             ;
 
@@ -308,12 +340,12 @@ namespace UD_ChooseYourBodyPlan.Mod
             Predicate<TextElements> Where = null,
             Predicate<Symbol> Filter = null
             )
-            => TextElements?.GetSymbols(Where, Filter)
+            => TextElements.GetSymbols(this, Where, Filter)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetLegends(Predicate<TextElements> Where = null)
-            => TextElements?.GetLegends(Where)
+            => TextElements.GetLegends(this, Where)
             ?? Enumerable.Empty<string>()
             ;
 
@@ -327,9 +359,9 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && Entry?.DisplayName is string entryDisplayName)
                 displayName = entryDisplayName;
 
-            SB.Append(displayName ?? BodyPlanEntry.MISSING_ANATOMY);
+            SB.Append(displayName ?? MISSING_ANATOMY);
 
-            if (SB.ToString() != BodyPlanEntry.MISSING_ANATOMY)
+            if (SB.ToString() != MISSING_ANATOMY)
             {
                 if (ShowDefault
                     && IsDefault)
@@ -368,6 +400,9 @@ namespace UD_ChooseYourBodyPlan.Mod
             HasDefaultEquipment = SampleCreature?.Body?.GetFirstPart(BodyPlan.HasDefaultEquipment) != null;
             return LimbTreeBranches;
         }
+
+        public IEnumerable<LimbTreeBranch> GetBodyLimbTreeBranches()
+            => GetBodyLimbTreeBranches(out _);
 
         public IEnumerable<string> GetBodyLimbTreeLines(out bool HasDefaultEquipment)
         {
@@ -575,7 +610,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                         );
                 }
 
-                if (BodyPlanFactory.Factory?.ModInfoByAnatomy is StringMap<ModInfo> modInfoByAnatomy)
+                if (BodyPlanFactory.Factory?.ModdedAnatomiesFound is true
+                    && BodyPlanFactory.Factory?.ModInfoByAnatomy is StringMap<ModInfo> modInfoByAnatomy)
                 {
                     string byLine = null;
                     string comesFrom = "is from";

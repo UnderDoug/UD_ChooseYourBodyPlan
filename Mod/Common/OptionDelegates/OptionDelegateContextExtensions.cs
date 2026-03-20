@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -18,19 +19,9 @@ namespace UD_ChooseYourBodyPlan.Mod
     public static class OptionDelegateContextExtensions
     {
         [OptionDelegate]
-        public static bool DisallowTrueKinUnless(string TagValue, EmbarkBuilder Builder)
+        public static bool DisallowTrueKinUnless(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder)
         {
-            SimpleDelegates ??= new();
-
-            if (!SimpleDelegates.TryGetValue(TagValue, out var simpleDelegate))
-            {
-                if (!TryParseSimpleOptionPredicate(TagValue, out simpleDelegate))
-                    return true;
-                else
-                    CacheSimpleOptionDelegate(simpleDelegate);
-            }
-
-            if (SimpleDelegates.IsNullOrEmpty())
+            if (TagValue.FailedToGetSimpleDelegate(out var simpleDelegate))
                 return true;
 
             return Builder?.GetModule<QudGenotypeModule>()?.data?.Entry?.IsTrueKin is not true
@@ -38,10 +29,49 @@ namespace UD_ChooseYourBodyPlan.Mod
                 ;
         }
 
-        public static IEnumerable<bool> GetChecks(this OptionDelegateContexts OptionDelegates)
+        [OptionDelegate]
+        public static bool DisallowMechanicalUnless(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder)
         {
-            foreach (var option in OptionDelegates)
-                yield return option.Check();
+            if (TagValue.FailedToGetSimpleDelegate(out var simpleDelegate))
+                return true;
+
+            return BodyPlanEntry?.Anatomy?.IsMechanical() is not true
+                || simpleDelegate.Check()
+                ;
+        }
+
+        public static bool FailedToGetSimpleDelegate(this string TagValue, [NotNullWhen(false)] out SimpleDelegate SimpleDelegate)
+        {
+            using var indent = new Indent(1);
+
+            SimpleDelegates ??= new();
+
+            if (!SimpleDelegates.TryGetValue(TagValue, out SimpleDelegate))
+            {
+                if (!TryParseSimpleOptionPredicate(TagValue, out SimpleDelegate))
+                {
+                    Debug.LogMethod(indent,
+                        ArgPairs: new Debug.ArgPair[]
+                        {
+                            Debug.Arg(nameof(TagValue), TagValue),
+                        });
+                    return true;
+                }
+                else
+                    CacheSimpleOptionDelegate(SimpleDelegate);
+            }
+
+            if (SimpleDelegates.IsNullOrEmpty())
+            {
+                Debug.LogMethod(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(nameof(TagValue), TagValue),
+                    });
+                return true;
+            }
+
+            return false;
         }
 
         public static bool ContainsOptionID(

@@ -7,6 +7,7 @@
     <tag Name="RandomWeight" Value="5" />
     <tag Name="BaseObject" Value="*noinherit" />
     <tag Name="Option.DisallowTrueKinUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansForTK==Yes" />
+    <tag Name="Option.DisallowMechanicalUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic==Yes" />
   </object>
   <object Name="UD_CYBP_BodyPlanEntry UD_CYBP_NoEntry" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="UD_CYBP_NoEntry" />
@@ -55,14 +56,12 @@
     <tag Name="BasedOnBlueprint" Value="VehicleTemplarMech3" />
     <part Name="Render" Tile="Creatures/sw_templar_mech_big.bmp"
           RenderString="@" ColorString="&amp;c" TileColor="&amp;c" DetailColor="r" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry BipedalRobot" Inherits="UD_CYBP_BaseDifficultBodyPlan">
     <tag Name="Anatomy" Value="BipedalRobot" />
     <tag Name="BasedOnBlueprint" Value="Urn Porter" />
     <part Name="Render" Tile="creatures/sw_urnduster.bmp" RenderString="0" ColorString="&amp;y" DetailColor="Y" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry BipedalRobotWithArmatures" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -70,7 +69,6 @@
     <tag Name="BasedOnBlueprint" Value="VehicleTemplarMech1" />
     <part Name="Render" Tile="Creatures/sw_templar_mech_2.bmp"
           RenderString="@" ColorString="&amp;c" TileColor="&amp;c" DetailColor="r" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Bird" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -188,9 +186,7 @@
   <object Name="UD_CYBP_BodyPlanEntry HexapedalRobot" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="HexapedalRobot" />
     <tag Name="BasedOnBlueprint" Value="Random Turret Tinker" />
-    <part Name="Render" Tile="Creatures/sw_turret_tinker.bmp" RenderString="6" ColorString="&amp;W" DetailColor="c" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
-  </object>
+    <part Name="Render" Tile="Creatures/sw_turret_tinker.bmp" RenderString="6" ColorString="&amp;W" DetailColor="c" />  </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Hexapod" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="Hexapod" />
@@ -202,14 +198,12 @@
     <tag Name="Anatomy" Value="HoverRobot" />
     <tag Name="BasedOnBlueprint" Value="Waydroid" />
     <part Name="Render" Tile="Creatures/sw_waydroid.bmp" RenderString="2" ColorString="&amp;c" DetailColor="W" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry HoverRobotWithFourArms" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="HoverRobotWithFourArms" />
     <tag Name="BasedOnBlueprint" Value="Cloneling" />
     <part Name="Render" Tile="Creatures/sw_cloneling.bmp" RenderString="4" ColorString="&amp;c" DetailColor="C" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Humanoid" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -230,7 +224,6 @@
     <tag Name="Anatomy" Value="HumanoidRobot" />
     <tag Name="BasedOnBlueprint" Value="Shem -1" />
     <part Name="Render" Tile="Creatures/sw_chromeling_special.bmp" RenderString="1" ColorString="&amp;c" DetailColor="m" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry HumanoidWithHandsFace" Inherits="UD_CYBP_BaseRestrictedBodyPlan">
@@ -372,7 +365,6 @@
     <tag Name="BasedOnBlueprint" Value="Miner Mk II" />
     <part Name="Render" Tile="Creatures/sw_miner.bmp"
           RenderString="4" ColorString="&amp;g" TileColor="&amp;c" DetailColor="W" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry RailedMechanism" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -447,6 +439,7 @@
 
   <object Name="UD_CYBP_BodyPlanEntry TailedBiped" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="TailedBiped" />
+    <tag Name="DisplayName" Value ="Biped (Tailed)"/>
     <tag Name="BasedOnBlueprint" Value="MopangoPilgrim" />
     <part Name="Render" Tile="creatures/sw_mopango_villager.bmp" RenderString="v" ColorString="&amp;w" DetailColor="y" />
   </object>
@@ -462,7 +455,6 @@
     <tag Name="BasedOnBlueprint" Value="Warden 1-FF" />
     <part Name="Render" Tile="Creatures/sw_tombbot_large_2.bmp"
           RenderString="6" ColorString="&amp;B" TileColor="&amp;B" DetailColor="C" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Tree" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -475,14 +467,12 @@
     <tag Name="Anatomy" Value="TripedalRobot" />
     <tag Name="BasedOnBlueprint" Value="Crypt Sitter" />
     <part Name="Render" Tile="Creatures/sw_orb_legged.bmp" RenderString="7" ColorString="&amp;c" DetailColor="Y" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Turret" Inherits="UD_CYBP_BaseDifficultBodyPlan">
     <tag Name="Anatomy" Value="Turret" />
     <tag Name="BasedOnBlueprint" Value="Vivira" />
     <part Name="Render" Tile="Creatures/sw_chainlaser_emplacement.bmp" RenderString="5" ColorString="&amp;M" DetailColor="C" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry VanedMechanism" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -516,7 +506,6 @@
     <tag Name="BasedOnBlueprint" Value="default" />
     <part Name="Render" Tile="Creatures/sw_mimic.bmp"
           RenderString="*" ColorString="&amp;w^y" TileColor="&amp;w" DetailColor="y" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry WheelRobot" Inherits="UD_CYBP_BaseBodyPlanEntry">
@@ -524,7 +513,6 @@
     <tag Name="BasedOnBlueprint" Value="Galgal" />
     <part Name="Render" Tile="Creatures/sw_galgal_1.bmp"
           RenderString="8" ColorString="&amp;m" TileColor="&amp;c" DetailColor="R" />
-    <tag Name="Option" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic" />
   </object>
 
   <object Name="UD_CYBP_BodyPlanEntry WoodenHumanoid" Inherits="UD_CYBP_BaseBodyPlanEntry">

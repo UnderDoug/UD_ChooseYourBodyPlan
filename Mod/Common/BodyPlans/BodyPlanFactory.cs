@@ -15,7 +15,10 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
+using UD_ChooseYourBodyPlan.Mod.TextHelpers;
+
 using static UD_ChooseYourBodyPlan.Mod.AnatomyCategoryEntry;
+using System.Linq;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -160,6 +163,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public Dictionary<string, AnatomyCategoryEntry> AnatomyCategoryEntryByCategoryName;
 
+        public bool ModdedAnatomiesFound { get; protected set; } = false;
+
         public bool TextElementsInitialized { get; protected set; }
         public bool TransformationDataInitialized { get; protected set; }
         public bool BodyPlanEntriesInitialized { get; protected set; }
@@ -231,10 +236,19 @@ namespace UD_ChooseYourBodyPlan.Mod
                             Debug.Arg(anatomyName, source),
                         });
                     ModInfoByAnatomy[anatomyName] = Reader.modInfo;
+                    if (Reader.modInfo != null)
+                        ModdedAnatomiesFound = true;
                 }
             }
             while (Reader.Read());
         }
+
+        public static Type[] OptionDelegateMethodParameters = new Type[3]
+        {
+            typeof(string),
+            typeof(BodyPlanEntry),
+            typeof(EmbarkBuilder),
+        };
 
         public void LoadOptionDelegates()
         {
@@ -264,16 +278,19 @@ namespace UD_ChooseYourBodyPlan.Mod
 
                 if (delegateMethod.GetParameters() is ParameterInfo[] paramInfos)
                 {
-                    if (paramInfos.Length != 2)
+                    for (int i = 0; i < paramInfos.Length; i++)
                     {
-                        modInfo.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {delegateMethod?.Name}, " +
-                            $"must contain 2 parameters: {typeof(string)} and {typeof(EmbarkBuilder)}, in that order.");
-                        continue;
+                        if (i >= OptionDelegateMethodParameters.Length
+                            || paramInfos[i].ParameterType != OptionDelegateMethodParameters[i])
+                        {
+                            string parameterString = OptionDelegateMethodParameters.Aggregate(
+                                seed: "",
+                                func: Utils.CommaSpaceDelimitedAggregator);
+                            modInfo.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {delegateMethod?.Name}, " +
+                                $"must contain {OptionDelegateMethodParameters.Length} parameters: {parameterString}, in that order.");
+                            continue;
+                        }
                     }
-
-                    if (!CheckParameterIsAcceptableForOptionDelegate(paramInfos[0], delegateMethod, modInfo, true)
-                        || !CheckParameterIsAcceptableForOptionDelegate(paramInfos[1], delegateMethod, modInfo, false))
-                        continue;
 
                     string name = attribute?.Name ?? delegateMethod.Name;
                     string alternateName = $"{delegateMethod.DeclaringType.Name}.{delegateMethod.Name}";
@@ -323,45 +340,6 @@ namespace UD_ChooseYourBodyPlan.Mod
             Load(ref AnatomyCategoryEntryByCategoryName);
             AssignCategoryEntries();
             AnatomyCategoryEntriesInitialized = true;
-        }
-
-        public static bool CheckParameterIsAcceptableForOptionDelegate(ParameterInfo Parameter, MethodInfo Method, ModInfo Mod, bool First)
-        {
-            if (Parameter.IsOut)
-            {
-                Mod.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {Method?.Name}, " +
-                    $"contains an out parameter: {Parameter.Name} of type {Parameter.ParameterType}.");
-                return false;
-            }
-            if (Parameter.IsIn)
-            {
-                Mod.Warn($"{nameof(OptionDelegateAttribute)} decorated method, {Method?.Name}, " +
-                    $"contains an in parameter: {Parameter.Name} of type {Parameter.ParameterType}.");
-                return false;
-            }
-
-            string mustContain2InOrder = $"{nameof(OptionDelegateAttribute)} decorated method, {Method?.Name}, " +
-                    $"must contain 2 parameters: {typeof(string)} and {typeof(EmbarkBuilder)}, in that order.";
-
-            if (Parameter.ParameterType != typeof(string)
-                && Parameter.ParameterType != typeof(EmbarkBuilder))
-            {
-                Mod.Warn(mustContain2InOrder);
-                return false;
-            }
-            if (First
-                && Parameter.ParameterType != typeof(string))
-            {
-                Mod.Warn(mustContain2InOrder);
-                return false;
-            }
-            if (!First
-                && Parameter.ParameterType != typeof(EmbarkBuilder))
-            {
-                Mod.Warn(mustContain2InOrder);
-                return false;
-            }
-            return true;
         }
 
         public void Load<T>(ref Dictionary<string, T> CacheByName)
@@ -466,7 +444,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                         ID = i,
                         CategoryName = GetBodyPartCategoryName(i),
                         DisplayName = GetBodyPartCategoryName(i),
-                        Shader = new TextShader(i).Finalize(),
+                        Shader = new Shader(GetBodyPartCategoryColor(i)).Finalize(),
                         Entries = new()
                     };
                     AnatomyCategoryEntryByCategoryName.Add(newCategory.CategoryName, newCategory);

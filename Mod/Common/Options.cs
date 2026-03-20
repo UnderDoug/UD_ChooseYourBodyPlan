@@ -7,7 +7,13 @@ namespace UD_ChooseYourBodyPlan.Mod
     public static class Options
     {
         // Debug Settings
-        [OptionFlag] public static bool? DebugEnableLogging;
+        [OptionFlag] public static bool DebugEnableLogging;
+
+        public static bool? EnableLogging
+            => XRL.UI.Options.HasOption(Const.MOD_PREFIX + nameof(DebugEnableLogging))
+            ? DebugEnableLogging
+            : null
+            ;
 
         // General Settings
         [OptionFlag] public static bool EnableSortByCategory;

@@ -43,18 +43,6 @@ namespace UD_ChooseYourBodyPlan.Mod.TextHelpers
 
         public Shader Finalize(string OriginalShader = null)
         {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                        Debug.Arg(nameof(OriginalShader), OriginalShader ??  "NO_ORIGINAL"),
-                });
-
-            Debug.Log(nameof(Value), Value ?? "NO_SHADER", Indent: indent[1]);
-            Debug.Log(nameof(Type), Type ?? "NO_TYPE", Indent: indent[1]);
-            Debug.Log(nameof(Colors), Colors ?? "NO_COLORS", Indent: indent[1]);
-            Debug.Log(nameof(Color), Color ?? "NO_COLOR", Indent: indent[1]);
-
             Value = Value.ShaderColorOrNull();
             if (Value.IsNullOrEmpty())
             {
@@ -73,7 +61,6 @@ namespace UD_ChooseYourBodyPlan.Mod.TextHelpers
             if (Value.IsNullOrEmpty())
                 Value = OriginalShader;
 
-            Debug.YehNah($"Final {nameof(Value)}", Value ?? "NO_SHADER", Indent: indent[1]);
             return this;
         }
 
@@ -106,7 +93,7 @@ namespace UD_ChooseYourBodyPlan.Mod.TextHelpers
             if (!Color.IsNullOrEmpty())
                 this.Color = Color;
 
-            return Finalize(originalShader);
+            return Finalize(originalShader).DebugOutput(originalShader);
         }
 
         public Shader Merge(Shader Other)
@@ -124,5 +111,23 @@ namespace UD_ChooseYourBodyPlan.Mod.TextHelpers
                   Colors: xTag?.GetValue(nameof(Colors)),
                   Color: xTag?.GetValue(nameof(Color)))
             ;
+
+        public readonly Shader DebugOutput(string OriginalShader = null)
+        {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(OriginalShader), OriginalShader ??  "NO_ORIGINAL"),
+                });
+
+            Debug.Log(nameof(Value), Value ?? "NO_SHADER", Indent: indent[1]);
+            Debug.Log(nameof(Type), Type ?? "NO_TYPE", Indent: indent[1]);
+            Debug.Log(nameof(Colors), Colors ?? "NO_COLORS", Indent: indent[1]);
+            Debug.Log(nameof(Color), Color ?? "NO_COLOR", Indent: indent[1]);
+
+            Debug.YehNah($"Final {nameof(Value)}", Value ?? "NO_SHADER", Indent: indent[1]);
+            return this;
+        }
     }
 }

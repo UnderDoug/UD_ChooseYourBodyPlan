@@ -38,10 +38,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             : base(Source, EqualityComparer)
         { }
 
-        public bool Check()
+        public bool Check(BodyPlanEntry BodyPlanEntry)
         {
             foreach (var optionDelegate in this)
-                if (!optionDelegate.Check())
+                if (!optionDelegate.Check(BodyPlanEntry))
                     return false;
 
             return true;

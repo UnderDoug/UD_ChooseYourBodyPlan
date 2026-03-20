@@ -58,7 +58,7 @@ namespace UD_ChooseYourBodyPlan.Mod.TextHelpers
         public override readonly string ToString()
             => Color != default
             ? "{{" + $"{Color}|{Value}" + "}}"
-            : Value.ToString()
+            : Value
             ;
 
         public readonly string DebugString()

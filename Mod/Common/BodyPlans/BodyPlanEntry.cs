@@ -23,8 +23,11 @@ namespace UD_ChooseYourBodyPlan.Mod
     {
         public class LimbTextElements
         {
-            public static LimbTextElements NaturalEquipment => new() { Shader = new Shader { Color = "W" }.Finalize() };
-            public static LimbTextElements NoCyber => new() { Symbol = BodyPlanFactory.Factory?.GetTextElements(nameof(NoCyber))?.GetSymbol() ?? default };
+            public static LimbTextElements NaturalEquipment
+                => new() { Shader = new Shader { Color = "w" }.Finalize() };
+
+            public static LimbTextElements NoCyber
+                => new() { Symbol = BodyPlanFactory.Factory?.GetTextElements(nameof(NoCyber))?.GetSymbol() ?? default };
 
             public string Type;
             public Shader Shader;
@@ -73,20 +76,21 @@ namespace UD_ChooseYourBodyPlan.Mod
             {
                 string output = Type ?? "NO_TYPE";
 
-                if (!Equals(Shader, default))
+                if (Shader.Apply("A") != "A")
                     output = $"{output}[{nameof(Shader)}:{Shader}]";
 
                 if (!PostText.IsNullOrEmpty())
                     output = $"{output}[{nameof(PostText)}:{PostText}]";
 
-                if (!Equals(Symbol, default))
+                if (!Symbol.ToString().IsNullOrEmpty())
                     output = $"{output}[{nameof(Symbol)}:{Symbol.DebugString()}]";
 
                 return output;
             }
 
             public bool CheckType(string Type)
-                => this.Type.IsNullOrEmpty()
+                => Type.IsNullOrEmpty()
+                || this.Type.IsNullOrEmpty()
                 || this.Type.Equals(Type)
                 ;
 
@@ -101,7 +105,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 : LimbDescription
                 ;
 
-            public string ProcessPost(string LimbDescription, string Type = null)
+            public string ProcessPostText(string LimbDescription, string Type = null)
             {
                 if (!CheckType(Type))
                     return LimbDescription;
@@ -199,12 +203,12 @@ namespace UD_ChooseYourBodyPlan.Mod
         {
             get
             {
+                _TextElements ??= new();
                 if (WantsTextElements
                     && Factory.TextElementsInitialized
                     && _TextElements.IsNullOrEmpty())
                 {
                     WantsTextElements = false;
-                    _TextElements = new();
 
                     if (!TextElementsNames.IsNullOrEmpty())
                         foreach (var textElementsName in TextElementsNames)
@@ -460,11 +464,10 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
             AnatomyName = Anatomy?.Name;
             DisplayName = Anatomy?.Name?.SplitCamelCase();
+
+            TextElementsNames ??= new();
             if (Anatomy.IsMechanical())
-            {
-                TextElementsNames ??= new();
                 TextElementsNames.Add("Mechanical");
-            }
 
             Tags.ClearNoInherits();
             Tags.ClearRemoves();
@@ -686,6 +689,11 @@ namespace UD_ChooseYourBodyPlan.Mod
         public string GetTag(string Name)
             => Tags?.GetValueOrDefault(Name);
 
+        public bool AnyNoCyber()
+            => Anatomy != null
+            && Anatomy.AnyNoCyber()
+            ;
+
         public bool HasMatchingAnatomy(GameObjectBlueprint Blueprint)
             => Anatomy != null
             && Blueprint.GetAnatomyName() is string anatomy
@@ -748,7 +756,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public bool IsAvailable()
             => Anatomy != null
             && !HasTag("Restricted")
-            && (OptionDelegateContexts?.Check() is not false)
+            && (OptionDelegateContexts?.Check(this) is not false)
             ;
 
         public BodyPlan GetBodyPlan()

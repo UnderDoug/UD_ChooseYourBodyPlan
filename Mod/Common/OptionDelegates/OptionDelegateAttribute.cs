@@ -30,7 +30,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
     }
 
-    public delegate bool OptionDelegate(string TagValue, EmbarkBuilder Builder);
+    public delegate bool OptionDelegate(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder);
 
     public struct OptionDelegateEntry
     {

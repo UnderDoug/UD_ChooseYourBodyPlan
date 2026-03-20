@@ -67,7 +67,7 @@ namespace UD_ChooseYourBodyPlan.Mod
         public static StringMap<SimpleDelegate> SimpleDelegates = new();
 
         [OptionDelegate]
-        public static bool SimpleOptionDelegate(string TagValue, EmbarkBuilder Builder)
+        public static bool SimpleOptionDelegate(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder)
         {
             SimpleDelegates ??= new();
 
@@ -188,7 +188,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             : null
             ;
 
-        public bool Check()
+        public bool Check(BodyPlanEntry BodyPlanEntry)
         {
             if (!IsValid())
                 return true;
@@ -198,7 +198,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             var builder = GameManager.Instance?.gameObject?.GetComponent<EmbarkBuilder>();
             return builder == null
-                || (delegateEntry.OptionDelegate?.Invoke(TagValue, builder) is not false);
+                || (delegateEntry.OptionDelegate?.Invoke(TagValue, BodyPlanEntry, builder) is not false);
         }
 
         public virtual bool IsValid()

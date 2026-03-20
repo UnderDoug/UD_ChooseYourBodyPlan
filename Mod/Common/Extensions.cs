@@ -574,8 +574,6 @@ namespace UD_ChooseYourBodyPlan.Mod
                         func: AggregateNewline);
         }
 
-
-
         public static BodyPlan.LimbTreeBranch InitializeLimbTreeBranch(
             this BodyPart BodyPart,
             BodyPlan BodyPlan,
@@ -598,8 +596,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (BodyPart.VariantTypeModel().FinalType.EqualsNoCase("body")
                 && BodyPart.ParentBody.CalculateMobilitySpeedPenalty() is int moveSpeedPenalty
                 && moveSpeedPenalty > 0)
-                extra = $" {"{{r|"}{-moveSpeedPenalty} Move Speed Penalty{"}}"}";
-
+                extra = $"{"{{r|"}{-moveSpeedPenalty} Move Speed Penalty{"}}"}";
 
             return new()
             {
@@ -609,12 +606,13 @@ namespace UD_ChooseYourBodyPlan.Mod
                 FinalType = finalType,
                 NaturalEquipmentStats = BodyPlan.GetDefaultBehaviorString(defaultBehaviour),
                 Extra = extra,
+                NoCyber = !BodyPart.CanReceiveCyberneticImplant(),
                 LimbElements = BodyPlan?.Entry?.LimbElementsByType?.GetValue(type) ?? new(),
             };
         }
 
         public static BodyPlan.LimbTreeBranch InitializeLimbTreeBranch(this BodyPart BodyPart, BodyPlan BodyPlan)
-            => InitializeLimbTreeBranch(BodyPart, null, out _)
+            => InitializeLimbTreeBranch(BodyPart, BodyPlan, out _)
             ;
 
         public static BodyPlan.LimbTreeBranch InitializeLimbTreeBranch(this BodyPart BodyPart)
@@ -956,10 +954,36 @@ namespace UD_ChooseYourBodyPlan.Mod
             => !(OptionState = OptionID.GetOption()).IsNullOrEmpty();
 
         public static bool IsMechanical(this Anatomy Anatomy)
-            => Anatomy?.Category == BodyPartCategory.MECHANICAL;
+            => Anatomy?.Category is BodyPartCategory.MECHANICAL;
+
+        public static bool IsNoCyber(this AnatomyPart AnatomyPart)
+            => AnatomyPart?.Extrinsic is true
+            || (AnatomyPart?.Category != null
+                && AnatomyPart?.Category != BodyPartCategory.ANIMAL);
+
+        public static bool AnyNoCyber(this Anatomy Anatomy, AnatomyPart Part = null)
+        {
+            if (Part.IsNoCyber())
+                return true;
+
+            if (Part?.Subparts?.IsNullOrEmpty() is false)
+                foreach (var part in Part.Subparts)
+                    if (AnyNoCyber(null, part))
+                        return true;
+
+            if (Anatomy != null)
+                foreach (var part in Anatomy.Parts)
+                    if (AnyNoCyber(null, part))
+                        return true;
+
+            return false;
+        }
 
         public static string PairString<TKey, TValue>(this KeyValuePair<TKey, TValue> KVP)
-            => $"{KVP.Key}: {KVP.Value}";
+            => $"{KVP.Value}" is string value
+            ? $"{KVP.Key}: {value}"
+            : $"{KVP.Key}"
+            ;
 
         public static Dictionary<string, string> ClearNoInherits(this Dictionary<string, string> Tags)
         {

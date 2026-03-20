@@ -14,6 +14,7 @@ namespace UD_ChooseYourBodyPlan.Mod
     public static class TextElementsExtensions
     {
         public static string LimbElements => nameof(LimbElements);
+        public static string NoCyber => nameof(NoCyber);
 
         public static IEnumerable<string> GetTextElementsTags(this GameObjectBlueprint DataBucket)
         {
@@ -116,6 +117,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static IEnumerable<string> GetSymbols(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan BodyPlan,
             Predicate<TextElements> Where = null,
             Predicate<Symbol> Filter = null
             )
@@ -128,7 +130,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                                 yield return symbol.ToString();
 
             if (Utils.IsTruekinEmbarking
-                && BodyPlanFactory.Factory?.GetTextElements("NoCyber") is TextElements noCyber
+                && BodyPlan?.AnyNoCyber is true
+                && BodyPlanFactory.Factory?.GetTextElements(NoCyber) is TextElements noCyber
                 && Where?.Invoke(noCyber) is not false)
                 foreach (var symbol in noCyber.GetSymbols())
                     if (Filter?.Invoke(symbol) is not false)
@@ -137,6 +140,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static IEnumerable<string> GetLegends(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan BodyPlan,
             Predicate<TextElements> Where = null
             )
         {
@@ -147,7 +151,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                             yield return legend;
 
             if (Utils.IsTruekinEmbarking
-                && BodyPlanFactory.Factory?.GetTextElements("NoCyber") is TextElements noCyber
+                && BodyPlan?.AnyNoCyber is true
+                && BodyPlanFactory.Factory?.GetTextElements(NoCyber) is TextElements noCyber
                 && Where?.Invoke(noCyber) is not false)
                 foreach (var legend in noCyber.GetLegendsStrings())
                     yield return legend;
