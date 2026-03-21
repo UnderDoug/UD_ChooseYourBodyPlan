@@ -186,7 +186,8 @@
   <object Name="UD_CYBP_BodyPlanEntry HexapedalRobot" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="HexapedalRobot" />
     <tag Name="BasedOnBlueprint" Value="Random Turret Tinker" />
-    <part Name="Render" Tile="Creatures/sw_turret_tinker.bmp" RenderString="6" ColorString="&amp;W" DetailColor="c" />  </object>
+    <part Name="Render" Tile="Creatures/sw_turret_tinker.bmp" RenderString="6" ColorString="&amp;W" DetailColor="c" />
+  </object>
 
   <object Name="UD_CYBP_BodyPlanEntry Hexapod" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="Hexapod" />
