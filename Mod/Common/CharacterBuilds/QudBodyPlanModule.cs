@@ -158,6 +158,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                 if (id == QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECT)
                 {
                     playerBody.Rebuild(data.Selection.Anatomy);
+
                     if (data.Selection.GetTransformation() is TransformationData xForm
                         && !xForm.Mutations.IsNullOrEmpty())
                         foreach (var mutation in xForm.Mutations.Values)
@@ -165,6 +166,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 
                     if (data.Selection.GetBodyPlanEntry().NaturalEquipment is List<InventoryObject> naturalEquipmentList)
                     {
+                        var naturalEquipmentObjects = Event.NewGameObjectList();
+
                         foreach (var naturalEquipment in naturalEquipmentList)
                         {
                             if (!naturalEquipment.Chance.in100())
@@ -183,6 +186,64 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                                     : null,
                                 OwningObject: player,
                                 TargetInventory: player.Inventory);
+
+                            GameObject naturalEquipmentObject = null;
+                            bool wantEquip = false;
+                            bool didEquip = false;
+                            foreach (var objectInInventory in player.Inventory?.Objects ?? Enumerable.Empty<GameObject>())
+                            {
+                                if (objectInInventory.Blueprint != naturalEquipment.Blueprint)
+                                    continue;
+
+                                if (naturalEquipmentObjects.Contains(objectInInventory))
+                                    continue;
+
+                                naturalEquipmentObject = objectInInventory;
+                                naturalEquipmentObjects.Add(naturalEquipmentObject);
+
+                                if (!naturalEquipmentObject.HasPropertyOrTag("EquipInType"))
+                                    break;
+
+                                wantEquip = true;
+
+                                string prospectiveType = naturalEquipmentObject.GetTagOrStringProperty("EquipInType");
+                                var bodyParts = player.Body.LoopParts();
+
+                                if (prospectiveType.IsNullOrEmpty()
+                                    || prospectiveType.EqualsNoCase("blueprint")
+                                    || !bodyParts.Any(bp => bp.VariantTypeModel().Type == prospectiveType))
+                                    prospectiveType = naturalEquipmentObject.Blueprint;
+
+                                if (!bodyParts.Any(bp => bp.VariantTypeModel().Type == prospectiveType))
+                                    break;
+
+                                foreach (var bodyPart in bodyParts)
+                                {
+                                    if (bodyPart.VariantTypeModel().Type != prospectiveType)
+                                        continue;
+
+                                    if (bodyPart.Equipped is GameObject equippedObject)
+                                    {
+                                        if (equippedObject.IsNatural()
+                                            && equippedObject.Blueprint != naturalEquipmentObject.Blueprint
+                                            && !bodyPart.ForceUnequip(Silent: true))
+                                            continue;
+                                    }
+
+                                    if (bodyPart.Equip(Item: objectInInventory, Silent: true, Forced: true))
+                                    {
+                                        didEquip = true;
+                                        break;
+                                    }
+                                }
+                                if (didEquip)
+                                    break;
+                            }
+                            if (wantEquip
+                                && !didEquip
+                                && player.Inventory.RemoveObjectFromInventory(naturalEquipmentObject, Silent: true)
+                                && GameObject.Validate(ref naturalEquipmentObject))
+                                naturalEquipmentObject?.Obliterate();
                         }
                     }
                 }
