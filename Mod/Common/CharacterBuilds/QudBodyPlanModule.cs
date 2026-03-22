@@ -164,7 +164,9 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                         foreach (var mutation in xForm.Mutations.Values)
                             mutation.AddMutation(player);
 
-                    if (data.Selection.GetBodyPlanEntry().NaturalEquipment is List<InventoryObject> naturalEquipmentList)
+                    var selectionEntry = data.Selection.GetBodyPlanEntry();
+
+                    if (selectionEntry.NaturalEquipment is List<InventoryObject> naturalEquipmentList)
                     {
                         var naturalEquipmentObjects = Event.NewGameObjectList();
 
@@ -230,7 +232,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                                             continue;
                                     }
 
-                                    if (bodyPart.Equip(Item: objectInInventory, Silent: true, Forced: true))
+                                    if (bodyPart.Equip(Item: naturalEquipmentObject, Silent: true, Forced: true))
                                     {
                                         didEquip = true;
                                         break;
@@ -245,6 +247,48 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                                 && GameObject.Validate(ref naturalEquipmentObject))
                                 naturalEquipmentObject?.Obliterate();
                         }
+                    }
+
+                    if (selectionEntry.ManagedNaturalEquipment is List<GamePartBlueprint> managedNaturalEquipmentList)
+                    {
+                        var managedNaturalEquipmentPart = player.RequirePart<UD_CYBP_BodyPlanNaturalEquipment>();
+                        foreach (var partBlueprint in managedNaturalEquipmentList)
+                            managedNaturalEquipmentPart.MergeFrom(partBlueprint);
+
+                        managedNaturalEquipmentPart
+                            .ManageNaturalEquipment()
+                            .CleanUpNaturalEquipmentReferences();
+                    }
+
+                    if (!selectionEntry.AddsParts.IsNullOrEmpty())
+                    {
+                        foreach ((var _, var partBlueprint) in selectionEntry.AddsParts)
+                        {
+                            if (partBlueprint.T == null)
+                            {
+                                Utils.Error($"Unknown part {partBlueprint.Name}!");
+                                continue;
+                            }
+
+                            var partInstance = partBlueprint.Reflector?.GetInstance()
+                                ?? (Activator.CreateInstance(partBlueprint.T) as IPart);
+
+                            partInstance.ParentObject = player;
+
+                            partBlueprint.InitializePartInstance(partInstance);
+                            player.AddPart(partInstance, Creation: true);
+
+                            if (partBlueprint.TryGetParameter("Builder", out string builderName)
+                                && ModManager.ResolveType("XRL.World.PartBuilders", builderName) is Type builderType
+                                && Activator.CreateInstance(builderType) is IPartBuilder builder)
+                                builder.BuildPart(partInstance);
+                        }
+                    }
+
+                    if (selectionEntry.WantsDerivedFrom)
+                    {
+                        player.RequirePart<UD_CYBP_BodyPlanNaturalEquipment>().DoDerivedFrom = true;
+                        player.Body.UpdateBodyParts();
                     }
                 }
 

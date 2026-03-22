@@ -229,6 +229,12 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public List<TextElements> TextElements => Entry?.TextElements;
 
+        private Dictionary<string, string> _NaturalEquipmentByBodyPartType;
+        public Dictionary<string, string> NaturalEquipmentByBodyPartType
+            => _NaturalEquipmentByBodyPartType ??= Entry
+                ?.ManagedNaturalEquipment
+                .GetBlueprintsByBodyPartType();
+
         public bool IsDefault;
 
         private bool? _AnyNoCyber;
@@ -397,7 +403,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                     BodyPartProc: InitializeLimbTreeBranch,
                     Treat0DepthPartsAsRoot: true));
 
-            HasDefaultEquipment = SampleCreature?.Body?.GetFirstPart(BodyPlan.HasDefaultEquipment) != null;
+            HasDefaultEquipment = SampleCreature?.Body?.GetFirstPart(BodyPlan.HasDefaultEquipment) != null
+                || !NaturalEquipmentByBodyPartType.IsNullOrEmpty();
             return LimbTreeBranches;
         }
 
@@ -423,6 +430,54 @@ namespace UD_ChooseYourBodyPlan.Mod
             return BodyLimbTreeLines;
         }
 
+        public BodyPartType GetTypeModelForCount(BodyPart BodyPart)
+        {
+            using var indent = new Indent(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(BodyPart),
+                });
+
+            var variantTypeModel = BodyPart.VariantTypeModel();
+            var typeModel = BodyPart.TypeModel();
+
+            Debug.Log(nameof(variantTypeModel), variantTypeModel.Type, Indent: indent[1]);
+
+            Debug.Log(nameof(typeModel), typeModel.Type, Indent: indent[1]);
+
+            if (NaturalEquipmentByBodyPartType.TryGetValue(variantTypeModel.Type, out string variantNaturalEquipment)
+                && !variantNaturalEquipment.IsNullOrEmpty())
+            {
+                Debug.Log(nameof(variantNaturalEquipment), variantNaturalEquipment, Indent: indent[1]);
+
+                if (!NaturalEquipmentByBodyPartType.TryGetValue(typeModel.Type, out string naturalEquipment)
+                    || naturalEquipment.IsNullOrEmpty()
+                    || variantNaturalEquipment != naturalEquipment)
+                {
+                    Debug.Log(nameof(naturalEquipment), naturalEquipment, Indent: indent[1]);
+                    return variantTypeModel;
+                }
+            }
+
+            if (variantTypeModel.DefaultBehavior != typeModel.DefaultBehavior)
+            {
+                Debug.Log(
+                    Label: Utils.CallChain(nameof(variantTypeModel), nameof(variantTypeModel.DefaultBehavior)),
+                    Value: variantTypeModel.DefaultBehavior,
+                    Indent: indent[1]);
+
+                Debug.Log(
+                    Label: Utils.CallChain(nameof(typeModel), nameof(typeModel.DefaultBehavior)),
+                    Value: typeModel.DefaultBehavior,
+                    Indent: indent[1]);
+
+                return variantTypeModel;
+            }
+
+            return typeModel;
+        }
+
         public Dictionary<BodyPartType, int> GetLimbCounts()
         {
             if (LimbCounts.IsNullOrEmpty())
@@ -435,7 +490,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     return LimbCounts;
 
                 foreach (var part in bodyParts)
-                    limbs.Add(part.VariantTypeModel());
+                    limbs.Add(GetTypeModelForCount(part));
 
                 if (limbs.IsNullOrEmpty())
                     return LimbCounts;
@@ -453,49 +508,53 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public IEnumerable<string> GetLimbCountLines(Dictionary<BodyPartType, int> LimbCounts)
         {
-            if (!LimbCountLines.IsNullOrEmpty())
+            if (LimbCountLines.IsNullOrEmpty())
             {
-                foreach (var limbCountLine in LimbCountLines)
-                    yield return limbCountLine;
-                yield break;
-            }
-
-            LimbCountLines ??= new();
-            foreach ((var limb, var count) in LimbCounts)
-            {
-                string timesColored = "}}x {{Y|";
-                string limbName = limb.FinalType ?? limb.Type;
-                string limbPluralName = null;
-
-                if (limb.DescriptionPrefix is string prefix)
-                    limbName = $"{prefix} {limbName}";
-
-                if (limb.Plural.GetValueOrDefault())
-                    limbPluralName = timesColored + limbName;
-
-                if (limbName.EqualsNoCase("feet"))
-                    limbPluralName = timesColored + "Worn on Feet";
-
-                if (limbName.EqualsNoCase("foot"))
-                    limbPluralName = timesColored + "Feet";
-
-                limbName = timesColored + limbName;
-
-                string output = "{{Y|" + count.Things(limbName, limbPluralName) + "}}";
-
-                if (limb.FinalType.EqualsNoCase("body")
-                    && SampleCreature.Body.CalculateMobilitySpeedPenalty() is int moveSpeedPenalty
-                    && moveSpeedPenalty > 0)
+                LimbCountLines ??= new();
+                foreach ((var limb, var count) in LimbCounts)
                 {
-                    output = $"{output} {"{{r|"}{-moveSpeedPenalty} MS{"}}"}";
+                    string timesColored = "}}x {{Y|";
+                    string limbName = limb.FinalType ?? limb.Type;
+                    string limbPluralName = null;
+
+                    /*
+                    if (limb.DescriptionPrefix is string prefix)
+                        limbName = $"{prefix} {limbName}";
+                    */
+
+                    if (limb.Plural.GetValueOrDefault())
+                        limbPluralName = timesColored + limbName;
+
+                    if (limbName.EqualsNoCase("feet"))
+                        limbPluralName = timesColored + "Worn on Feet";
+
+                    if (limbName.EqualsNoCase("hands"))
+                        limbPluralName = timesColored + "Worn on Hands";
+
+                    if (limbName.EqualsNoCase("foot"))
+                        limbPluralName = timesColored + "Feet";
+
+                    limbName = timesColored + limbName;
+
+                    string output = "{{Y|" + count.Things(limbName, limbPluralName) + "}}";
+
+                    if (limb.FinalType.EqualsNoCase("body")
+                        && SampleCreature.Body.CalculateMobilitySpeedPenalty() is int moveSpeedPenalty
+                        && moveSpeedPenalty > 0)
+                    {
+                        output = $"{output} {"{{r|"}{-moveSpeedPenalty} MS{"}}"}";
+                    }
+
+                    string naturalEquipment = NaturalEquipmentByBodyPartType?.GetValueOrDefault(limb.Type)
+                        ?? limb.DefaultBehavior;
+
+                    if (GetNaturalEquipmentStatsString(naturalEquipment) is string naturalEquipmentString)
+                        output = $"{output}{naturalEquipmentString}";
+
+                    LimbCountLines.Add(output);
                 }
-
-                if (GetDefaultBehaviorString(limb.DefaultBehavior) is string defaultBehaviourString)
-                    output = $"{output}{defaultBehaviourString}";
-
-                LimbCountLines.Add(output);
-                yield return output;
             }
+            return LimbCountLines;
         }
 
         private static bool HasDefaultEquipment(BodyPart BodyPart)
@@ -690,14 +749,14 @@ namespace UD_ChooseYourBodyPlan.Mod
                     func: Utils.AggregateNewline)
             .ToString();
 
-        public static string GetDefaultBehaviorString(GameObjectBlueprint DefaultBehvaiour)
+        public static string GetNaturalEquipmentStatsString(GameObjectBlueprint NaturalEquipmentBlueprint)
         {
-            if (DefaultBehvaiour?.createSample() is not GameObject sampleDefaultBehaviour)
+            if (NaturalEquipmentBlueprint?.createSample() is not GameObject sampleNaturalEnquipment)
                 return null;
 
             var sB = Event.NewStringBuilder();
 
-            if (sampleDefaultBehaviour.TryGetPart(out Armor armor))
+            if (sampleNaturalEnquipment.TryGetPart(out Armor armor))
             {
                 int aV = armor.AV;
                 int dV = armor.DV;
@@ -705,7 +764,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 sB.Append(' ').AppendArmor("y", aV, dV);
             }
 
-            if (sampleDefaultBehaviour.TryGetPart(out MeleeWeapon mw))
+            if (sampleNaturalEnquipment.TryGetPart(out MeleeWeapon mw))
             {
                 if (!mw.IsImprovisedWeapon())
                 {
@@ -713,19 +772,27 @@ namespace UD_ChooseYourBodyPlan.Mod
 
                     int pVCap = mw.MaxStrengthBonus;
                     int pV = RuleSettings.VISUAL_PENETRATION_BONUS;
-                    string pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleDefaultBehaviour);
+                    string pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleNaturalEnquipment);
 
                     sB.Append(' ').AppendPV(pVSymbolColor, "y", pV, pVCap);
                     sB.Append(' ').AppendDamage("y", damage);
                 }
             }
 
-            if (sampleDefaultBehaviour.HasPart<MissileWeapon>())
+            if (sampleNaturalEnquipment.HasPart<MissileWeapon>())
             {
+                using var indent = new Indent(1);
+                Debug.LogCaller(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(NaturalEquipmentBlueprint?.Name ?? "NO_BLUEPRINT"),
+                        Debug.Arg("as", nameof(MissileWeapon)),
+                    });
+
                 GameObject projectile = null;
                 string projectileBlueprint = null;
-                if (GetMissileWeaponProjectileEvent.GetFor(sampleDefaultBehaviour, ref projectile, ref projectileBlueprint)
-                    && GetMissileWeaponPerformanceEvent.GetFor(null, sampleDefaultBehaviour, projectile) is GetMissileWeaponPerformanceEvent mWPE)
+                if (GetMissileWeaponProjectileEvent.GetFor(sampleNaturalEnquipment, ref projectile, ref projectileBlueprint)
+                    && GetMissileWeaponPerformanceEvent.GetFor(null, sampleNaturalEnquipment, projectile) is GetMissileWeaponPerformanceEvent mWPE)
                 {
                     if (mWPE.Attributes == null
                         || !mWPE.Attributes.Contains("NonPenetrating"))
@@ -736,7 +803,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                         if (mWPE.PenetrateWalls)
                             pVSymbolColor = "m";
 
-                        pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleDefaultBehaviour, pVSymbolColor);
+                        pVSymbolColor = GetDisplayNamePenetrationColorEvent.GetFor(sampleNaturalEnquipment, pVSymbolColor);
 
                         int pV = Math.Max(mWPE.Penetration + RuleSettings.VISUAL_PENETRATION_BONUS, 1);
 
@@ -762,14 +829,16 @@ namespace UD_ChooseYourBodyPlan.Mod
 
                         sB.Append(' ').AppendDamage("y", damage);
                     }
+
+                    Debug.CheckYeh(nameof(GetMissileWeaponPerformanceEvent), sB.ToString(), Indent: indent[1]);
                 }
             }
 
-            sampleDefaultBehaviour?.Obliterate();
+            sampleNaturalEnquipment?.Obliterate();
             return Event.FinalizeString(sB);
         }
-        public static string GetDefaultBehaviorString(string DefaultBehvaiour)
-            => GetDefaultBehaviorString(GameObjectFactory.Factory.GetBlueprintIfExists(DefaultBehvaiour));
+        public static string GetNaturalEquipmentStatsString(string NaturalEquipmentBlueprint)
+            => GetNaturalEquipmentStatsString(GameObjectFactory.Factory.GetBlueprintIfExists(NaturalEquipmentBlueprint));
 
         public BodyPlanMenuOption GetMenuOption(bool IsSelected = false)
             => new()

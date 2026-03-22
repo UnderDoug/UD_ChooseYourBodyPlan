@@ -563,8 +563,16 @@ namespace UD_ChooseYourBodyPlan.Mod
                     yield return bodyPlanEntry;
         }
 
+        public BodyPlanEntry GetBodyPlanEntry(string Anatomy)
+            => RequireBodyPlanEntry(Anatomy)
+            ;
+
+        public BodyPlanEntry GetBodyPlanEntry(Anatomy Anatomy)
+            => RequireBodyPlanEntry(Anatomy?.Name)
+            ;
+
         public BodyPlanEntry GetBodyPlanEntry(PrefixMenuOption MenuOption)
-            => RequireBodyPlanEntry(MenuOption?.Id)
+            => GetBodyPlanEntry(MenuOption?.Id)
             ;
 
         public TextElements GetTextElements(string Name)

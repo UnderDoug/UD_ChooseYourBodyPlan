@@ -222,7 +222,14 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public Dictionary<string, List<LimbTextElements>> LimbElementsByType;
 
+        public Dictionary<string, GamePartBlueprint> AddsParts;
+
         public List<InventoryObject> NaturalEquipment;
+
+        public List<GamePartBlueprint> ManagedNaturalEquipment;
+
+        private bool? _WantsDerivedFrom;
+        public bool WantsDerivedFrom => _WantsDerivedFrom.GetValueOrDefault();
 
         public int RandomWeight;
 
@@ -243,7 +250,11 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             LimbElementsByType = null;
 
+            AddsParts = null;
+
             NaturalEquipment = null;
+            ManagedNaturalEquipment = null;
+            _WantsDerivedFrom = null;
 
             Tags = null;
         }
@@ -288,6 +299,33 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && !Source.LimbElementsByType.IsNullOrEmpty())
                 foreach ((var limbType, var limbElements) in Source.LimbElementsByType)
                     LimbElementsByType.Add(limbType, new(limbElements));
+
+            AddsParts = new();
+            if (Source?.AddsParts != null
+                && !Source.AddsParts.IsNullOrEmpty())
+            {
+                foreach ((var partName, var partBlueprint) in Source.AddsParts)
+                {
+                    if (!partName.IsNullOrEmpty())
+                    {
+                        var partBlueprintCopy = new GamePartBlueprint(partName);
+                        partBlueprintCopy.CopyFrom(partBlueprint);
+                        AddsParts.Add(partName, partBlueprintCopy);
+                    }
+                }
+            }
+
+            NaturalEquipment = new();
+            if (Source?.NaturalEquipment != null
+                && !Source.NaturalEquipment.IsNullOrEmpty())
+                NaturalEquipment.AddRange(Source.NaturalEquipment);
+
+            ManagedNaturalEquipment = new();
+            if (Source?.ManagedNaturalEquipment != null
+                && !Source.ManagedNaturalEquipment.IsNullOrEmpty())
+                ManagedNaturalEquipment.AddRange(Source.ManagedNaturalEquipment);
+
+            _WantsDerivedFrom = Source?._WantsDerivedFrom;
 
             RandomWeight = Source?.RandomWeight ?? 0;
 
@@ -433,9 +471,36 @@ namespace UD_ChooseYourBodyPlan.Mod
                 }
             }
 
+            AddsParts ??= new();
+            if (DataBucket.GetTag(nameof(AddsParts), null)?.CachedCommaExpansion() is IEnumerable<string> addsPartsTag)
+            {
+                foreach (var addsPart in addsPartsTag)
+                {
+                    if (!addsPart.IsNullOrEmpty())
+                    {
+                        var partBlueprint = new GamePartBlueprint(addsPart);
+                        if (DataBucket.HasPart(addsPart))
+                            partBlueprint.CopyFrom(DataBucket.GetPart(addsPart));
+                        AddsParts.Add(addsPart, partBlueprint);
+                    }
+                }
+            }
+
             NaturalEquipment ??= new();
             if (!DataBucket.Inventory.IsNullOrEmpty())
                 NaturalEquipment.AddRange(DataBucket.Inventory);
+
+            ManagedNaturalEquipment ??= new();
+            if (DataBucket.HasPart(nameof(UD_CYBP_BodyPlanNaturalEquipment)))
+                ManagedNaturalEquipment.Add(DataBucket.GetPart(nameof(UD_CYBP_BodyPlanNaturalEquipment)));
+
+            if (DataBucket.GetTag(nameof(WantsDerivedFrom), null) is string wantsDerivedFrom)
+            {
+                if (wantsDerivedFrom.EqualsNoCase(Const.REMOVE_TAG))
+                    _WantsDerivedFrom = false;
+                else
+                    _WantsDerivedFrom = true;
+            }
 
             if (DataBucket.TryGetTagValueForData(nameof(RandomWeight), out string randomWeight)
                 && !int.TryParse(randomWeight, out RandomWeight))
@@ -536,10 +601,29 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (!limbElements.IsNullOrEmpty())
                     LimbElementsByType[limbType] = new(limbElements);
 
+            AddsParts ??= new();
+            AddsParts.Clear();
+            foreach ((var partName, var partBlueprint) in Other.AddsParts)
+            {
+                if (!partName.IsNullOrEmpty())
+                {
+                    var partBlueprintCopy = new GamePartBlueprint(partName);
+                    partBlueprintCopy.CopyFrom(partBlueprint);
+                    AddsParts.Add(partName, partBlueprintCopy);
+                }
+            }
+
             NaturalEquipment ??= new();
             NaturalEquipment.Clear();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
                 NaturalEquipment.AddRange(Other.NaturalEquipment);
+
+            ManagedNaturalEquipment ??= new();
+            ManagedNaturalEquipment.Clear();
+            if (!Other.ManagedNaturalEquipment.IsNullOrEmpty())
+                ManagedNaturalEquipment.AddRange(Other.ManagedNaturalEquipment);
+
+            _WantsDerivedFrom = Other._WantsDerivedFrom;
 
             RandomWeight = Other.RandomWeight;
 
@@ -585,9 +669,28 @@ namespace UD_ChooseYourBodyPlan.Mod
                 }
             }
 
+            AddsParts ??= new();
+            foreach ((var partName, var partBlueprint) in Other.AddsParts)
+            {
+                if (!partName.IsNullOrEmpty())
+                {
+                    if (!AddsParts.ContainsKey(partName))
+                        AddsParts[partName] = new GamePartBlueprint(partName);
+
+                    AddsParts[partName].CopyFrom(partBlueprint);
+                }
+            }
+
             NaturalEquipment ??= new();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
                 NaturalEquipment.AddRange(Other.NaturalEquipment);
+
+            ManagedNaturalEquipment ??= new();
+            if (!Other.ManagedNaturalEquipment.IsNullOrEmpty())
+                ManagedNaturalEquipment.AddRange(Other.ManagedNaturalEquipment);
+
+            if (Other._WantsDerivedFrom != null)
+                _WantsDerivedFrom = Other._WantsDerivedFrom;
 
             Utils.MergeReplaceField(ref RandomWeight, Other.RandomWeight);
 
@@ -628,9 +731,25 @@ namespace UD_ChooseYourBodyPlan.Mod
                     && !LimbElementsByType.ContainsKey(limbType))
                     LimbElementsByType[limbType] = new(limbElements);
 
+            AddsParts ??= new();
+            foreach ((var partName, var partBlueprint) in Other.AddsParts)
+            {
+                if (!partName.IsNullOrEmpty())
+                {
+                    if (AddsParts.ContainsKey(partName))
+                        AddsParts[partName].CopyFrom(partBlueprint);
+                }
+            }
+
             NaturalEquipment ??= new();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
                 NaturalEquipment.AddRange(Other.NaturalEquipment);
+
+            ManagedNaturalEquipment ??= new();
+            if (!Other.ManagedNaturalEquipment.IsNullOrEmpty())
+                ManagedNaturalEquipment.AddRange(Other.ManagedNaturalEquipment);
+
+            _WantsDerivedFrom ??= Other._WantsDerivedFrom;
 
             Utils.MergeRequireField(ref RandomWeight, Other.RandomWeight);
 
@@ -789,8 +908,16 @@ namespace UD_ChooseYourBodyPlan.Mod
             LimbElementsByType?.Clear();
             LimbElementsByType = null;
 
+            AddsParts?.Clear();
+            AddsParts = null;
+
             NaturalEquipment?.Clear();
             NaturalEquipment = null;
+
+            ManagedNaturalEquipment?.Clear();
+            ManagedNaturalEquipment = null;
+
+            _WantsDerivedFrom = null;
 
             Tags?.Clear();
             Tags = null;
@@ -842,6 +969,14 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Indent: indent[3]);
             }
 
+            Debug.Log(nameof(AddsParts), AddsParts?.Count ?? 0, Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: AddsParts.Keys,
+                Proc: n => n.ToString(),
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
+
             Debug.Log(nameof(NaturalEquipment), NaturalEquipment?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(
                 Source: NaturalEquipment,
@@ -849,6 +984,16 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Empty: "None",
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);
+
+            Debug.Log(nameof(ManagedNaturalEquipment), ManagedNaturalEquipment?.Count ?? 0, Indent: indent[1]);
+            Debug.Loggregrate(
+                Source: ManagedNaturalEquipment.GetBlueprintsByBodyPartType(AnatomyName),
+                Proc: n => n.PairString(),
+                Empty: "None",
+                PostProc: s => $"::{s}",
+                Indent: indent[2]);
+
+            Debug.Log(nameof(WantsDerivedFrom), _WantsDerivedFrom?.ToString() ?? "null", Indent: indent[1]);
 
             Debug.Log(nameof(RandomWeight), RandomWeight, Indent: indent[1]);
 

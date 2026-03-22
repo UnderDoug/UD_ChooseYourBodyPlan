@@ -580,10 +580,16 @@ namespace UD_ChooseYourBodyPlan.Mod
             out bool HasNaturalEquipment
             )
         {
-            string defaultBehaviour = BodyPart.VariantTypeModel().DefaultBehavior;
-            HasNaturalEquipment = !defaultBehaviour.IsNullOrEmpty();
-
+            using var indent = new Indent(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(BodyPart),
+                    Debug.Arg(nameof(BodyPlan), BodyPlan?.Anatomy),
+                });
             string cardinalDescription = BodyPart.GetCardinalDescription();
+
+            Debug.Log(nameof(cardinalDescription), cardinalDescription, Indent: indent[1]);
 
             string finalType = null;
             if (BodyPart.IsVariantType()
@@ -591,6 +597,15 @@ namespace UD_ChooseYourBodyPlan.Mod
                 finalType = BodyPart.TypeModel().FinalType;
 
             string type = BodyPart.VariantTypeModel().Type;
+
+            Debug.Log(nameof(type), type, Indent: indent[1]);
+            Debug.Log(nameof(finalType), finalType ?? type, Indent: indent[1]);
+
+            string naturalEquipment = BodyPlan.NaturalEquipmentByBodyPartType?.GetValueOrDefault(type)
+                ?? BodyPart.VariantTypeModel().DefaultBehavior;
+            HasNaturalEquipment = !naturalEquipment.IsNullOrEmpty();
+
+            Debug.Log(nameof(naturalEquipment), naturalEquipment, Indent: indent[1]);
 
             string extra = null;
             if (BodyPart.VariantTypeModel().FinalType.EqualsNoCase("body")
@@ -604,7 +619,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Description = BodyPart.VariantTypeModel().Description,
                 Type = type,
                 FinalType = finalType,
-                NaturalEquipmentStats = BodyPlan.GetDefaultBehaviorString(defaultBehaviour),
+                NaturalEquipmentStats = BodyPlan.GetNaturalEquipmentStatsString(naturalEquipment),
                 Extra = extra,
                 NoCyber = !BodyPart.CanReceiveCyberneticImplant(),
                 LimbElements = BodyPlan?.Entry?.LimbElementsByType?.GetValue(type) ?? new(),
@@ -1057,5 +1072,52 @@ namespace UD_ChooseYourBodyPlan.Mod
 			}
 			return false;
 		}
+
+        public static Dictionary<string, string> GetBlueprintsByBodyPartType(
+            this GamePartBlueprint BodyPlanNaturalEquipmentPart,
+            ref Dictionary<string, string> BlueprintsByBodyPartType,
+            string ForAnatomy = null
+            )
+        {
+            BlueprintsByBodyPartType ??= new Dictionary<string, string>();
+            if (BodyPlanNaturalEquipmentPart is GamePartBlueprint bp)
+            {
+                if (!ForAnatomy.IsNullOrEmpty()
+                    && bp.TryGetParameter(nameof(UD_CYBP_BodyPlanNaturalEquipment.Anatomy), out string anatomy)
+                    && ForAnatomy != anatomy)
+                    return BlueprintsByBodyPartType;
+
+                if (!bp.TryGetParameter(nameof(UD_CYBP_BodyPlanNaturalEquipment.NaturalEquipment), out string naturalEquipment)
+                    || naturalEquipment.IsNullOrEmpty())
+                    return BlueprintsByBodyPartType;
+
+                UD_CYBP_BodyPlanNaturalEquipment.ParseNaturalEquipment(naturalEquipment, ref BlueprintsByBodyPartType);
+            }
+            return BlueprintsByBodyPartType;
+        }
+
+        public static Dictionary<string, string> GetBlueprintsByBodyPartType(
+            this GamePartBlueprint BodyPlanNaturalEquipmentPart,
+            string ForAnatomy = null
+            )
+        {
+            var output = new Dictionary<string, string>();
+            return BodyPlanNaturalEquipmentPart.GetBlueprintsByBodyPartType(ref output, ForAnatomy);
+        }
+
+        public static Dictionary<string, string> GetBlueprintsByBodyPartType(
+            this IEnumerable<GamePartBlueprint> Source,
+            string ForAnatomy = null
+            )
+        {
+            var output = new Dictionary<string, string>();
+            if (Source.IsNullOrEmpty())
+                return output;
+
+            foreach (var partBlueprint in Source)
+                partBlueprint.GetBlueprintsByBodyPartType(ref output, ForAnatomy);
+
+            return output;
+        }
 	}
 }
