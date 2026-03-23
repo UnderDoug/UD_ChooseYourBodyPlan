@@ -2,7 +2,7 @@
     "id": "UD_ChooseYourBodyPlan",
     "title": "Choose Your Body Plan",
     "description": "Adds a module to character generation allowing mutants to pick an alternative body plan.",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "{{K-g-G-Y-G-g-K alternation|UnderDoug}}",
     "tags": "Character Generation,Extension,Customization",
     "PreviewImage": "preview.png",
