@@ -17,7 +17,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             this.Anatomy = Anatomy;
         }
         public QudBodyPlanModuleDataRow(BodyPlan Choice)
-            : this(Choice?.Entry?.Anatomy?.Name)
+            : this(Choice?.Anatomy)
         { }
 
         public BodyPlanEntry GetBodyPlanEntry()
@@ -28,5 +28,9 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         public TransformationData GetTransformation()
             => GetBodyPlanEntry()
                 ?.Transformation;
+
+        public bool MatchesBodyPlan(BodyPlan BodyPlan)
+            => !Anatomy.IsNullOrEmpty()
+            && BodyPlan?.Anatomy == Anatomy;
     }
 }

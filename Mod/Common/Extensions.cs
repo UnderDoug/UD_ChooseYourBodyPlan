@@ -33,6 +33,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 				MethodNameValues: new()
 				{
 					{ nameof(GetTags), false },
+					{ nameof(InitializeLimbTreeBranch), false },
 				});
 		#endregion
 
@@ -580,6 +581,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             out bool HasNaturalEquipment
             )
         {
+            /*
             using var indent = new Indent(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
@@ -587,9 +589,10 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Debug.Arg(BodyPart),
                     Debug.Arg(nameof(BodyPlan), BodyPlan?.Anatomy),
                 });
+            */
             string cardinalDescription = BodyPart.GetCardinalDescription();
 
-            Debug.Log(nameof(cardinalDescription), cardinalDescription, Indent: indent[1]);
+            // Debug.Log(nameof(cardinalDescription), cardinalDescription, Indent: indent[1]);
 
             string finalType = null;
             if (BodyPart.IsVariantType()
@@ -598,14 +601,14 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             string type = BodyPart.VariantTypeModel().Type;
 
-            Debug.Log(nameof(type), type, Indent: indent[1]);
-            Debug.Log(nameof(finalType), finalType ?? type, Indent: indent[1]);
+            // Debug.Log(nameof(type), type, Indent: indent[1]);
+            // Debug.Log(nameof(finalType), finalType ?? type, Indent: indent[1]);
 
             string naturalEquipment = BodyPlan.NaturalEquipmentByBodyPartType?.GetValueOrDefault(type)
                 ?? BodyPart.VariantTypeModel().DefaultBehavior;
             HasNaturalEquipment = !naturalEquipment.IsNullOrEmpty();
 
-            Debug.Log(nameof(naturalEquipment), naturalEquipment, Indent: indent[1]);
+            // Debug.Log(nameof(naturalEquipment), naturalEquipment, Indent: indent[1]);
 
             string extra = null;
             if (BodyPart.VariantTypeModel().FinalType.EqualsNoCase("body")

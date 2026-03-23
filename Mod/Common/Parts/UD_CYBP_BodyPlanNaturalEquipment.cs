@@ -38,6 +38,8 @@ namespace XRL.World.Parts
 
         public bool DoDerivedFrom;
 
+        private bool DoneDerivedFrom;
+
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
@@ -235,7 +237,7 @@ namespace XRL.World.Parts
             return this;
         }
 
-        public UD_CYBP_BodyPlanNaturalEquipment CleanUpNaturalEquipmentReferences()
+        public UD_CYBP_BodyPlanNaturalEquipment CleanUpNaturalEquipment()
         {
             if (ParentObject.Body.LoopParts() is not IEnumerable<BodyPart> bodyParts)
                 return this;
@@ -328,30 +330,57 @@ namespace XRL.World.Parts
         public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
         {
             ManageNaturalEquipment();
-            CleanUpNaturalEquipmentReferences();
+            CleanUpNaturalEquipment();
+            if (DoDerivedFrom
+                && !DoneDerivedFrom)
+            {
+                var naturalEquipmentList = Event.NewGameObjectList();
+                GameObject derived = null;
+                foreach (var bodyPart in ParentObject.Body.LoopParts())
+                {
+                    derived ??= bodyPart.DefaultBehavior ?? bodyPart.Equipped;
+
+                    // bodyPart.DefaultBehavior?.SetStringProperty("TemporaryDefaultBehavior", GetType().Name);
+
+                    naturalEquipmentList.AddIf(
+                        element: bodyPart.DefaultBehavior,
+                        conditional:
+                            go => bodyPart.DefaultBehavior != null
+                            && derived != bodyPart.DefaultBehavior
+                            && !naturalEquipmentList.Contains(bodyPart.DefaultBehavior)
+                        );
+                    naturalEquipmentList.AddIf(
+                        element: bodyPart.Equipped,
+                        conditional:
+                            go => bodyPart.Equipped != null
+                            && derived != bodyPart.Equipped
+                            && bodyPart.Equipped.IsNatural()
+                            && !naturalEquipmentList.Contains(bodyPart.Equipped)
+                        );
+                }
+                try
+                {
+                    WasDerivedFromEvent.Send(ParentObject, ParentObject, derived, null, naturalEquipmentList, GetType().Name);
+                }
+                catch (Exception x)
+                {
+                    Utils.Error(x);
+                }
+                try
+                {
+                    DerivationCreatedEvent.Send(derived, ParentObject, ParentObject, GetType().Name);
+                }
+                catch (Exception x)
+                {
+                    Utils.Error(x);
+                }
+                DoneDerivedFrom = true;
+            }
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(DecorateDefaultEquipmentEvent E)
         {
-            if (DoDerivedFrom)
-            {
-                var allDerived = Event.NewGameObjectList();
-                var additional = Event.NewGameObjectList();
-                foreach (var bodyPart in ParentObject.Body.LoopParts())
-                {
-                    if (bodyPart.DefaultBehavior is GameObject defaultBehavior)
-                    {
-                        allDerived.Add(defaultBehavior);
-                        WasDerivedFromEvent.Send(ParentObject, ParentObject, defaultBehavior, additional, allDerived, GetType().Name);
-                    }
-                    if (bodyPart.Equipped is GameObject equipped
-                        && equipped.IsNatural())
-                    {
-                        allDerived.Add(equipped);
-                        WasDerivedFromEvent.Send(ParentObject, ParentObject, equipped, additional, allDerived, GetType().Name);
-                    }
-                }
-            }
+            DoneDerivedFrom = false;
             return base.HandleEvent(E);
         }
     }

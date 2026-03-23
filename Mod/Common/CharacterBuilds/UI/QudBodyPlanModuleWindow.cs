@@ -198,14 +198,21 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         public override UIBreadcrumb GetBreadcrumb()
         {
             var renderable = module?.SelectedChoice()?.Render;
+            Color iconDetailColor = ColorUtility.ColorMap['W'];
+            Color iconForegroundColor = ColorUtility.ColorMap['w'];
+            if (renderable != null)
+            {
+                iconDetailColor = ColorUtility.ColorMap[renderable.getColorChars().detail];
+                iconForegroundColor = ColorUtility.ColorMap[renderable.getColorChars().foreground];
+            }
             return new()
             {
                 Id = GetType().FullName,
                 Title = module?.SelectedChoice()?.DisplayName ?? "Body Plan",
                 IconPath = renderable?.getTile() ?? "Creatures/natural-weapon-fist.bmp",
                 HFlip = renderable?.HFlip ?? false,
-                IconDetailColor = ColorUtility.ColorMap[renderable?.getColorChars().detail ?? 'W'],
-                IconForegroundColor = ColorUtility.ColorMap[renderable?.getColorChars().foreground ?? 'w']
+                IconDetailColor = iconDetailColor,
+                IconForegroundColor = iconForegroundColor
             };
         }
 
@@ -256,12 +263,12 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
 
         public void SelectAnatomy(int n)
         {
-            module.PickAnatomy(n);
+            module.PickBodyPlan(n);
             UpdateControls();
         }
         public void SelectAnatomy(string Id)
         {
-            module.PickAnatomy(Id);
+            module.PickBodyPlan(Id);
             UpdateControls();
         }
         public void SelectAnatomy(FrameworkDataElement dataElement)
@@ -371,7 +378,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI
         public BodyPlanMenuOption FindSelected()
         {
             foreach (var categoryMenuOption in BodyPlanMenuOptions ?? Enumerable.Empty<AnatomyCategoryMenuData>())
-                foreach (var bodyPlanMenuOption in categoryMenuOption.menuOptions ?? Enumerable.Empty<PrefixMenuOption>())
+                foreach (var bodyPlanMenuOption in categoryMenuOption.menuOptions?.OfType<BodyPlanMenuOption>() ?? Enumerable.Empty<BodyPlanMenuOption>())
                     if (bodyPlanMenuOption.Id == module?.SelectedChoice()?.Anatomy)
                         return bodyPlanMenuOption as BodyPlanMenuOption;
 

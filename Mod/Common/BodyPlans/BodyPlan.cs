@@ -22,6 +22,18 @@ namespace UD_ChooseYourBodyPlan.Mod
 {
     public class BodyPlan : IDisposable
     {
+        #region Debug Registration
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEach(
+                Type: typeof(UD_ChooseYourBodyPlan.Mod.Extensions),
+                MethodNameValues: new()
+                {
+                    { nameof(GetNaturalEquipmentStatsString), false },
+                    { nameof(GetTypeModelForCount), false },
+                });
+        #endregion
+
         public class BodyPlanEqualityComparer : IEqualityComparer<BodyPlan>, IDisposable
         {
             public readonly bool ByRef;
@@ -432,36 +444,38 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public BodyPartType GetTypeModelForCount(BodyPart BodyPart)
         {
+            /*
             using var indent = new Indent(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(BodyPart),
                 });
-
+            */
             var variantTypeModel = BodyPart.VariantTypeModel();
             var typeModel = BodyPart.TypeModel();
 
-            Debug.Log(nameof(variantTypeModel), variantTypeModel.Type, Indent: indent[1]);
+            // Debug.Log(nameof(variantTypeModel), variantTypeModel.Type, Indent: indent[1]);
 
-            Debug.Log(nameof(typeModel), typeModel.Type, Indent: indent[1]);
+            // Debug.Log(nameof(typeModel), typeModel.Type, Indent: indent[1]);
 
             if (NaturalEquipmentByBodyPartType.TryGetValue(variantTypeModel.Type, out string variantNaturalEquipment)
                 && !variantNaturalEquipment.IsNullOrEmpty())
             {
-                Debug.Log(nameof(variantNaturalEquipment), variantNaturalEquipment, Indent: indent[1]);
+                // Debug.Log(nameof(variantNaturalEquipment), variantNaturalEquipment, Indent: indent[1]);
 
                 if (!NaturalEquipmentByBodyPartType.TryGetValue(typeModel.Type, out string naturalEquipment)
                     || naturalEquipment.IsNullOrEmpty()
                     || variantNaturalEquipment != naturalEquipment)
                 {
-                    Debug.Log(nameof(naturalEquipment), naturalEquipment, Indent: indent[1]);
+                    // Debug.Log(nameof(naturalEquipment), naturalEquipment, Indent: indent[1]);
                     return variantTypeModel;
                 }
             }
 
             if (variantTypeModel.DefaultBehavior != typeModel.DefaultBehavior)
             {
+                /*
                 Debug.Log(
                     Label: Utils.CallChain(nameof(variantTypeModel), nameof(variantTypeModel.DefaultBehavior)),
                     Value: variantTypeModel.DefaultBehavior,
@@ -471,6 +485,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     Label: Utils.CallChain(nameof(typeModel), nameof(typeModel.DefaultBehavior)),
                     Value: typeModel.DefaultBehavior,
                     Indent: indent[1]);
+                */
 
                 return variantTypeModel;
             }
@@ -522,7 +537,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                         limbName = $"{prefix} {limbName}";
                     */
 
-                    if (limb.Plural.GetValueOrDefault())
+                    if (limb.Plural is true)
                         limbPluralName = timesColored + limbName;
 
                     if (limbName.EqualsNoCase("feet"))
@@ -781,6 +796,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             if (sampleNaturalEnquipment.HasPart<MissileWeapon>())
             {
+                /*
                 using var indent = new Indent(1);
                 Debug.LogCaller(indent,
                     ArgPairs: new Debug.ArgPair[]
@@ -788,11 +804,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                         Debug.Arg(NaturalEquipmentBlueprint?.Name ?? "NO_BLUEPRINT"),
                         Debug.Arg("as", nameof(MissileWeapon)),
                     });
-
-                GameObject projectile = null;
-                string projectileBlueprint = null;
-                if (GetMissileWeaponProjectileEvent.GetFor(sampleNaturalEnquipment, ref projectile, ref projectileBlueprint)
-                    && GetMissileWeaponPerformanceEvent.GetFor(null, sampleNaturalEnquipment, projectile) is GetMissileWeaponPerformanceEvent mWPE)
+                */
+                if (GetMissileWeaponPerformanceEvent.GetFor(null, sampleNaturalEnquipment) is GetMissileWeaponPerformanceEvent mWPE)
                 {
                     if (mWPE.Attributes == null
                         || !mWPE.Attributes.Contains("NonPenetrating"))
@@ -830,7 +843,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                         sB.Append(' ').AppendDamage("y", damage);
                     }
 
-                    Debug.CheckYeh(nameof(GetMissileWeaponPerformanceEvent), sB.ToString(), Indent: indent[1]);
+                    // Debug.CheckYeh(nameof(GetMissileWeaponPerformanceEvent), sB.ToString(), Indent: indent[1]);
                 }
             }
 

@@ -35,7 +35,8 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (_GenerallyEligbleForDisplayBlueprints.IsNullOrEmpty())
                 {
                     _GenerallyEligbleForDisplayBlueprints ??= new();
-                    foreach (var blueprint in GameObjectFactory.Factory?.BlueprintList ?? new List<GameObjectBlueprint>())
+                    var blueprints = GameObjectFactory.Factory?.Blueprints.Values ?? Enumerable.Empty<GameObjectBlueprint>();
+                    foreach (var blueprint in blueprints)
                         if (IsGenerallyEligbleForDisplay(blueprint))
                             _GenerallyEligbleForDisplayBlueprints.Add(blueprint);
                 }

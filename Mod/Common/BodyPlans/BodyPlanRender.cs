@@ -110,6 +110,15 @@ namespace UD_ChooseYourBodyPlan.Mod
             return output + extras;
         }
 
+        public bool IsEmpty()
+            => RenderString.IsNullOrEmpty()
+            && ColorString.IsNullOrEmpty()
+            && Tile.IsNullOrEmpty()
+            && TileColor.IsNullOrEmpty()
+            && DetailColor == default
+            && HFlip == null
+            ;
+
         private BodyPlanRender LoadFromDataBucketTags(GameObjectBlueprint DataBucket, bool? HFlip = null)
         {
             if (DataBucket == null)

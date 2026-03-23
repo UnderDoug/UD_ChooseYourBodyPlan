@@ -16,6 +16,7 @@ using UD_ChooseYourBodyPlan.Mod.Logging;
 using UD_ChooseYourBodyPlan.Mod.TextHelpers;
 
 using static UD_ChooseYourBodyPlan.Mod.ILoadFromDataBucket<UD_ChooseYourBodyPlan.Mod.BodyPlanEntry>;
+using XRL.Collections;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -426,11 +427,12 @@ namespace UD_ChooseYourBodyPlan.Mod
                         LimbElementsByType[limbType] = new();
 
                     Shader shader = default;
-
-                    if (rawLimbElements.GetValue(nameof(Shader.Color)) is string rawShaderColor)
+                    if (rawLimbElements.GetValue(nameof(Shader.Color)) is string rawShaderColor
+                        && !rawShaderColor.IsNullOrEmpty())
                         shader = new Shader { Color = rawShaderColor }.Finalize();
                     else
-                    if (rawLimbElements.GetValue(nameof(Shader)).CachedCommaExpansion()?.ToList() is List<string> rawShader)
+                    if (rawLimbElements.GetValue(nameof(Shader)).CachedCommaExpansion()?.ToList() is List<string> rawShader
+                        && !rawShader.IsNullOrEmpty())
                     {
                         if (rawShader.Count > 2)
                             shader = new Shader { Colors = rawShader[0], Type = rawShader[1], Color = rawShader[2] }.Finalize();
@@ -440,8 +442,10 @@ namespace UD_ChooseYourBodyPlan.Mod
                         else
                             shader = new Shader { Value = rawShader[0] }.Finalize();
                     }
+
                     Symbol symbol = default;
-                    if (rawLimbElements.GetValue(nameof(Symbol)).CachedCommaExpansion()?.ToList() is List<string> rawSymbol)
+                    if (rawLimbElements.GetValue(nameof(Symbol)).CachedCommaExpansion()?.ToList() is List<string> rawSymbol
+                        && !rawSymbol.IsNullOrEmpty())
                     {
                         if (rawSymbol.Count > 2)
                             symbol = new(rawSymbol[0], rawSymbol[1][0], rawSymbol[2]);
@@ -449,7 +453,19 @@ namespace UD_ChooseYourBodyPlan.Mod
                         if (rawSymbol.Count > 1)
                             symbol = new(null, rawSymbol[0][0], rawSymbol[1]);
                         else
-                            symbol = new(null, default, rawSymbol[0]);
+                        {
+                            if (rawSymbol[0].Contains(".")
+                                && rawSymbol[0].Split('.') is string[] rawSymbolTextElementsAddress
+                                && Factory.TextElementsByName.TryGetValue(rawSymbolTextElementsAddress[0], out var fullyAddressedTextElements)
+                                && fullyAddressedTextElements.SymbolsByName.TryGetValue(rawSymbolTextElementsAddress[1], out var fullyAddressedSymbol))
+                                symbol = fullyAddressedSymbol;
+                            else
+                            if (Factory.TextElementsByName.TryGetValue(rawSymbol[0], out var addressedTextElements)
+                                && addressedTextElements.SymbolsByName.TryGetValue(rawSymbol[0], out var addressedSymbol))
+                                symbol = addressedSymbol;
+                            else
+                                symbol = new(null, default, rawSymbol[0]);
+                        }
                     }
 
                     bool overridesNaturalEquipmentColor = rawLimbElements.GetValue(nameof(LimbTextElements.OverridesNaturalEquipmentColor)) is string overridesColor
@@ -782,11 +798,15 @@ namespace UD_ChooseYourBodyPlan.Mod
         public BodyPlanRender GetRender()
         {
             if (Transformation != null
+                && !Transformation.Render.IsEmpty()
                 && !Transformation.Tile.IsNullOrEmpty()
                 && Transformation.DetailColor != default)
                 return Transformation.Render;
 
-            return Render ??= new(GetExampleBlueprint(), false);
+            if (Render?.IsEmpty() is not false)
+                Render = new(GetExampleBlueprint(), false);
+
+            return Render;
         }
 
         public void OverrideRender(BodyPlanRender Render)
@@ -830,39 +850,47 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public IEnumerable<GameObjectBlueprint> GetExampleBlueprints()
         {
-            bool any = false;
+            var matchingAnatomy = ScopeDisposedList<GameObjectBlueprint>.GetFromPool();
+            var animatesWithAnatomy = ScopeDisposedList<GameObjectBlueprint>.GetFromPool();
+            var inheritsAnatomy = ScopeDisposedList<GameObjectBlueprint>.GetFromPool();
             foreach (var blueprint in BodyPlanFactory.GenerallyEligbleForDisplayBlueprints)
             {
                 if (HasMatchingAnatomy(blueprint))
                 {
-                    any = true;
-                    yield return blueprint;
+                    matchingAnatomy.Add(blueprint);
+                    continue;
                 }
-            }
-            if (any)
-                yield break;
 
-            foreach (var blueprint in BodyPlanFactory.GenerallyEligbleForDisplayBlueprints)
-            {
                 if (ObjectAnimatesWithAnatomy(blueprint))
                 {
-                    any = true;
-                    yield return blueprint;
+                    animatesWithAnatomy.Add(blueprint);
+                    continue;
                 }
-            }
-            if (any)
-                yield break;
 
-            foreach (var blueprint in BodyPlanFactory.GenerallyEligbleForDisplayBlueprints)
-            {
                 if (InheritsFromAnatomy(blueprint))
-                {
-                    any = true;
-                    yield return blueprint;
-                }
+                    inheritsAnatomy.Add(blueprint);
             }
-            if (any)
+
+            if (!matchingAnatomy.IsNullOrEmpty())
+            {
+                foreach (var matchingBlueprint in matchingAnatomy)
+                    yield return matchingBlueprint;
                 yield break;
+            }
+
+            if (!animatesWithAnatomy.IsNullOrEmpty())
+            {
+                foreach (var animatesWithBlueprint in animatesWithAnatomy)
+                    yield return animatesWithBlueprint;
+                yield break;
+            }
+
+            if (!inheritsAnatomy.IsNullOrEmpty())
+            {
+                foreach (var inheritsBlueprint in inheritsAnatomy)
+                    yield return inheritsBlueprint;
+                yield break;
+            }
 
             yield return GameObjectFactory.Factory?.GetBlueprintIfExists("Mimic");
         }

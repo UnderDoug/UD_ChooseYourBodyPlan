@@ -29,5 +29,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         public QudBodyPlanModuleData(BodyPlan Selection)
             : this(Selection?.Entry?.Anatomy)
         { }
+
+        public bool MatchesBodyPlan(BodyPlan BodyPlan)
+            => Selection?.MatchesBodyPlan(BodyPlan) is true;
     }
 }

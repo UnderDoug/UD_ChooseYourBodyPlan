@@ -257,7 +257,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 
                         managedNaturalEquipmentPart
                             .ManageNaturalEquipment()
-                            .CleanUpNaturalEquipmentReferences();
+                            .CleanUpNaturalEquipment();
                     }
 
                     if (!selectionEntry.AddsParts.IsNullOrEmpty())
@@ -430,30 +430,47 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             }
         }
 
-        public void PickAnatomy(int n)
+        protected bool CheckBodyPlans()
+        {
+            if (BodyPlanChoices.IsNullOrEmpty())
+            {
+                MetricsManager.LogCallingModError(nameof(BodyPlanChoices) + " empty when it probably shouldn't be.");
+                return false;
+            }
+            return true;
+        }
+        protected BodyPlan GetBodyPlan(int n)
+        {
+            if (!CheckBodyPlans())
+                return null;
+
+            return BodyPlanChoices[n];
+        }
+        protected BodyPlan GetBodyPlan(string Id)
+        {
+            if (!CheckBodyPlans())
+                return null;
+
+            return BodyPlanChoices.Find(c => c?.Anatomy == Id);
+        }
+
+        protected void PickBodyPlan(BodyPlan BodyPlan)
         {
             if (data == null)
                 setData(DefaultData);
 
-            if (BodyPlanChoices.IsNullOrEmpty())
-                MetricsManager.LogCallingModError(nameof(BodyPlanChoices) + " empty when it probably shouldn't be.");
-            else
-                data.Selection = new(BodyPlanChoices[n]);
+            if (BodyPlan != null)
+                data.Selection = new(BodyPlan);
 
             setData(data);
         }
-        public void PickAnatomy(string Id)
-        {
-            if (data == null)
-                setData(DefaultData);
+        public void PickBodyPlan(int n)
+            => PickBodyPlan(GetBodyPlan(n))
+            ;
 
-            if (BodyPlanChoices.IsNullOrEmpty())
-                MetricsManager.LogCallingModError(nameof(BodyPlanChoices) + " empty when it probably shouldn't be.");
-            else
-                data.Selection = new(BodyPlanChoices.Find(c => c?.Anatomy == Id));
-
-            setData(data);
-        }
+        public void PickBodyPlan(string Id)
+            => PickBodyPlan(GetBodyPlan(Id))
+            ;
 
         private string GetPlayerBlueprint()
             => builder?.info?.fireBootEvent(
@@ -503,26 +520,21 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             if (data != null)
             {
                 if (Override
-                    || data.Selection == null
-                    || data.Selection.Anatomy.IsNullOrEmpty())
+                    || data.Selection?.Anatomy?.IsNullOrEmpty() is not false)
                 {
                     int defaultIndex = BodyPlanChoices.FindIndex(IsDefaultChoice);
                     if (defaultIndex < 0)
                         defaultIndex = 0;
 
-                    PickAnatomy(defaultIndex);
+                    PickBodyPlan(defaultIndex);
                 }
             }
         }
 
         public bool IsSelected(BodyPlan Choice)
-            => Choice != null
-            && data != null
-            && ((Choice.Anatomy == null
-                    && data.Selection == null)
-                || Choice.Anatomy == data.Selection?.Anatomy);
+            => data?.MatchesBodyPlan(Choice) is true;
 
         public BodyPlan SelectedChoice()
-            => BodyPlanChoices.Find(IsSelected);
+            => BodyPlanChoices.FirstOrDefault(IsSelected);
     }
 }
