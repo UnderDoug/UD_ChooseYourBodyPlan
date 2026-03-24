@@ -305,7 +305,7 @@
     <part Name="Render" Tile="Creatures/sw_nest.bmp" RenderString="15" ColorString="&amp;w" DetailColor="r" />
   </object>
 
-  <object Name="UD_CYBP_BodyPlanEntry Octohedron" Inherits="UD_CYBP_BaseBodyPlanEntry">
+  <object Name="UD_CYBP_BodyPlanEntry Octohedron" Inherits="UD_CYBP_BaseDifficultBodyPlan">
     <tag Name="Anatomy" Value="Octohedron" />
     <tag Name="BasedOnBlueprint" Value="Recall Star" />
     <part Name="Render" Tile="Creatures/sw_recall_star.bmp" RenderString="@" ColorString="&amp;B" DetailColor="M" />

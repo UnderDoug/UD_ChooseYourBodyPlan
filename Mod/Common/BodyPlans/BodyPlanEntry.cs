@@ -207,6 +207,23 @@ namespace UD_ChooseYourBodyPlan.Mod
                         OptionDelegateContexts ??= new();
                         OptionDelegateContexts.AddRange(_Transformation.OptionDelegateContexts);
 
+                        if (Transformation.GetTextElementsNames() is IEnumerable<string> transformationTextElements)
+                        {
+                            if (_TextElements == null
+                                && !Factory.TextElementsInitialized)
+                            {
+                                TextElementsNames ??= new();
+                                TextElementsNames.AddRange(Transformation.GetTextElementsNames());
+                                WantsTextElements = true;
+                            }
+                            else
+                            {
+                                foreach (var xformTextElementsName in Transformation.GetTextElementsNames())
+                                    if (Factory.TextElementsByName.TryGetValue(xformTextElementsName, out var xformTextElement))
+                                        TextElements.Add(xformTextElement);
+                            }
+                        }
+
                         NaturalEquipment ??= new();
                         if (!_Transformation.NaturalEquipment.IsNullOrEmpty())
                             NaturalEquipment.AddRange(_Transformation.NaturalEquipment);
@@ -225,13 +242,6 @@ namespace UD_ChooseYourBodyPlan.Mod
             get
             {
                 _TextElements ??= new();
-                if (WantsTransformation
-                    && Transformation != null)
-                {
-                    TextElementsNames ??= new();
-                    TextElementsNames.AddRange(Transformation.GetTextElementsNames());
-                    WantsTextElements = TextElementsNames.Count > 0;
-                }
                 if (WantsTextElements
                     && Factory.TextElementsInitialized
                     && _TextElements.IsNullOrEmpty())
@@ -1013,7 +1023,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (IncludeLateLoaded)
             {
                 if (Transformation != null)
-                    Transformation.DebugOutput(indent[1]);
+                    Transformation.DebugOutput(1);
                 else
                     Debug.Log(nameof(Transformation), "None", Indent: indent[1]);
             }

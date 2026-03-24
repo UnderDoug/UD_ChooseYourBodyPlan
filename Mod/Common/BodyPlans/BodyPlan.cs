@@ -5,17 +5,18 @@ using System.Text;
 
 using XRL;
 using XRL.Collections;
+using XRL.Rules;
 using XRL.UI.Framework;
 using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
-using UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI;
-
 using Event = XRL.World.Event;
-using XRL.Rules;
+
+using UD_ChooseYourBodyPlan.Mod.CharacterBuilds.UI;
 using UD_ChooseYourBodyPlan.Mod.TextHelpers;
 using UD_ChooseYourBodyPlan.Mod.Logging;
+
 using static UD_ChooseYourBodyPlan.Mod.BodyPlanEntry;
 
 namespace UD_ChooseYourBodyPlan.Mod
