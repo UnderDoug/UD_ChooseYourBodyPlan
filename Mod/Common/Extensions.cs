@@ -35,6 +35,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 				{
 					{ nameof(GetTags), false },
 					{ nameof(InitializeLimbTreeBranch), false },
+					{ nameof(GetPlayerBodyBlueprint), false },
 				});
 		#endregion
 
@@ -619,6 +620,7 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             return new()
             {
+                Entry = BodyPlan.Entry,
                 CardinalDescription = cardinalDescription,
                 Description = BodyPart.VariantTypeModel().Description,
                 Type = type,
@@ -1130,15 +1132,22 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static string GetPlayerBodyBlueprint(this EmbarkBuilder Builder, out bool HaveSubtype, out bool HaveGenotype)
         {
-			string genotypeBody = Builder?.GetModule<QudGenotypeModule>()?.data?.Entry?.BodyObject;
-			string subtypeBody = Builder?.GetModule<QudSubtypeModule>()?.data?.Entry?.BodyObject;
+			//using var indent = new Indent(1);
+			//Debug.LogMethod(indent);
 
-            HaveSubtype = !subtypeBody.IsNullOrEmpty();
-			HaveGenotype = !genotypeBody.IsNullOrEmpty();
+			EmbarkingSubtypeBody ??= Builder?.GetModule<QudSubtypeModule>()?.data?.Entry?.BodyObject;
+			EmbarkingGenotypeBody ??= Builder?.GetModule<QudGenotypeModule>()?.data?.Entry?.BodyObject;
 
-			string baseBody = subtypeBody
-                .Coalesce(genotypeBody)
+            HaveSubtype = !EmbarkingSubtypeBody.IsNullOrEmpty();
+			HaveGenotype = !EmbarkingGenotypeBody.IsNullOrEmpty();
+
+			string baseBody = EmbarkingSubtypeBody
+				.Coalesce(EmbarkingGenotypeBody)
                 .Coalesce("Humanoid");
+
+            //Debug.YehNah(nameof(EmbarkingSubtypeBody), EmbarkingSubtypeBody, HaveSubtype, Indent: indent[1]);
+            //Debug.YehNah(nameof(EmbarkingGenotypeBody), EmbarkingGenotypeBody, HaveGenotype, Indent: indent[1]);
+            //Debug.YehNah(nameof(baseBody), baseBody, Indent: indent[1]);
 
 			return Builder?.info?.fireBootEvent(
                 id: QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECTBLUEPRINT,
@@ -1155,5 +1164,15 @@ namespace UD_ChooseYourBodyPlan.Mod
 
 		public static GameObjectBlueprint GetPlayerBodyModel(this EmbarkBuilder Builder)
             => Builder.GetPlayerBodyModel(out _, out _);
+
+        public static IEnumerable<BodyPlan> GetAvailable(this IEnumerable<BodyPlan> BodyPlans)
+        {
+            if (BodyPlans.IsNullOrEmpty())
+                yield break;
+
+            foreach (var bodyPlan in BodyPlans)
+                if (bodyPlan.Entry.IsAvailable())
+                    yield return bodyPlan;
+        }
 	}
 }

@@ -48,6 +48,46 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public OptionDelegateContexts OptionDelegateContexts;
 
+        public TextElements()
+        {
+            Name = null;
+            DescriptionBefore = null;
+            DescriptionAfter = null;
+            SummaryBefore = null;
+            SummaryAfter = null;
+            LegendsByName = null;
+            _Symbols = null;
+            SymbolsByName = null;
+            OptionDelegateContexts = null;
+        }
+
+        public TextElements(TextElements Source)
+            : base()
+        {
+            if (Source == null)
+                return;
+
+            Name = Source.Name;
+            DescriptionBefore = Source.DescriptionBefore;
+            DescriptionAfter = Source.DescriptionAfter;
+            SummaryBefore = Source.SummaryBefore;
+            SummaryAfter = Source.SummaryAfter;
+
+            SymbolsByName ??= new();
+            if (!Source.SymbolsByName.IsNullOrEmpty())
+                foreach ((var symbolName, var symbol) in Source.SymbolsByName)
+                    SymbolsByName[symbolName] = symbol;
+
+            LegendsByName ??= new();
+            if (!Source.LegendsByName.IsNullOrEmpty())
+                foreach ((var legendName, var legendValue) in Source.LegendsByName)
+                    LegendsByName[legendName] = legendValue;
+
+            OptionDelegateContexts = new();
+            if (!Source.OptionDelegateContexts.IsNullOrEmpty())
+                OptionDelegateContexts.AddRange(Source.OptionDelegateContexts);
+        }
+
         public TextElements LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
             if (!ILoadFromDataBucket<TextElements>.CheckIsValidDataBucket(this, DataBucket))
@@ -127,12 +167,12 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public TextElements Clone()
-            => new TextElements()
-                .Merge(this);
-
+            => new(this)
+            ;
 
         public bool IsAvailableFor(BodyPlanEntry BodyPlanEntry)
-            => OptionDelegateContexts?.Check(BodyPlanEntry) is not false
+            => OptionDelegateContexts.IsNullOrEmpty()
+            || OptionDelegateContexts.Check(BodyPlanEntry)
             ;
 
         public Symbol GetSymbol(string Name)

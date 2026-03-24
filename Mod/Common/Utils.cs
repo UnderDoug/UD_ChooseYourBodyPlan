@@ -37,6 +37,10 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static BodyPlanRender EmbarkingGenoSubtypeRender = null;
 
+        public static string EmbarkingBody = null;
+        public static string EmbarkingSubtypeBody = null;
+        public static string EmbarkingGenotypeBody = null;
+
         #region Pseudo-Debug
 
         public static void Error(object Message)

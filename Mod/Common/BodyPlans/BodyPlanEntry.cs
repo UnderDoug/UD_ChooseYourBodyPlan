@@ -31,6 +31,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 => new() { Symbol = BodyPlanFactory.Factory?.GetTextElements(nameof(NoCyber))?.GetSymbol() ?? default };
 
             public string Type;
+            public OptionDelegateContext OptionDelegateContext;
             public Shader Shader;
             public string PostText;
             public Symbol Symbol;
@@ -40,6 +41,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             public LimbTextElements()
             {
                 Type = null;
+                OptionDelegateContext = null;
                 Shader = default;
                 PostText = null;
                 Symbol = default;
@@ -77,17 +79,28 @@ namespace UD_ChooseYourBodyPlan.Mod
             {
                 string output = Type ?? "NO_TYPE";
 
+                string extras = null;
                 if (Shader.Apply("A") != "A")
-                    output = $"{output}[{nameof(Shader)}:{Shader}]";
+                    extras = $"{extras}[{nameof(Shader)}:{Shader}]";
 
                 if (!PostText.IsNullOrEmpty())
-                    output = $"{output}[{nameof(PostText)}:{PostText}]";
+                    extras = $"{extras}[{nameof(PostText)}:{PostText}]";
 
                 if (!Symbol.ToString().IsNullOrEmpty())
-                    output = $"{output}[{nameof(Symbol)}:{Symbol.DebugString()}]";
+                    extras = $"{extras}[{nameof(Symbol)}:{Symbol.DebugString()}]";
 
-                return output;
+                if (OptionDelegateContext != null)
+                    extras = $"{extras}[{nameof(Symbol)}:{Symbol.DebugString()}]";
+
+                extras ??= "[empty]";
+
+                return $"{output}{extras}";
             }
+
+            public bool CheckOption(BodyPlanEntry Entry)
+                => Entry is not null
+                && OptionDelegateContext?.Check(Entry) is not false
+                ;
 
             public bool CheckType(string Type)
                 => Type.IsNullOrEmpty()
@@ -100,14 +113,22 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && CheckType(Limb?.VariantTypeModel()?.Type)
                 ;
 
-            public string ProcessColor(string LimbDescription, string Type = null)
-                => CheckType(Type)
-                ? Shader.Apply(LimbDescription)
-                : LimbDescription
-                ;
-
-            public string ProcessPostText(string LimbDescription, string Type = null)
+            public string ProcessColor(string LimbDescription, BodyPlanEntry Entry, string Type = null)
             {
+                if (!CheckOption(Entry))
+                    return LimbDescription;
+
+                if (!CheckType(Type))
+                    return LimbDescription;
+
+                return Shader.Apply(LimbDescription);
+            }
+
+            public string ProcessPostText(string LimbDescription, BodyPlanEntry Entry, string Type = null)
+            {
+                if (!CheckOption(Entry))
+                    return LimbDescription;
+
                 if (!CheckType(Type))
                     return LimbDescription;
 
@@ -117,8 +138,11 @@ namespace UD_ChooseYourBodyPlan.Mod
                 return LimbDescription;
             }
 
-            public string ProcessSymbol(string LimbDescription, string Type = null)
+            public string ProcessSymbol(string LimbDescription, BodyPlanEntry Entry, string Type = null)
             {
+                if (!CheckOption(Entry))
+                    return LimbDescription;
+
                 if (!CheckType(Type))
                     return LimbDescription;
 
@@ -183,10 +207,6 @@ namespace UD_ChooseYourBodyPlan.Mod
                         OptionDelegateContexts ??= new();
                         OptionDelegateContexts.AddRange(_Transformation.OptionDelegateContexts);
 
-                        TextElementsNames ??= new();
-                        TextElementsNames.AddRange(_Transformation.GetTextElementsNames());
-                        WantsTextElements = TextElementsNames.Count > 0;
-
                         NaturalEquipment ??= new();
                         if (!_Transformation.NaturalEquipment.IsNullOrEmpty())
                             NaturalEquipment.AddRange(_Transformation.NaturalEquipment);
@@ -205,6 +225,13 @@ namespace UD_ChooseYourBodyPlan.Mod
             get
             {
                 _TextElements ??= new();
+                if (WantsTransformation
+                    && Transformation != null)
+                {
+                    TextElementsNames ??= new();
+                    TextElementsNames.AddRange(Transformation.GetTextElementsNames());
+                    WantsTextElements = TextElementsNames.Count > 0;
+                }
                 if (WantsTextElements
                     && Factory.TextElementsInitialized
                     && _TextElements.IsNullOrEmpty())
@@ -274,36 +301,34 @@ namespace UD_ChooseYourBodyPlan.Mod
         public BodyPlanEntry(BodyPlanEntry Source)
             : this()
         {
-            AnatomyName = Source?.AnatomyName;
-            MergeType = Source?.MergeType ?? MergeType;
+            if (Source == null)
+                return;
 
-            CategoryOverride = Source?.CategoryOverride;
-            DisplayName = Source?.DisplayName;
-            Render = Source?.Render?.Clone();
+            AnatomyName = Source.AnatomyName;
+            MergeType = Source.MergeType;
+
+            CategoryOverride = Source.CategoryOverride;
+            DisplayName = Source.DisplayName;
+            Render = Source.Render?.Clone();
 
             OptionDelegateContexts = new();
-            if (Source?.OptionDelegateContexts != null
-                && !Source.OptionDelegateContexts.IsNullOrEmpty())
+            if (!Source.OptionDelegateContexts.IsNullOrEmpty())
                 OptionDelegateContexts.AddRange(Source.OptionDelegateContexts);
 
             WantsTransformation = Source?._Transformation != null;
 
             TextElementsNames = new();
-            if (Source?.TextElementsNames != null
-                && !Source.TextElementsNames.IsNullOrEmpty())
-                foreach (var textElementsName in Source.TextElementsNames)
-                    TextElementsNames.Add(textElementsName);
+            if (!Source.TextElementsNames.IsNullOrEmpty())
+                TextElementsNames.AddRange(Source.TextElementsNames);
             WantsTextElements = !TextElementsNames.IsNullOrEmpty();
 
             LimbElementsByType = new();
-            if (Source?.LimbElementsByType != null
-                && !Source.LimbElementsByType.IsNullOrEmpty())
+            if (!Source.LimbElementsByType.IsNullOrEmpty())
                 foreach ((var limbType, var limbElements) in Source.LimbElementsByType)
                     LimbElementsByType.Add(limbType, new(limbElements));
 
             AddsParts = new();
-            if (Source?.AddsParts != null
-                && !Source.AddsParts.IsNullOrEmpty())
+            if (!Source.AddsParts.IsNullOrEmpty())
             {
                 foreach ((var partName, var partBlueprint) in Source.AddsParts)
                 {
@@ -317,22 +342,19 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
 
             NaturalEquipment = new();
-            if (Source?.NaturalEquipment != null
-                && !Source.NaturalEquipment.IsNullOrEmpty())
+            if (!Source.NaturalEquipment.IsNullOrEmpty())
                 NaturalEquipment.AddRange(Source.NaturalEquipment);
 
             ManagedNaturalEquipment = new();
-            if (Source?.ManagedNaturalEquipment != null
-                && !Source.ManagedNaturalEquipment.IsNullOrEmpty())
+            if (!Source.ManagedNaturalEquipment.IsNullOrEmpty())
                 ManagedNaturalEquipment.AddRange(Source.ManagedNaturalEquipment);
 
-            _WantsDerivedFrom = Source?._WantsDerivedFrom;
+            _WantsDerivedFrom = Source._WantsDerivedFrom;
 
-            RandomWeight = Source?.RandomWeight ?? 0;
+            RandomWeight = Source.RandomWeight;
 
             Tags = new();
-            if (Source?.Tags != null
-                && !Source.Tags.IsNullOrEmpty())
+            if (!Source.Tags.IsNullOrEmpty())
                 foreach ((var tagName, var tagValue) in Source.Tags)
                     Tags.Add(tagName, tagValue);
         }
@@ -426,6 +448,17 @@ namespace UD_ChooseYourBodyPlan.Mod
                     if (!LimbElementsByType.ContainsKey(limbType))
                         LimbElementsByType[limbType] = new();
 
+                    OptionDelegateContext optionDelegateContext = null;
+                    foreach (var elementName in rawLimbElements.Keys)
+                    {
+                        if (elementName.StartsWith("Option"))
+                        {
+                            optionDelegateContext = new KeyValuePair<string, string>(elementName, rawLimbElements[elementName]).ParseOptionTag(out bool remove);
+                            if (remove)
+                                optionDelegateContext = null;
+                        }
+                    }
+
                     Shader shader = default;
                     if (rawLimbElements.GetValue(nameof(Shader.Color)) is string rawShaderColor
                         && !rawShaderColor.IsNullOrEmpty())
@@ -478,6 +511,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                         item: new LimbTextElements
                         {
                             Type = limbType,
+                            OptionDelegateContext = optionDelegateContext,
                             Shader = shader,
                             PostText = rawLimbElements.GetValueOrDefault(nameof(LimbTextElements.PostText)),
                             Symbol = symbol,
@@ -953,7 +987,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             ClearCaches();
         }
 
-        public void LogDebug(int Indent)
+        public void LogDebug(int Indent, bool IncludeLateLoaded = false)
         {
             using Indent indent = new(Indent);
             Debug.LogMethod(indent,
@@ -976,6 +1010,14 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             Debug.Log(nameof(WantsTransformation), WantsTransformation, Indent: indent[1]);
 
+            if (IncludeLateLoaded)
+            {
+                if (Transformation != null)
+                    Transformation.DebugOutput(indent[1]);
+                else
+                    Debug.Log(nameof(Transformation), "None", Indent: indent[1]);
+            }
+
             Debug.Log(nameof(TextElementsNames), TextElementsNames?.Count ?? 0, Indent: indent[1]);
             Debug.Loggregrate(
                 Source: TextElementsNames,
@@ -984,6 +1026,17 @@ namespace UD_ChooseYourBodyPlan.Mod
                 PostProc: s => $"::{s}",
                 Indent: indent[2]);
             Debug.Log(nameof(WantsTextElements), WantsTextElements, Indent: indent[1]);
+
+            if (IncludeLateLoaded)
+            {
+                Debug.Log(nameof(TextElements), TextElements?.Count ?? 0, Indent: indent[1]);
+                Debug.Loggregrate(
+                    Source: TextElements,
+                    Proc: n => $"{n.Name}",
+                    Empty: "None",
+                    PostProc: s => $"::{s}",
+                    Indent: indent[3]);
+            }
 
             Debug.Log(nameof(LimbElementsByType), LimbElementsByType?.Count ?? 0, Indent: indent[1]);
             foreach ((var limbType, var limbElements) in LimbElementsByType)

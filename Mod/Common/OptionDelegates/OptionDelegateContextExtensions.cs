@@ -172,6 +172,28 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (OptionDelegateContexts == null)
                 return false;
 
+            if (OptionTag.ParseOptionTag(out bool remove) is OptionDelegateContext optionDelegateContext)
+            {
+                if (!remove)
+                    OptionDelegateContexts.Add(optionDelegateContext);
+                else
+                    OptionDelegateContexts.RemoveWhere(o => o.SameAs(optionDelegateContext));
+                return true;
+            }
+            return false;
+        }
+
+        public static OptionDelegateContext ParseOptionTag(this KeyValuePair<string, string> OptionTag, out bool Remove)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(OptionTag.Key ?? "NO_KEY", OptionTag.Value ?? "NO_VALUE"),
+                });
+
+            Remove = false;
+
             string tagName = OptionTag.Key;
             string tagValue = OptionTag.Value;
 
@@ -196,29 +218,51 @@ namespace UD_ChooseYourBodyPlan.Mod
                 && TryParseSimpleOptionPredicate(tagValue, out var simpleDelegate))
             {
                 var optionDelegateContext = CacheSimpleOptionDelegate(simpleDelegate);
-                OptionDelegateContexts.Add(optionDelegateContext);
                 Debug.CheckYeh(nameof(OptionDelegateContext), optionDelegateContext, Indent: indent[1]);
-                return true;
+                return optionDelegateContext;
             }
 
             if (tagName.Contains("."))
             {
                 if (postTagName.EqualsNoCase("remove"))
                 {
+                    Remove = true;
+                    string delegateName = null;
+                    string delegateTagValue = null;
                     if (tagValue.Contains(";"))
                     {
                         if (tagName.Split(";") is string[] tagParams)
                         {
-                            string delegateName = tagParams[0];
-                            string delegateTagValue = tagParams[1];
-                            OptionDelegateContexts.RemoveWhere(o => o.DelegateName == delegateName && o.TagValue == delegateTagValue);
-
-                            Debug.CheckYeh(nameof(OptionDelegateContext), $"{delegateName} -> {delegateTagValue}", Indent: indent[1]);
-                            return true;
+                            delegateName = tagParams[0];
+                            delegateTagValue = tagParams[1];
+                            Debug.CheckYeh($"Remove {nameof(OptionDelegateContext)}", $"{delegateName} -> {delegateTagValue}", Indent: indent[1]);
                         }
                     }
-                    Utils.Error($"Failed to parse {nameof(OptionDelegateContext)} \"remove\" tag: [{tagName}] value: [{tagValue}]; " +
-                        $"invalid tag Value attribute format. Use \"Example_OptionDelegateName;Example_OptionID==ExampleValue\".");
+                    else
+                    if (tagValue.Contains(","))
+                    {
+                        if (tagName.Split(",") is string[] tagParams)
+                        {
+                            delegateName = tagParams[0];
+                            delegateTagValue = tagParams[1];
+                            Debug.CheckYeh($"Remove {nameof(OptionDelegateContext)}", $"{delegateName} -> {delegateTagValue}", Indent: indent[1]);
+                        }
+                    }
+
+                    if (!delegateName.IsNullOrEmpty()
+                        && !delegateTagValue.IsNullOrEmpty())
+                    {
+                        return new OptionDelegateContext
+                        {
+                            DelegateName = delegateName,
+                            TagValue = delegateTagValue,
+                        };
+                    }
+                    else
+                    {
+                        Utils.Error($"Failed to parse {nameof(OptionDelegateContext)} \"remove\" tag: [{tagName}] value: [{tagValue}]; " +
+                            $"invalid tag Value attribute format. Use \"Example_OptionDelegateName;Example_OptionID==ExampleValue\".");
+                    }
                 }
                 else
                 if (BodyPlanFactory.Factory?.OptionDelegates?.ContainsKey(postTagName) is true)
@@ -228,23 +272,23 @@ namespace UD_ChooseYourBodyPlan.Mod
                         DelegateName = postTagName,
                         TagValue = tagValue,
                     };
-                    OptionDelegateContexts.Add(optionDelegateContext);
                     Debug.CheckYeh(nameof(OptionDelegateContext), optionDelegateContext, Indent: indent[1]);
-                    return true;
+                    return optionDelegateContext;
                 }
                 else
                 {
                     Utils.Error($"Failed to parse {nameof(OptionDelegateContext)} tag: [{tagName}] value: [{tagValue}]; " +
                         $"option delegate with name {postTagName} was not found.");
                 }
-                return false;
             }
             else
+            {
                 Utils.Error($"Failed to parse {nameof(OptionDelegateContext)} tag: [{tagName}] value: [{tagValue}]; " +
                     $"unable to determine syntax.");
+            }
 
             Debug.CheckNah($"{nameof(OptionDelegateContext)} Invalid", $"{tagName};{tagValue}", Indent: indent[1]);
-            return false;
+            return null;
         }
 
         public static Dictionary<string, string> GetOptionTags(this GameObjectBlueprint DataBucket)
@@ -264,7 +308,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             bool any = false;
             foreach (var optionTag in tags)
-                any = OptionDelegates.ParseOptionTag(optionTag) || any;
+                if (OptionDelegates.ParseOptionTag(optionTag))
+                    any = true;
 
             return any;
         }

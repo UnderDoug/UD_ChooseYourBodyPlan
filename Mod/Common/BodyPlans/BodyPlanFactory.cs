@@ -330,6 +330,11 @@ namespace UD_ChooseYourBodyPlan.Mod
             Debug.LogCaller(indent);
             LoadBaseBodyPlanEntries();
             Load(ref BodyPlanEntryByAnatomyName);
+
+            Debug.Log("Final Body Plan Entries:", Indent: indent[1]);
+            foreach (var bodyPlan in BodyPlanEntryByAnatomyName?.Values ?? Enumerable.Empty<BodyPlanEntry>())
+                bodyPlan.LogDebug(indent[2], true);
+
             BodyPlanEntriesInitialized = true;
         }
 

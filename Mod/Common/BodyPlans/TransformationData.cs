@@ -16,6 +16,7 @@ namespace UD_ChooseYourBodyPlan.Mod
     [Serializable]
     public class TransformationData : ILoadFromDataBucket<TransformationData>
     {
+        [Serializable]
         public struct Mutation
         {
             public string Name;
@@ -27,6 +28,13 @@ namespace UD_ChooseYourBodyPlan.Mod
                 Name = Entry.Name;
                 Class = Entry.Class;
                 this.Color = Color;
+            }
+
+            public Mutation(Mutation Source)
+            {
+                Name = Source.Name;
+                Class = Source.Class;
+                Color = Source.Color;
             }
 
             public readonly MutationEntry Entry => Utils.GetMutationByClassOrName(Class ?? Name);
@@ -71,6 +79,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public List<InventoryObject> NaturalEquipment;
 
+        public List<GamePartBlueprint> ManagedNaturalEquipment;
+
         public Dictionary<string, Mutation> Mutations;
 
         public TransformationData()
@@ -89,11 +99,37 @@ namespace UD_ChooseYourBodyPlan.Mod
         public TransformationData(TransformationData Source)
             : this()
         {
+            if (Source == null)
+                return;
+
             Anatomy = Source.Anatomy;
-            Render = new(Source);
+
+            Render = Source?.Render?.Clone();
+
             Species = Source.Species;
             Property = Source.Property;
-            Mutations = !Source.Mutations.IsNullOrEmpty() ? new(Source.Mutations) : new();
+
+            OptionDelegateContexts = new();
+            if (!Source.OptionDelegateContexts.IsNullOrEmpty())
+                OptionDelegateContexts.AddRange(Source.OptionDelegateContexts);
+
+            TextElementsNames = new();
+            if (!Source.TextElementsNames.IsNullOrEmpty())
+                foreach (var textElementsName in Source.TextElementsNames)
+                    TextElementsNames.Add(textElementsName);
+
+            NaturalEquipment = new();
+            if (!Source.NaturalEquipment.IsNullOrEmpty())
+                NaturalEquipment.AddRange(Source.NaturalEquipment);
+
+            ManagedNaturalEquipment = new();
+            if (!Source.ManagedNaturalEquipment.IsNullOrEmpty())
+                ManagedNaturalEquipment.AddRange(Source.ManagedNaturalEquipment);
+
+            Mutations = new();
+            if (!Source.Mutations.IsNullOrEmpty())
+                foreach ((var mutationName, var mutation) in Source.Mutations)
+                    Mutations.Add(mutationName, new(mutation));
         }
 
         public TransformationData LoadFromDataBucket(GameObjectBlueprint DataBucket)
@@ -203,27 +239,44 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public TransformationData Merge(TransformationData Other)
         {
+            if (Other == null)
+                return this;
+
             Anatomy ??= Other.Anatomy;
-            if (Other?.Render?.Tile != null)
+
+            if (Other.Render?.Tile != null)
                 Render = Other.Render.Clone();
 
-            Utils.MergeReplaceField(ref Species, Other.Species);
-            Utils.MergeReplaceField(ref Property, Other.Property);
-            Utils.MergeReplaceField(ref Mutations, new(Other.Mutations));
+            Species = Other.Species;
+            Property = Other.Property;
 
             OptionDelegateContexts ??= new();
-            OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
+            if (!Other.OptionDelegateContexts.IsNullOrEmpty())
+                OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
+
+            TextElementsNames ??= new();
+            if (!Other.TextElementsNames.IsNullOrEmpty())
+                TextElementsNames.AddRange(Other.TextElementsNames);
 
             NaturalEquipment ??= new();
             if (!Other.NaturalEquipment.IsNullOrEmpty())
                 NaturalEquipment.AddRange(Other.NaturalEquipment);
 
+            ManagedNaturalEquipment ??= new();
+            if (!Other.ManagedNaturalEquipment.IsNullOrEmpty())
+                ManagedNaturalEquipment.AddRange(Other.ManagedNaturalEquipment);
+
+            Mutations ??= new();
+            if (!Other.Mutations.IsNullOrEmpty())
+                foreach ((var mutationName, var mutation) in Other.Mutations)
+                    Mutations.Add(mutationName, new(mutation));
+
             return this;
         }
 
         public TransformationData Clone()
-            => new TransformationData()
-                .Merge(this);
+            => new(this)
+            ;
 
         public void Dispose()
         {

@@ -18,6 +18,15 @@ namespace UD_ChooseYourBodyPlan.Mod.TextHelpers
             this.Color = Color;
             this.Value = Value;
         }
+
+        public Symbol(Symbol Source)
+            : this()
+        {
+            Name = Source.Name;
+            Color = Source.Color;
+            Value = Source.Value;
+        }
+
         public Symbol(KeyValuePair<string, string> XTagEntry)
             : this()
         {

@@ -49,16 +49,28 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                     && !_BodyPlanChoices.IsNullOrEmpty()
                     && GetDefaultBodyPlanAnatomy() is string defaultChoiceAnatomy
                     && !defaultChoiceAnatomy.IsNullOrEmpty())
-                {
-                    Debug.Log($"{nameof(DefaultBodyPlanChoice)} -> {defaultChoiceAnatomy}");
                     _DefaultBodyPlanChoice = _BodyPlanChoices.FirstOrDefault(a => a?.Anatomy == defaultChoiceAnatomy);
-                }
+
                 return _DefaultBodyPlanChoice;
             }
             set => _DefaultBodyPlanChoice = value;
         }
 
         public override AbstractEmbarkBuilderModuleData DefaultData => GetDefaultData();
+
+        public IEnumerable<BodyPlan> BodyPlans
+        {
+            get
+            {
+                if (BodyPlanEntires.IsNullOrEmpty())
+                    yield break;
+
+                foreach (var bodyPlanEntry in BodyPlanEntires)
+                    if (bodyPlanEntry.TryGetBodyPlan(out var bodyPlan)
+                        && bodyPlan.IsValid())
+                        yield return bodyPlan;
+            }
+        }
 
         private List<BodyPlan> _BodyPlanChoices;
         public List<BodyPlan> BodyPlanChoices
@@ -68,21 +80,18 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                 if (_BodyPlanChoices == null
                     || WantClearChoices)
                 {
+                    bool resetDefault = WantClearChoices;
                     WantClearChoices = false;
-                    _BodyPlanChoices = new();
+                    _BodyPlanChoices ??= new();
+                    _BodyPlanChoices.Clear();
 
-                    foreach (var bodyPlanEntry in BodyPlanEntires)
-                    {
-                        if (bodyPlanEntry.IsAvailable()
-                            && bodyPlanEntry.TryGetBodyPlan(out BodyPlan bodyPlan)
-                            && bodyPlan.IsValid())
-                            _BodyPlanChoices.Add(bodyPlan);
-                    }
+                    foreach (var bodyPlan in BodyPlans.GetAvailable())
+                        _BodyPlanChoices.Add(bodyPlan);
 
                     _BodyPlanChoices.Sort(BodyPlan.DefaultFirstNameComparer);
 
                     SetDefaultChoice();
-                    SelectDefaultChoice();
+                    SelectDefaultChoice(resetDefault);
                 }
                 return _BodyPlanChoices;
             }
@@ -432,7 +441,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         }
         public override void setData(AbstractEmbarkBuilderModuleData values)
         {
-            OrganizeAnatomyChoices(true);
+            OrganizeAnatomyChoices(true, values == null);
             base.setData(values);
         }
 
@@ -475,16 +484,42 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 
             Utils.EmbarkingGenoSubtypeRender ??= new BodyPlanRender();
 
+            string previousGenotypBody = Utils.EmbarkingGenotypeBody;
+            string previousSubtypeBody = Utils.EmbarkingSubtypeBody;
+
             if (GenotypeModuleData?.Entry is GenotypeEntry genotypeEntry)
+            {
                 Utils.EmbarkingGenoSubtypeRender.SetFromGenotype(genotypeEntry);
+                Utils.EmbarkingGenotypeBody = genotypeEntry.BodyObject;
+            }
 
             if (SubtypeModuleData?.Entry is SubtypeEntry subtypeEntry)
+            {
                 Utils.EmbarkingGenoSubtypeRender.SetFromSubtype(subtypeEntry);
+                Utils.EmbarkingSubtypeBody = subtypeEntry.BodyObject;
+            }
+
+            bool resetDefault = false;
+            if (previousGenotypBody != Utils.EmbarkingGenotypeBody
+                || previousSubtypeBody != Utils.EmbarkingSubtypeBody)
+            {
+                WantClearChoices = true;
+                resetDefault = true;
+
+                setData(null);
+            }
+
+            Utils.EmbarkingBody = builder.GetPlayerBodyBlueprint();
 
             if (Utils.IsTruekinEmbarking)
+            {
                 WantClearChoices = true;
+                resetDefault = true;
 
-            OrganizeAnatomyChoices();
+                setData(null);
+            }
+
+            OrganizeAnatomyChoices(true, resetDefault);
         }
 
         [OptionFlagUpdate]
@@ -558,18 +593,10 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             => PickBodyPlan(GetBodyPlan(Id))
             ;
 
-        private string GetPlayerBlueprint()
-            => builder?.info?.fireBootEvent(
-                id: QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECTBLUEPRINT,
-                game: The.Game,
-                element: SubtypeModuleData?.Entry?.BodyObject
-                    .Coalesce(GenotypeModuleData?.Entry?.BodyObject)
-                    .Coalesce("Humanoid"));
-
         public string GetDefaultBodyPlanAnatomy()
-            => GameObjectFactory.Factory
-                ?.GetBlueprintIfExists(GetPlayerBlueprint())
-                ?.GetAnatomyName();
+            => builder.GetPlayerBodyModel()
+                ?.GetAnatomyName()
+            ;
 
         public QudBodyPlanModuleData GetDefaultData()
             => new(DefaultBodyPlanChoice);

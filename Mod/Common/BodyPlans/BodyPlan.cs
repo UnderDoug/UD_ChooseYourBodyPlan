@@ -102,6 +102,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             public static string DescriptionPlaceholder => "@@DESCRIPTION@@";
             public static bool IsTrueKin => Utils.IsTruekinEmbarking;
 
+            public BodyPlanEntry Entry;
+
             public string Indent;
             public string CardinalDescription;
             public string Description;
@@ -110,8 +112,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             public string NaturalEquipmentStats;
             public string Extra;
             public bool HasNaturalEquipment => !NaturalEquipmentStats.IsNullOrEmpty();
-            public bool HasNaturalEquipmentColorOverride => LimbElements?.Any(l => l.OverridesNaturalEquipmentColor) is true;
-            public bool HasNaturalEquipmentStatsOverride => LimbElements?.Any(l => l.OverridesNaturalEquipmentStats) is true;
+            public bool HasNaturalEquipmentColorOverride => LimbElements?.Any(l => l.CheckOption(Entry) && l.OverridesNaturalEquipmentColor) is true;
+            public bool HasNaturalEquipmentStatsOverride => LimbElements?.Any(l => l.CheckOption(Entry) && l.OverridesNaturalEquipmentStats) is true;
             public bool NoCyber;
 
             public List<LimbTextElements> LimbElements;
@@ -123,10 +125,10 @@ namespace UD_ChooseYourBodyPlan.Mod
 
                 if (HasNaturalEquipment
                     && !HasNaturalEquipmentColorOverride)
-                    description = LimbTextElements.NaturalEquipment.ProcessColor(Description);
+                    description = LimbTextElements.NaturalEquipment.ProcessColor(Description, Entry);
 
                 if (!LimbElements.IsNullOrEmpty())
-                    description = LimbElements[^1].ProcessColor(description);
+                    description = LimbElements[^1].ProcessColor(description, Entry);
 
                 if (!FinalType.IsNullOrEmpty())
                     description = $"{description} ({FinalType})";
@@ -138,7 +140,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 if (!LimbElements.IsNullOrEmpty())
                 {
                     foreach (var limbElements in LimbElements ?? Enumerable.Empty<LimbTextElements>())
-                        description = limbElements.ProcessPostText(description);
+                        description = limbElements.ProcessPostText(description, Entry);
                 }
 
                 if (!Extra.IsNullOrEmpty())
@@ -151,7 +153,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     {
                         if (!anySymbols)
                             description += " ";
-                        description = limbElements.ProcessSymbol(description);
+                        description = limbElements.ProcessSymbol(description, Entry);
                         anySymbols = true;
                     }
                 }
@@ -161,7 +163,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 {
                     if (!anySymbols)
                         description += " ";
-                    description = LimbTextElements.NoCyber.ProcessSymbol(description);
+                    description = LimbTextElements.NoCyber.ProcessSymbol(description, Entry);
                 }
 
                 cardinalDescription = cardinalDescription.Replace(DescriptionPlaceholder, description);
