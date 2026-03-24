@@ -46,6 +46,8 @@ namespace UD_ChooseYourBodyPlan.Mod
             }
         }
 
+        public OptionDelegateContexts OptionDelegateContexts;
+
         public TextElements LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
             if (!ILoadFromDataBucket<TextElements>.CheckIsValidDataBucket(this, DataBucket))
@@ -93,6 +95,10 @@ namespace UD_ChooseYourBodyPlan.Mod
                 foreach (var tagEntry in LegendTags)
                     LegendsByName[tagEntry.Key] = tagEntry.Value;
             }
+
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.ParseDataBucket(DataBucket);
+
             return this;
         }
 
@@ -113,12 +119,21 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             Utils.MergeReplaceDictionary(LegendsByName ??= new(), new StringMap<string>(Other.LegendsByName));
 
+            OptionDelegateContexts ??= new();
+            OptionDelegateContexts.Clear();
+            OptionDelegateContexts.AddRange(Other.OptionDelegateContexts);
+
             return this;
         }
 
         public TextElements Clone()
             => new TextElements()
                 .Merge(this);
+
+
+        public bool IsAvailableFor(BodyPlanEntry BodyPlanEntry)
+            => OptionDelegateContexts?.Check(BodyPlanEntry) is not false
+            ;
 
         public Symbol GetSymbol(string Name)
             => SymbolsByName?.GetValue(Name)

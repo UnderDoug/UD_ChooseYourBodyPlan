@@ -7,7 +7,9 @@
     <tag Name="RandomWeight" Value="5" />
     <tag Name="BaseObject" Value="*noinherit" />
     <tag Name="Option.DisallowTrueKinUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansForTK==Yes" />
-    <tag Name="Option.DisallowMechanicalUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic==Yes" />
+    <tag Name="Option.DisallowCrossOrganicMechanicalUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatCrossOrganicMechanical==Yes" />
+    <tag Name="TextElements.Mechanical" />
+    <tag Name="TextElements.Organic" />
   </object>
   <object Name="UD_CYBP_BodyPlanEntry UD_CYBP_NoEntry" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="UD_CYBP_NoEntry" />

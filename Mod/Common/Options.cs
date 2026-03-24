@@ -22,8 +22,8 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         [OptionFlag] public static bool EnableBodyPlansAvailableViaRecipe;
 
-        [OptionFlag] public static bool EnableBodyPlansThatAreRobotic;
-        [OptionFlag] public static bool EnableRoboticBodyPlansMakingYouRobotic;
+        [OptionFlag] public static bool EnableBodyPlansThatCrossOrganicMechanical;
+        [OptionFlag] public static bool EnableOrganicMechanicalBodyPlansOntologicallyMatch;
 
         public static bool SortByCategory
         {

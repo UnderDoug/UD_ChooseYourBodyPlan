@@ -10,6 +10,7 @@ using XRL.CharacterBuilds;
 using XRL.CharacterBuilds.Qud;
 using XRL.Collections;
 using XRL.World;
+using XRL.World.Anatomy;
 
 using static UD_ChooseYourBodyPlan.Mod.OptionDelegateContext;
 
@@ -30,14 +31,53 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         [OptionDelegate]
-        public static bool DisallowMechanicalUnless(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder)
+        public static bool DisallowCrossOrganicMechanicalUnless(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder)
         {
             if (TagValue.FailedToGetSimpleDelegate(out var simpleDelegate))
                 return true;
 
-            return BodyPlanEntry?.Anatomy?.IsMechanical() is not true
-                || simpleDelegate.Check()
-                ;
+            if (simpleDelegate.Check())
+                return true;
+
+            var bodyModel = Builder.GetPlayerBodyModel();
+
+            if (bodyModel?.GetAnatomy() is Anatomy originAnatomy
+                && BodyPlanEntry.Anatomy is Anatomy destinationAnatomy)
+                return originAnatomy.IsMechanical() == destinationAnatomy.IsMechanical();
+
+            return true;
+        }
+
+        [OptionDelegate]
+        public static bool OrganicMechanicalMismatch(string TagValue, BodyPlanEntry BodyPlanEntry, EmbarkBuilder Builder)
+        {
+            if (!TagValue.Contains(";"))
+                return false;
+
+            if (TagValue.Split(";") is not string[] rawTagValueParts)
+                return false;
+
+            bool isTextOrganicWarning = rawTagValueParts[0].EqualsNoCase("Organic");
+            bool isTextMechanicalWarning = rawTagValueParts[0].EqualsNoCase("Mechanical");
+
+            if (rawTagValueParts[1].FailedToGetSimpleDelegate(out var simpleDelegate)
+                || !simpleDelegate.Check())
+                return false;
+
+            var bodyModel = Builder.GetPlayerBodyModel();
+
+            if (bodyModel?.GetAnatomy() is Anatomy originAnatomy
+                && BodyPlanEntry.Anatomy is Anatomy destinationAnatomy)
+            {
+                if (originAnatomy.IsMechanical()
+                    && !destinationAnatomy.IsMechanical())
+                    return isTextOrganicWarning;
+                else
+                if (!originAnatomy.IsMechanical()
+                    && destinationAnatomy.IsMechanical())
+                    return isTextMechanicalWarning;
+            }
+            return false;
         }
 
         public static bool FailedToGetSimpleDelegate(this string TagValue, [NotNullWhen(false)] out SimpleDelegate SimpleDelegate)

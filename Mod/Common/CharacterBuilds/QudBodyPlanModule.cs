@@ -22,6 +22,13 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
     [HasOptionFlagUpdate]
     public partial class QudBodyPlanModule : QudEmbarkBuilderModule<QudBodyPlanModuleData>
     {
+        public enum OntologicalMatch
+        {
+            None,
+            Organic,
+            Mechanical,
+        }
+
         public static string GetDefaultSelectionUIEvent => $"{nameof(QudBodyPlanModule)}_{nameof(GetDefaultSelectionUIEvent)}";
         public static string GetAlphabeticalChoicesUIEvent => $"{nameof(QudBodyPlanModule)}_{nameof(GetAlphabeticalChoicesUIEvent)}";
         public static string GetCategorySortedChoicesUIEvent => $"{nameof(QudBodyPlanModule)}_{nameof(GetCategorySortedChoicesUIEvent)}";
@@ -93,6 +100,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         }
         private static bool LastSortByCategoryValue = Options.SortByCategory;
 
+        public OntologicalMatch MatchPlayerOntology;
+
         public QudBodyPlanModule()
         {
             _BodyPlanChoices = null;
@@ -157,7 +166,22 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             {
                 if (id == QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECT)
                 {
-                    playerBody.Rebuild(data.Selection.Anatomy);
+                    if (Options.EnableOrganicMechanicalBodyPlansOntologicallyMatch)
+                    {
+                        if (Anatomies.GetAnatomy(player.Body.Anatomy) is Anatomy originAnatomy
+                            && Anatomies.GetAnatomy(anatomy) is Anatomy destinationAnatomy)
+                        {
+                            if (originAnatomy.IsMechanical()
+                                && !destinationAnatomy.IsMechanical())
+                                MatchPlayerOntology = OntologicalMatch.Organic;
+                            else
+                            if (!originAnatomy.IsMechanical()
+                                && destinationAnatomy.IsMechanical())
+                                MatchPlayerOntology = OntologicalMatch.Mechanical;
+                        }
+                    }
+
+                    playerBody.Rebuild(anatomy);
 
                     if (data.Selection.GetTransformation() is TransformationData xForm
                         && !xForm.Mutations.IsNullOrEmpty())
@@ -307,9 +331,71 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                             player.SetStringProperty("Species", xForm.Species);
                     }
 
-                    if (Anatomies.GetAnatomy(anatomy).Category == BodyPartCategory.MECHANICAL
-                        && Options.EnableRoboticBodyPlansMakingYouRobotic)
-                        XRL.World.ObjectBuilders.Roboticized.Roboticize(player);
+                    switch (MatchPlayerOntology)
+                    {
+                        case OntologicalMatch.Organic:
+                            player.RemovePart(nameof(Robot));
+                            player.RemovePart<MentalShield>();
+
+                            player.RemovePart<Metal>();
+
+                            player.RemovePart<MaintenanceSystems>();
+                            player.RequirePart<Springy>();
+                            player.RequirePart<Stomach>();
+
+                            player.GetStat("ElectricResistance").BaseValue = 0;
+                            player.GetStat("HeatResistance").BaseValue = 0;
+                            player.GetStat("ColdResistance").BaseValue = 0;
+
+                            player.IsOrganic = true;
+                            player.SetStringProperty("SeveredLimbBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredHeadBlueprint", "GenericHead");
+                            player.SetStringProperty("SeveredFaceBlueprint", "GenericFace");
+                            player.SetStringProperty("SeveredArmBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredHandBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredLegBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredFootBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredFeetBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredTailBlueprint", "GenericLimb");
+                            player.SetStringProperty("SeveredRootsBlueprint", "PlantLimb");
+                            player.SetStringProperty("SeveredFinBlueprint", "GenericLimb");
+
+                            player.SetIntProperty("Bleeds", 1);
+                            player.SetStringProperty("BleedLiquid", "blood-1000");
+                            player.SetStringProperty("BleedColor", "&r");
+                            player.SetStringProperty("BleedPrefix", "&Kbloody");
+
+                            var render = player.Render;
+                            render.ColorString = "&w";
+                            render.TileColor = "&w";
+                            if (render.DetailColor == "w")
+                            {
+                                render.ColorString = ColorUtility.FindLastForeground(render.TileColor.IsNullOrEmpty() ? render.ColorString : render.TileColor)?.ToString()
+                                    ?? Crayons.GetRandomColor();
+                            }
+
+                            var displayNameAdjectives = player.RequirePart<DisplayNameAdjectives>();
+                            displayNameAdjectives.RemoveAdjective(XRL.World.ObjectBuilders.Roboticized.PREFIX_NAME);
+                            displayNameAdjectives.AddAdjective("{{w|organic}}");
+
+                            if (player.TryGetPart(out Description description))
+                            {
+                                string roboticPostfixDesc = XRL.World.ObjectBuilders.Roboticized.POSTFIX_DESC;
+                                string organicPostfixDesc = "There is a soft, persistent gurgling emanating outward.";
+                                if (description.Short.Contains(roboticPostfixDesc))
+                                    description._Short = description._Short.Replace(roboticPostfixDesc, organicPostfixDesc);
+                                else
+                                    description._Short += $" {organicPostfixDesc}";
+                            }
+                            break;
+
+                        case OntologicalMatch.Mechanical:
+                            XRL.World.ObjectBuilders.Roboticized.Roboticize(player);
+                            break;
+
+                        default:
+                            break;
+                    }
                 }
             }
             else
@@ -476,8 +562,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             => builder?.info?.fireBootEvent(
                 id: QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECTBLUEPRINT,
                 game: The.Game,
-                element: GenotypeModuleData?.Entry?.BodyObject
-                    .Coalesce(SubtypeModuleData?.Entry?.BodyObject)
+                element: SubtypeModuleData?.Entry?.BodyObject
+                    .Coalesce(GenotypeModuleData?.Entry?.BodyObject)
                     .Coalesce("Humanoid"));
 
         public string GetDefaultBodyPlanAnatomy()

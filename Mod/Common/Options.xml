@@ -82,28 +82,28 @@
     </helptext>
   </option>
   <option
-        ID="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic"
-        DisplayText="Enable body plans that are for robots."
+        ID="UD_ChooseYourBodyPlan_EnableBodyPlansThatCrossOrganicMechanical"
+        DisplayText="Enable body plans that cross the organic/mechanical divide."
         Category="Mod: Choose Your Body Plan"
         Type="Checkbox"
         Default="No">
     <helptext>
-      When enabled, body plans that are typically for robots will be available.
+      When enabled, body plans that are typically for robots will be available to non-robots, and body plans that are non-robotic will be available to robots.
 
-      {{r|Be warned}}: by default, selecting one of these body plans will make your character {{c|mechanical}}.
+      {{r|Be warned}}: by default, selecting one of these body plans will make your character {{c|mechanical}}/{{w|organic}} dependiong on which direction they're crossing the divide.
 
       The default is {{w|Disabled}}.
     </helptext>
   </option>
   <option
-        ID="UD_ChooseYourBodyPlan_EnableRoboticBodyPlansMakingYouRobotic"
-		    Requires="UD_ChooseYourBodyPlan_EnableBodyPlansThatAreRobotic==Yes"
-        DisplayText="Enable body plans that are for robots making you {{c|mechanical}}."
+        ID="UD_ChooseYourBodyPlan_EnableOrganicMechanicalBodyPlansOntologicallyMatch"
+		    Requires="UD_ChooseYourBodyPlan_EnableBodyPlansThatCrossOrganicMechanical==Yes"
+        DisplayText="Enable body plans that cross the organic/mechanical divide matching you to them ontologically."
         Category="Mod: Choose Your Body Plan"
         Type="Checkbox"
         Default="Yes">
     <helptext>
-      When enabled, body plans that are for robots will make you {{c|mechanical}}.
+      When enabled, body plans that cross the organic/mechanical divide will make your character {{c|mechanical}}/{{w|organic}} if they aren't already.
 
       The default is {{W|Enabled}}.
     </helptext>

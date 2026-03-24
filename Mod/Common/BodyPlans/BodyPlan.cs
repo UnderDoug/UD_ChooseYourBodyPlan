@@ -335,22 +335,22 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public IEnumerable<string> GetDescriptionBefores(Predicate<TextElements> Where = null)
-            => TextElements.GetDescriptionBefores(Where)
+            => TextElements.GetDescriptionBefores(this, Where)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetDescriptionAfters(Predicate<TextElements> Where = null)
-            => TextElements.GetDescriptionAfters(Where)
+            => TextElements.GetDescriptionAfters(this, Where)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSummaryBefores(Predicate<TextElements> Where = null)
-            => TextElements.GetSummaryBefores(Where)
+            => TextElements.GetSummaryBefores(this, Where)
             ?? Enumerable.Empty<string>()
             ;
 
         public IEnumerable<string> GetSummaryAfters(Predicate<TextElements> Where = null)
-            => TextElements.GetSummaryAfters(Where)
+            => TextElements.GetSummaryAfters(this, Where)
             ?? Enumerable.Empty<string>()
             ;
 

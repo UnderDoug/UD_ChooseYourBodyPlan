@@ -62,55 +62,68 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static IEnumerable<TextElements> GetTextElements(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan For = null,
             Predicate<TextElements> Where = null
             )
         {
             if (!TextElements.IsNullOrEmpty())
+            {
                 foreach (var textElements in TextElements)
+                {
+                    if (For != null
+                        && !textElements.IsAvailableFor(For.Entry))
+                        continue;
+
                     if (Where?.Invoke(textElements) is not false)
                         yield return textElements;
+                }
+            }
         }
 
         public static IEnumerable<string> GetDescriptionBefores(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan For = null,
             Predicate<TextElements> Where = null
             )
         {
             if (!TextElements.IsNullOrEmpty())
-                foreach (var textElements in TextElements.GetTextElements(Where))
+                foreach (var textElements in TextElements.GetTextElements(For, Where))
                     if (!textElements.DescriptionBefore.IsNullOrEmpty())
                         yield return textElements.DescriptionBefore;
         }
 
         public static IEnumerable<string> GetDescriptionAfters(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan For = null,
             Predicate<TextElements> Where = null
             )
         {
             if (!TextElements.IsNullOrEmpty())
-                foreach (var textElements in TextElements.GetTextElements(Where))
+                foreach (var textElements in TextElements.GetTextElements(For, Where))
                     if (!textElements.DescriptionAfter.IsNullOrEmpty())
                         yield return textElements.DescriptionAfter;
         }
 
         public static IEnumerable<string> GetSummaryBefores(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan For = null,
             Predicate<TextElements> Where = null
             )
         {
             if (!TextElements.IsNullOrEmpty())
-                foreach (var textElements in TextElements.GetTextElements(Where))
+                foreach (var textElements in TextElements.GetTextElements(For, Where))
                     if (!textElements.SummaryBefore.IsNullOrEmpty())
                         yield return textElements.SummaryBefore;
         }
 
         public static IEnumerable<string> GetSummaryAfters(
             this IEnumerable<TextElements> TextElements,
+            BodyPlan For = null,
             Predicate<TextElements> Where = null
             )
         {
             if (!TextElements.IsNullOrEmpty())
-                foreach (var textElements in TextElements.GetTextElements(Where))
+                foreach (var textElements in TextElements.GetTextElements(For, Where))
                     if (!textElements.SummaryAfter.IsNullOrEmpty())
                         yield return textElements.SummaryAfter;
         }
@@ -123,7 +136,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             )
         {
             if (!TextElements.IsNullOrEmpty())
-                foreach (var textElements in TextElements.GetTextElements(Where))
+                foreach (var textElements in TextElements.GetTextElements(BodyPlan, Where))
                     if (!textElements.Symbols.IsNullOrEmpty())
                         foreach (var symbol in textElements.Symbols)
                             if (Filter?.Invoke(symbol) is not false)
@@ -145,7 +158,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             )
         {
             if (!TextElements.IsNullOrEmpty())
-                foreach (var textElements in TextElements.GetTextElements(Where))
+                foreach (var textElements in TextElements.GetTextElements(BodyPlan, Where))
                     if (!textElements.LegendsByName.IsNullOrEmpty())
                         foreach (var legend in textElements.GetLegendsStrings())
                             yield return legend;

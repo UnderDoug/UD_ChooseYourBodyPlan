@@ -21,9 +21,18 @@
   
   <object Name="UD_CYBP_TextElements Mechanical" Inherits="UD_CYBP_BaseTextElements">
     <tag Name="TextElements" Value="Mechanical" />
+    <tag Name="Option.OrganicMechanicalMismatch" Value="Mechanical;UD_ChooseYourBodyPlan_EnableOrganicMechanicalBodyPlansOntologicallyMatch==Yes" />
     <tag Name="DescriptionBefore" Value="{{c|You will be made mechanical with this body plan.}}" />
     <tag Name="SummaryAfter" Value="{{c|You are mechanical}}" />
     <tag Name="Symbols.Mechanical" Value="c::&#xf;" />
+  </object>
+  
+  <object Name="UD_CYBP_TextElements Organic" Inherits="UD_CYBP_BaseTextElements">
+    <tag Name="TextElements" Value="Organic" />
+    <tag Name="Option.OrganicMechanicalMismatch" Value="Organic;UD_ChooseYourBodyPlan_EnableOrganicMechanicalBodyPlansOntologicallyMatch==Yes" />
+    <tag Name="DescriptionBefore" Value="{{W|You will be made organic with this body plan.}}" />
+    <tag Name="SummaryAfter" Value="{{W|You are organic}}" />
+    <tag Name="Symbols.Organic" Value="W::&#xf;" />
   </object>
   
   <object Name="UD_CYBP_TextElements NoCyber" Inherits="UD_CYBP_BaseTextElements">

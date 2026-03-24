@@ -20,6 +20,7 @@ using UD_ChooseYourBodyPlan.Mod.Logging;
 
 using static UD_ChooseYourBodyPlan.Mod.Utils;
 using static UD_ChooseYourBodyPlan.Mod.Const;
+using XRL.CharacterBuilds.Qud;
 
 namespace UD_ChooseYourBodyPlan.Mod
 {
@@ -972,7 +973,11 @@ namespace UD_ChooseYourBodyPlan.Mod
             => !(OptionState = OptionID.GetOption()).IsNullOrEmpty();
 
         public static bool IsMechanical(this Anatomy Anatomy)
-            => Anatomy?.Category is BodyPartCategory.MECHANICAL;
+            => Anatomy?.Category is BodyPartCategory.MECHANICAL
+            || Anatomy?.BodyCategory is BodyPartCategory.MECHANICAL
+            || Anatomy?.Category is BodyPartCategory.METAL
+            || Anatomy?.BodyCategory is BodyPartCategory.METAL
+            ;
 
         public static bool IsNoCyber(this AnatomyPart AnatomyPart)
             => AnatomyPart?.Extrinsic is true
@@ -1122,5 +1127,33 @@ namespace UD_ChooseYourBodyPlan.Mod
 
             return output;
         }
+
+        public static string GetPlayerBodyBlueprint(this EmbarkBuilder Builder, out bool HaveSubtype, out bool HaveGenotype)
+        {
+			string genotypeBody = Builder?.GetModule<QudGenotypeModule>()?.data?.Entry?.BodyObject;
+			string subtypeBody = Builder?.GetModule<QudSubtypeModule>()?.data?.Entry?.BodyObject;
+
+            HaveSubtype = !subtypeBody.IsNullOrEmpty();
+			HaveGenotype = !genotypeBody.IsNullOrEmpty();
+
+			string baseBody = subtypeBody
+                .Coalesce(genotypeBody)
+                .Coalesce("Humanoid");
+
+			return Builder?.info?.fireBootEvent(
+                id: QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECTBLUEPRINT,
+                game: The.Game,
+                element: baseBody);
+		}
+
+        public static string GetPlayerBodyBlueprint(this EmbarkBuilder Builder)
+            => Builder.GetPlayerBodyBlueprint(out _, out _)
+            ;
+
+		public static GameObjectBlueprint GetPlayerBodyModel(this EmbarkBuilder Builder, out bool HaveSubtype, out bool HaveGenotype)
+            => GameObjectFactory.Factory.GetBlueprintIfExists(Builder.GetPlayerBodyBlueprint(out HaveSubtype, out HaveGenotype));
+
+		public static GameObjectBlueprint GetPlayerBodyModel(this EmbarkBuilder Builder)
+            => Builder.GetPlayerBodyModel(out _, out _);
 	}
 }
