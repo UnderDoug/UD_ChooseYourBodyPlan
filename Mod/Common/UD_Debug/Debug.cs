@@ -51,7 +51,7 @@ namespace UD_ChooseYourBodyPlan.Mod.Logging
         public static DebugMethodRegistry DoDebugRegistry => DebugMethodRegistry.Instance;
 
         public static bool DoDebugSetting
-            => (EnableLogging is not false)
+            => (EnableLogging is true)
             && !SilenceLogging
             ;
 
