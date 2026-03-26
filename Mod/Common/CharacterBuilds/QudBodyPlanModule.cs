@@ -111,6 +111,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
 
         public OntologicalMatch MatchPlayerOntology;
 
+        protected bool BodyBuilt;
+
         public QudBodyPlanModule()
         {
             _BodyPlanChoices = null;
@@ -173,24 +175,12 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                 && player.Body is Body playerBody
                 && data.Selection.Anatomy is string anatomy)
             {
+                if (id == QudGameBootModule.BOOTEVENT_BEFOREBOOTPLAYEROBJECT)
+                    RebuildPlayerBody(player, anatomy, id);
+
                 if (id == QudGameBootModule.BOOTEVENT_BOOTPLAYEROBJECT)
                 {
-                    if (Options.EnableOrganicMechanicalBodyPlansOntologicallyMatch)
-                    {
-                        if (Anatomies.GetAnatomy(player.Body.Anatomy) is Anatomy originAnatomy
-                            && Anatomies.GetAnatomy(anatomy) is Anatomy destinationAnatomy)
-                        {
-                            if (originAnatomy.IsMechanical()
-                                && !destinationAnatomy.IsMechanical())
-                                MatchPlayerOntology = OntologicalMatch.Organic;
-                            else
-                            if (!originAnatomy.IsMechanical()
-                                && destinationAnatomy.IsMechanical())
-                                MatchPlayerOntology = OntologicalMatch.Mechanical;
-                        }
-                    }
-
-                    playerBody.Rebuild(anatomy);
+                    RebuildPlayerBody(player, anatomy, id);
 
                     if (data.Selection.GetTransformation() is TransformationData xForm
                         && !xForm.Mutations.IsNullOrEmpty())
@@ -439,6 +429,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             }
             return base.handleBootEvent(id, game, info, element);
         }
+
         public override void setData(AbstractEmbarkBuilderModuleData values)
         {
             OrganizeAnatomyChoices(true, values == null);
@@ -520,6 +511,40 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             }
 
             OrganizeAnatomyChoices(true, resetDefault);
+        }
+
+        public void RebuildPlayerBody(GameObject Player, string Anatomy, string ID = null)
+        {
+            if (!BodyBuilt
+                && Player.Body is Body playerBody)
+            {
+                using var indent = new Indent(1);
+                Debug.LogMethod(
+                    MessageAfter: playerBody.Anatomy == Anatomy ? $"already {Anatomy}" : "rebuild imminent",
+                    Indent: indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(Player?.DebugName ?? "NO_PLAYER"),
+                        Debug.Arg(nameof(Anatomy), Anatomy),
+                        Debug.Arg(nameof(ID), ID),
+                    });
+                if (Options.EnableOrganicMechanicalBodyPlansOntologicallyMatch)
+                {
+                    if (Anatomies.GetAnatomy(playerBody.Anatomy) is Anatomy originAnatomy
+                        && Anatomies.GetAnatomy(Anatomy) is Anatomy destinationAnatomy)
+                    {
+                        if (originAnatomy.IsMechanical()
+                            && !destinationAnatomy.IsMechanical())
+                            MatchPlayerOntology = OntologicalMatch.Organic;
+                        else
+                        if (!originAnatomy.IsMechanical()
+                            && destinationAnatomy.IsMechanical())
+                            MatchPlayerOntology = OntologicalMatch.Mechanical;
+                    }
+                }
+                BodyBuilt = playerBody.Anatomy == Anatomy
+                    || playerBody.Rebuild(Anatomy);
+            }
         }
 
         [OptionFlagUpdate]
