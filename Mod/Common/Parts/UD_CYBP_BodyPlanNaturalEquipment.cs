@@ -45,7 +45,7 @@ namespace XRL.World.Parts
             base.Write(Basis, Writer);
 
             Writer.WriteOptimized(NaturalEquipmentByBodyPartID?.Count ?? 0);
-            foreach (var entry in NaturalEquipmentByBodyPartID)
+            foreach (var entry in NaturalEquipmentByBodyPartID ?? Enumerable.Empty<KeyValuePair<int, GameObject>>())
             {
                 Writer.WriteOptimized(entry.Key);
                 Writer.WriteGameObject(entry.Value);

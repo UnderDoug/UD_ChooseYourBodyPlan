@@ -7,10 +7,10 @@
     <BaseIntermediateOutputPath>.dotnet\obj\</BaseIntermediateOutputPath>
     <BaseOutputPath>.dotnet\bin\</BaseOutputPath>
   </PropertyGroup>
-  <Import Project="../Mods.csproj" />
   <ItemGroup>
     <Compile Remove="obj\**" />
     <EmbeddedResource Remove="obj\**" />
     <None Remove="obj\**" />
   </ItemGroup>
+  <Import Project="../Mods.csproj" />
 </Project>

@@ -56,7 +56,20 @@ namespace UD_ChooseYourBodyPlan.Mod
             : String
 			;
 
-		public static string Join(this string Accumulator, string Next, string Delimiter = ", ")
+        public static string ToLiteral(this string String, bool Quotes = false)
+        {
+            if (String.IsNullOrEmpty())
+                return null;
+
+            string output = Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(String, false);
+
+            if (Quotes)
+                output = $"\"{output}\"";
+
+            return output;
+        }
+
+        public static string Join(this string Accumulator, string Next, string Delimiter = ", ")
 			=> Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next;
 
 		public static string Join(this IEnumerable<string> Strings, string Delimiter = ", ")

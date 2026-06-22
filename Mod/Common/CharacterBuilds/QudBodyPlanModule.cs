@@ -135,7 +135,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
             if (index < 0)
                 base.assembleWindowDescriptors(windows);
             else
-                windows.InsertRange(index + 1, this.windows.Values);
+                windows.InsertRange(index, this.windows.Values);
         }
 
         public override SummaryBlockData GetSummaryBlock()
