@@ -182,6 +182,8 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                 {
                     RebuildPlayerBody(player, anatomy, id);
 
+                    player.SetStringProperty("UD_ChooseYourBodyPlan_SelectedAnatomy", anatomy);
+
                     if (data.Selection.GetTransformation() is TransformationData xForm
                         && !xForm.Mutations.IsNullOrEmpty())
                         foreach (var mutation in xForm.Mutations.Values)
