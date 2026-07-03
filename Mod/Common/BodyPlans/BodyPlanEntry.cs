@@ -386,6 +386,14 @@ namespace UD_ChooseYourBodyPlan.Mod
             return this;
         }
 
+        public static string ProcessAnatomyNameToDisplayName(string AnatomyName)
+            => AnatomyName
+                ?.Replace("_", " ")
+                ?.Replace(".", " ")
+                ?.Replace("/", " ")
+                ?.SplitCamelCase()
+            ;
+
         public BodyPlanEntry LoadFromDataBucket(GameObjectBlueprint DataBucket)
         {
             using Indent indent = new(1);
@@ -434,7 +442,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 _ => MergeType.None,
             };
 
-            DisplayName = AnatomyName?.SplitCamelCase();
+            DisplayName = ProcessAnatomyNameToDisplayName(AnatomyName);
             
             DataBucket.AssignStringFieldFromTag(nameof(Category), ref _CategoryOverride);
             DataBucket.AssignStringFieldFromTag(nameof(CategoryOverride), ref _CategoryOverride);
@@ -588,7 +596,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 return null;
             }
             AnatomyName = Anatomy?.Name;
-            DisplayName = Anatomy?.Name?.SplitCamelCase();
+            DisplayName = ProcessAnatomyNameToDisplayName(Anatomy?.Name);
 
             TextElementsNames ??= new();
             if (Anatomy.IsMechanical())

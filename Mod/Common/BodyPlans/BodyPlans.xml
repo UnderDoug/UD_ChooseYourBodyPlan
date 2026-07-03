@@ -4,7 +4,7 @@
   <object Name="UD_CYBP_BaseBodyPlanEntry" Inherits="DataBucket">
     <tag Name="Anatomy" Value="UNDEFINED" />
     <tag Name="Merge" Value="Soft" />
-    <tag Name="RandomWeight" Value="5" />
+    <tag Name="RandomWeight" Value="10" />
     <tag Name="BaseObject" Value="*noinherit" />
     <tag Name="Option.DisallowTrueKinUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansForTK==Yes" />
     <tag Name="Option.DisallowCrossOrganicMechanicalUnless" Value="UD_ChooseYourBodyPlan_EnableBodyPlansThatCrossOrganicMechanical==Yes" />
@@ -212,6 +212,7 @@
   <object Name="UD_CYBP_BodyPlanEntry Humanoid" Inherits="UD_CYBP_BaseBodyPlanEntry">
     <tag Name="Anatomy" Value="Humanoid" />
     <tag Name="BasedOnBlueprint" Value="Trash Monk" />
+    <!--removetag Name="Option.DisallowTrueKinUnless" /-->
     <part Name="Render" Tile="creatures/sw_trash_monk.bmp"
           RenderString="h" ColorString="&amp;r" TileColor="&amp;y" DetailColor="r" />
   </object>

@@ -88,6 +88,10 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
                     foreach (var bodyPlan in BodyPlans.GetAvailable())
                         _BodyPlanChoices.Add(bodyPlan);
 
+                    if (_BodyPlanChoices.Count < 1
+                        && BodyPlans.FirstOrDefault(b => b.Anatomy == GetDefaultBodyPlanAnatomy()) is BodyPlan defaultBodyPlan)
+                        _BodyPlanChoices.Add(defaultBodyPlan);
+
                     _BodyPlanChoices.Sort(BodyPlan.DefaultFirstNameComparer);
 
                     SetDefaultChoice();
@@ -562,7 +566,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         {
             if (BodyPlanChoices.IsNullOrEmpty())
             {
-                MetricsManager.LogCallingModError(nameof(BodyPlanChoices) + " empty when it probably shouldn't be.");
+                MetricsManager.LogCallingModError($"{nameof(BodyPlanChoices)} empty when it probably shouldn't be");
                 return;
             }
 
@@ -582,7 +586,7 @@ namespace UD_ChooseYourBodyPlan.Mod.CharacterBuilds
         {
             if (BodyPlanChoices.IsNullOrEmpty())
             {
-                MetricsManager.LogCallingModError(nameof(BodyPlanChoices) + " empty when it probably shouldn't be.");
+                MetricsManager.LogCallingModError($"{nameof(BodyPlanChoices)} empty when it probably shouldn't be");
                 return false;
             }
             return true;

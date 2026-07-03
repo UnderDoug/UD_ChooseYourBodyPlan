@@ -6,6 +6,7 @@ using System.Text;
 
 using UD_ChooseYourBodyPlan.Mod.Logging;
 
+using XRL;
 using XRL.CharacterBuilds;
 using XRL.CharacterBuilds.Qud;
 using XRL.Collections;
@@ -25,7 +26,9 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (TagValue.FailedToGetSimpleDelegate(out var simpleDelegate))
                 return true;
 
-            return Builder?.GetModule<QudGenotypeModule>()?.data?.Entry?.IsTrueKin is not true
+            return Builder?.GetModule<QudGenotypeModule>()?.data?.Entry is not GenotypeEntry genotypeEntry
+                || !genotypeEntry.IsTrueKin
+                || BodyPlanEntry.AnatomyName == Builder.GetPlayerBodyBlueprint()
                 || simpleDelegate.Check()
                 ;
         }
