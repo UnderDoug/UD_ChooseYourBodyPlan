@@ -209,11 +209,18 @@ namespace UD_ChooseYourBodyPlan.Mod
 
         public static bool InheritsFromAny(this GameObjectBlueprint Blueprint, params string[] Blueprints)
             => !Blueprints.IsNullOrEmpty()
-            && Blueprints.Any(bp => Blueprint.InheritsFrom(bp));
+            && Blueprints.Any(bp => Blueprint.InheritsFrom(bp))
+            ;
+
+        public static bool InheritsFromAnySafe(this GameObjectBlueprint Blueprint, params string[] Blueprints)
+            => !Blueprints.IsNullOrEmpty()
+            && Blueprints.Any(bp => Blueprint.InheritsFromSafe(bp))
+            ;
 
         public static string ThisManyTimes(this string @string, int Times = 1)
             => Times.Aggregate("", (a, n) => a + @string)
             ;
+
         public static string ThisManyTimes(this char @char, int Times = 1)
             => @char.ToString().ThisManyTimes(Times)
             ;

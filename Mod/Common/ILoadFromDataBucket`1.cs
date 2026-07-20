@@ -30,8 +30,9 @@ namespace UD_ChooseYourBodyPlan.Mod
         }
 
         public static bool IsValidDataBucket(ILoadFromDataBucket<T> Object, GameObjectBlueprint DataBucket)
-            => DataBucket?.InheritsFrom(Object.BaseDataBucketBlueprint ?? BaseDataBucket)
-            ?? false;
+            => DataBucket?.InheritsFromSafe(Object.BaseDataBucketBlueprint ?? BaseDataBucket)
+            ?? false
+            ;
 
         public static bool CheckIsValidDataBucket(
             ILoadFromDataBucket<T> Object,

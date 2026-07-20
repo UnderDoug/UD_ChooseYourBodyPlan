@@ -897,7 +897,7 @@ namespace UD_ChooseYourBodyPlan.Mod
             ;
         public bool InheritsFromAnatomy(GameObjectBlueprint Blueprint)
             => Anatomy != null
-            && Blueprint.InheritsFrom(Anatomy.Name)
+            && Blueprint.InheritsFromSafe(Anatomy.Name)
             ;
 
         public IEnumerable<GameObjectBlueprint> GetExampleBlueprints()

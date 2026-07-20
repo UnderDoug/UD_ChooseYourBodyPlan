@@ -72,7 +72,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                 bool any = false;
                 foreach (var anatomyName in Anatomies.AnatomyTable.Keys)
                 {
-                    if (Blueprint.InheritsFrom(anatomyName))
+                    if (Blueprint.InheritsFromSafe(anatomyName))
                     {
                         any = true;
                         break;
@@ -82,7 +82,7 @@ namespace UD_ChooseYourBodyPlan.Mod
                     return false;
             }
 
-            if (!Blueprint.InheritsFrom("PhysicalObject"))
+            if (!Blueprint.InheritsFromSafe("PhysicalObject"))
                 return false;
 
             if (Blueprint.HasSTag("Chiliad"))
@@ -91,14 +91,14 @@ namespace UD_ChooseYourBodyPlan.Mod
             if (Blueprint.HasTag("Golem"))
                 return false;
 
-            if (Blueprint.InheritsFromAny(
+            if (Blueprint.InheritsFromAnySafe(
                 Blueprints: new string[]
                 {
                     "Templar",
                 }))
                 return false;
 
-            if (Blueprint.InheritsFrom("Chair")
+            if (Blueprint.InheritsFromSafe("Chair")
                 && Blueprint.Name.EndsWithAny(" L", " C", " R"))
                 return false;
 
